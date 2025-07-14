@@ -117,50 +117,98 @@ export default function BrokerDetailPage() {
   );
 
   return (
-    <>
+    <div className="max-w-4xl mx-auto">
       <PageHeader
         title={broker.name}
-        description={`Follow the steps below to link your ${broker.name} account.`}
+        description="Link your account to start earning cashback."
       />
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-            
-            {/* Step 1: Initial Choice */}
-            <div className={`transition-all duration-300 ${step === 'initial' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Step 1: Start Earning Now</CardTitle>
-                        <CardDescription>Do you already have a trading account with {broker.name}?</CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col sm:flex-row gap-4">
-                        <Button onClick={() => setStep('hasAccount')} size="lg" className="w-full">Yes, I have an account</Button>
-                        <Button onClick={() => setStep('needsAccount')} size="lg" variant="secondary" className="w-full">No, I need to create one</Button>
-                    </CardContent>
-                </Card>
-            </div>
+      <div className="space-y-8">
+        {/* Broker Details First */}
+        <Card>
+            <CardHeader className="flex-row items-center gap-4">
+                <Image 
+                    src={broker.logoUrl} 
+                    alt={`${broker.name} logo`} 
+                    width={80} 
+                    height={80}
+                    className="w-20 h-20 object-contain rounded-lg border p-2"
+                    data-ai-hint="logo"
+                />
+                <div className="space-y-1">
+                    <CardTitle className="text-2xl">{broker.name}</CardTitle>
+                    <CardDescription>{broker.description}</CardDescription>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm border-t pt-4">
+                    <div className="space-y-1">
+                        <p className="text-muted-foreground">Min. Deposit</p>
+                        <p className="font-medium">{broker.details.minDeposit}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-muted-foreground">Max. Leverage</p>
+                        <p className="font-medium">{broker.details.leverage}</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-muted-foreground">Typical Spread</p>
+                        <p className="font-medium">{broker.details.spreads}</p>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
 
-            {/* Step 2A: Has Account */}
-            <div className={`space-y-6 transition-all duration-500 ${step === 'hasAccount' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-                <Alert>
+        {/* Start Earning Now Hook */}
+        <Card>
+            <CardHeader>
+                <CardTitle>Start Earning Now in Easy Steps</CardTitle>
+                <CardDescription>Do you already have a trading account with {broker.name}?</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col sm:flex-row gap-4">
+                <Button onClick={() => setStep('hasAccount')} size="lg" className="w-full" variant={step === 'hasAccount' ? 'default' : 'secondary'}>
+                    Yes, I have an account
+                </Button>
+                <Button onClick={() => setStep('needsAccount')} size="lg" className="w-full" variant={step === 'needsAccount' ? 'default' : 'secondary'}>
+                    No, I need to create one
+                </Button>
+            </CardContent>
+        </Card>
+
+        {/* Conditional Steps */}
+        <div className="space-y-6">
+            {/* Step for users who HAVE an account */}
+            <div className={`space-y-6 transition-opacity duration-300 ${step !== 'needsAccount' ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                 <Alert>
                     <Info className="h-4 w-4" />
                     <AlertTitle>Important: Is your account under our Partner Link?</AlertTitle>
                     <AlertDescription>
-                        <p className="mb-2">For us to track your trades for cashback, your account must be registered under our partner link. If it's not, you'll need to create a new one using the link provided.</p>
+                        <p className="mb-2">For us to track your trades for cashback, your account must be registered under our partner link. If it's not, you'll need to create a new one using the link below.</p>
                         <p>If you're sure your account is correctly linked, proceed to enter your account number below.</p>
                     </AlertDescription>
                 </Alert>
                 <AccountLinkForm />
             </div>
 
-            {/* Step 2B: Needs Account */}
-            <div className={`space-y-6 transition-all duration-500 ${step === 'needsAccount' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+            {/* Separator */}
+            <div className="relative my-8">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center">
+                    <span className="bg-background px-2 text-xs uppercase text-muted-foreground">
+                        Or
+                    </span>
+                </div>
+            </div>
+
+            {/* Step for users who NEED an account */}
+            <div className={`space-y-6 transition-opacity duration-300 ${step !== 'hasAccount' ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
                  <Alert>
                     <Info className="h-4 w-4" />
-                    <AlertTitle>Step 2: Create Your New Account</AlertTitle>
+                    <AlertTitle>Create Your New Account</AlertTitle>
                     <AlertDescription>
                         <p className="mb-2">{broker.instructions.description}</p>
-                        <p className="mb-4">Click the button below to go to the broker's website and create your account. This will ensure it's correctly tracked for cashback.</p>
+                        <p className="mb-4">Click the button below to go to the broker's website. This will ensure it's correctly tracked for cashback. Once you've created your account, come back here and enter the new account number above.</p>
                          <Button asChild>
                             <a href={broker.instructions.link} target="_blank" rel="noopener noreferrer">
                                 {broker.instructions.linkText} <ArrowRight className="ml-2 h-4 w-4" />
@@ -168,84 +216,9 @@ export default function BrokerDetailPage() {
                         </Button>
                     </AlertDescription>
                 </Alert>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Step 3: Link Your New Account</CardTitle>
-                        <CardDescription>Once you've created your account, come back here and enter the new account number below.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                                <FormField
-                                control={form.control}
-                                name="accountNumber"
-                                render={({ field }) => (
-                                    <FormItem>
-                                    <FormLabel>New Trading Account Number</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Enter the new account number here" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                    </FormItem>
-                                )}
-                                />
-                                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-                                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Submit for Approval
-                                </Button>
-                            </form>
-                        </Form>
-                    </CardContent>
-                 </Card>
             </div>
-
-             {/* Broker Details visible in all steps */}
-             <div className={`transition-opacity duration-500 ${step !== 'initial' ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Broker Details</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                            <div className="space-y-1">
-                                <p className="text-muted-foreground">Min. Deposit</p>
-                                <p className="font-medium">{broker.details.minDeposit}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-muted-foreground">Max. Leverage</p>
-                                <p className="font-medium">{broker.details.leverage}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-muted-foreground">Typical Spread</p>
-                                <p className="font-medium">{broker.details.spreads}</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
         </div>
-
-        <aside className="space-y-6">
-            <Card className="flex flex-col items-center text-center">
-                 <CardHeader>
-                    <Image 
-                        src={broker.logoUrl} 
-                        alt={`${broker.name} logo`} 
-                        width={80} 
-                        height={80}
-                        className="w-20 h-20 object-contain rounded-lg border p-2 mx-auto"
-                        data-ai-hint="logo"
-                    />
-                    <CardTitle className="mt-4">{broker.name}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <CardDescription>{broker.description}</CardDescription>
-                </CardContent>
-            </Card>
-        </aside>
-
       </div>
-    </>
+    </div>
   );
 }
