@@ -33,7 +33,6 @@ export default function DashboardLayout({
     const navLinks = [
         { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
         { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
-        { href: "/dashboard/my-accounts", icon: CreditCard, label: "My Accounts" },
         { href: "/dashboard/transactions", icon: ReceiptText, label: "Transactions" },
         { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
         { href: "/dashboard/settings", icon: Settings, label: "Settings" },
@@ -113,5 +112,3 @@ export default function DashboardLayout({
         </AuthProvider>
     )
 }
-
-    
