@@ -158,32 +158,18 @@ export default function Home() {
               <h2 className="text-3xl font-bold font-headline">Get Paid in 3 Simple Steps</h2>
               <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Start earning cashback in under 5 minutes. It's that easy.</p>
             </div>
-            <div className="relative">
+            <div className="space-y-8">
               {howItWorksSteps.map((step, index) => (
-                <div key={index} className="flex gap-8 relative">
-                  {/* Journey Line */}
-                  <div className="absolute left-5 top-5 h-full border-l-2 border-dashed border-border"></div>
-                  
-                  {/* Step Number and Icon */}
-                  <div className="flex flex-col items-center">
-                    <div className="z-10 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg ring-8 ring-muted/40">
-                      {index + 1}
-                    </div>
+                <Card key={index} className="p-6 flex gap-6 items-start shadow-md hover:shadow-lg transition-shadow">
+                  <div className="bg-primary/10 p-4 rounded-full">
+                    {step.icon}
                   </div>
-
-                  {/* Step Content */}
-                  <div className="pb-12">
-                     <div className="flex items-center gap-4">
-                        <div className="bg-primary/10 p-3 rounded-lg">
-                           {step.icon}
-                        </div>
-                        <div>
-                            <h3 className="text-xl font-semibold font-headline">{step.title}</h3>
-                            <p className="mt-1 text-muted-foreground">{step.description}</p>
-                        </div>
-                     </div>
+                  <div>
+                    <p className="text-sm font-semibold text-primary">STEP {index + 1}</p>
+                    <h3 className="text-xl font-bold font-headline mt-1">{step.title}</h3>
+                    <p className="mt-2 text-muted-foreground">{step.description}</p>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
