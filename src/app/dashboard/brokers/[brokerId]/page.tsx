@@ -6,7 +6,6 @@ import { useRouter, useParams, notFound } from 'next/navigation';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -147,6 +146,10 @@ export default function BrokerDetailPage() {
         </CardContent>
       </Card>
       
+      <div className="text-center">
+        <h2 className="text-2xl font-bold font-headline">Start Earning Now in 3 Easy Steps</h2>
+      </div>
+
       {/* Horizontal Stepper */}
       <div className="w-full">
         <div className="flex items-center justify-between">
