@@ -109,7 +109,7 @@ export default function BrokerDetailPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 p-4 md:p-0">
+    <div className="max-w-4xl mx-auto space-y-8 p-4">
       
       {/* Broker Preview Card */}
       <Card>
@@ -129,7 +129,7 @@ export default function BrokerDetailPage() {
             </div>
           </div>
           <Separator className="my-3" />
-          <div className="grid grid-cols-3 divide-x text-center">
+          <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x text-center gap-2 md:gap-0">
               <div className="px-2">
                   <p className="text-xs text-muted-foreground">Min. Deposit</p>
                   <p className="font-semibold text-sm">{broker.details.minDeposit}</p>
@@ -320,5 +320,3 @@ function Step3() {
         </>
     )
 }
-
-  
