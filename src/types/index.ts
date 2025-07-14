@@ -1,18 +1,20 @@
-import { Timestamp } from "firebase/firestore";
+import type { Timestamp } from "firebase/firestore";
 
-export interface Transaction {
-    id: string;
-    userId: string;
-    merchant: string;
-    amount: number;
-    mcc: string;
-    cashbackAmount: number;
-    status: 'Pending' | 'Approved' | 'Rejected';
-    submittedAt: Date;
+/**
+ * Represents a user document in the 'users' collection.
+ */
+export interface UserProfile {
+    uid: string;
+    email: string;
+    name: string;
+    createdAt: Timestamp;
 }
 
+/**
+ * Represents a linked trading account document in the 'tradingAccounts' collection.
+ */
 export interface TradingAccount {
-    id: string;
+    id: string; // Document ID
     userId: string;
     broker: string;
     accountNumber: string;
@@ -20,22 +22,31 @@ export interface TradingAccount {
     createdAt: Timestamp;
 }
 
-export interface Withdrawal {
-    id: string;
-    amount: number;
-    status: 'Processing' | 'Completed' | 'Failed';
-    date: Date;
-    network: 'bep20' | 'trc20';
-    address: string;
-}
-
+/**
+ * Represents a cashback transaction document in the 'cashbackTransactions' collection.
+ */
 export interface CashbackTransaction {
-    id: string;
+    id: string; // Document ID
     userId: string;
-    date: Date | Timestamp;
+    accountId: string; // Reference to the TradingAccount document ID
     accountNumber: string;
     broker: string;
-    merchant: string;
-    transactionAmount: number;
+    date: Timestamp;
+    tradeDetails: string; // e.g., "Trade 1.5 lots EURUSD"
     cashbackAmount: number;
+}
+
+
+/**
+ * Represents a withdrawal request document in the 'withdrawals' collection.
+ */
+export interface Withdrawal {
+    id: string; // Document ID
+    userId: string;
+    amount: number;
+    status: 'Processing' | 'Completed' | 'Failed';
+    network: 'bep20' | 'trc20';
+    walletAddress: string;
+    requestedAt: Timestamp;
+    completedAt?: Timestamp;
 }
