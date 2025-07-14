@@ -109,7 +109,7 @@ export default function BrokerDetailPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 p-4 md:p-0">
       
       {/* Broker Preview Card */}
       <Card>
@@ -129,7 +129,7 @@ export default function BrokerDetailPage() {
             </div>
           </div>
           <Separator className="my-3" />
-          <div className="grid grid-cols-3 divide-x divide-border text-center">
+          <div className="grid grid-cols-3 divide-x text-center">
               <div className="px-2">
                   <p className="text-xs text-muted-foreground">Min. Deposit</p>
                   <p className="font-semibold text-sm">{broker.details.minDeposit}</p>
@@ -151,7 +151,7 @@ export default function BrokerDetailPage() {
       </div>
 
       {/* Horizontal Stepper */}
-      <div className="w-full">
+      <div className="w-full px-2 sm:px-0">
         <div className="flex items-center justify-between">
             {STEPS.map((step, index) => (
               <React.Fragment key={step.id}>
@@ -163,9 +163,9 @@ export default function BrokerDetailPage() {
                     )}>
                       {currentStep > step.id ? <Check className="w-6 h-6"/> : <step.icon className="w-5 h-5"/>}
                   </div>
-                  <p className={cn("mt-2 text-sm font-medium", currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground')}>{step.name}</p>
+                  <p className={cn("mt-2 text-xs sm:text-sm font-medium", currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground')}>{step.name}</p>
                 </div>
-                {index < STEPS.length - 1 && <div className={cn("flex-1 h-0.5 mx-4", currentStep > step.id ? 'bg-primary' : 'bg-border')}></div>}
+                {index < STEPS.length - 1 && <div className={cn("flex-1 h-0.5 mx-2 sm:mx-4", currentStep > step.id + 1 ? 'bg-primary' : 'bg-border')}></div>}
               </React.Fragment>
             ))}
         </div>
@@ -320,3 +320,5 @@ function Step3() {
         </>
     )
 }
+
+  
