@@ -130,7 +130,7 @@ export default function BrokerDetailPage() {
             <div className={`transition-all duration-300 ${step === 'initial' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
                 <Card>
                     <CardHeader>
-                        <CardTitle>Step 1: Account Status</CardTitle>
+                        <CardTitle>Step 1: Start Earning Now</CardTitle>
                         <CardDescription>Do you already have a trading account with {broker.name}?</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col sm:flex-row gap-4">
@@ -242,11 +242,6 @@ export default function BrokerDetailPage() {
                 <CardContent>
                     <CardDescription>{broker.description}</CardDescription>
                 </CardContent>
-                 <CardFooter>
-                    <Button asChild variant="outline" className="w-full">
-                        <a href={broker.instructions.link} target="_blank" rel="noopener noreferrer">Visit Broker Website</a>
-                    </Button>
-                </CardFooter>
             </Card>
         </aside>
 
