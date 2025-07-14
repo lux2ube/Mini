@@ -4,46 +4,49 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
+import type { TradingAccount } from "@/types"
 
-// This is a placeholder for user data. In a real app, you'd fetch this.
-const userData = {
-  name: "Alice Johnson",
-  email: "alice@example.com",
+interface AccountCardProps {
+    account: TradingAccount;
 }
 
-export function AccountCard() {
+export function AccountCard({ account }: AccountCardProps) {
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'Approved':
+        return 'default';
+      case 'Pending':
+        return 'secondary';
+      case 'Rejected':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Profile Information</CardTitle>
-        <CardDescription>Update your personal details.</CardDescription>
+        <CardTitle>Account: {account.accountNumber}</CardTitle>
+        <CardDescription>{account.broker}</CardDescription>
       </CardHeader>
       <CardContent>
-        <form>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" defaultValue={userData.name} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                defaultValue={userData.email}
-                disabled
-              />
-            </div>
-            <Button className="w-full md:w-auto">Save Changes</Button>
-          </div>
-        </form>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-muted-foreground">Status</span>
+          <Badge variant={getStatusVariant(account.status)}>{account.status}</Badge>
+        </div>
       </CardContent>
+      <CardFooter>
+        <Button variant="outline" size="sm" className="w-full">
+          View Details
+        </Button>
+      </CardFooter>
     </Card>
   )
 }

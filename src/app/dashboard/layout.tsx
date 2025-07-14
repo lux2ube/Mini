@@ -13,7 +13,8 @@ import {
     DollarSign,
     Settings,
     LayoutDashboard,
-    UserCog
+    UserCog,
+    CreditCard
 } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -44,6 +45,7 @@ export default function DashboardLayout({
 }) {
     const navLinks = [
         { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        { href: "/my-accounts", icon: CreditCard, label: "My Accounts" },
         { href: "/request-cashback", icon: DollarSign, label: "Request Cashback" },
         { href: "/admin", icon: UserCog, label: "Admin" },
         { href: "/settings", icon: Settings, label: "Settings" },
