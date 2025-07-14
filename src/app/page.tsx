@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SummaryGenerator } from "@/components/summary-generator";
+import { CashbackCalculator } from "@/components/cashback-calculator";
 import { CheckCircle2, Code, Github } from "lucide-react";
 import Link from 'next/link';
 
@@ -69,6 +70,8 @@ export default function Home() {
           </Card>
 
           <SummaryGenerator />
+
+          <CashbackCalculator />
 
           <Card className="lg:col-span-2">
             <CardHeader>

@@ -2,6 +2,8 @@
 
 import { generateProjectSummary } from "@/ai/flows/generate-project-summary";
 import type { GenerateProjectSummaryOutput } from "@/ai/flows/generate-project-summary";
+import { calculateCashback } from "@/ai/flows/calculate-cashback";
+import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 
 // Hardcoded data based on https://github.com/tcb4dev/cashback1
 const projectData = {
@@ -22,5 +24,20 @@ export async function handleGenerateSummary(): Promise<{ summary: string | null;
         console.error(e);
         const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
         return { summary: null, error: `An error occurred: ${errorMessage}` };
+    }
+}
+
+
+export async function handleCalculateCashback(input: CalculateCashbackInput): Promise<{ result: CalculateCashbackOutput | null; error: string | null }> {
+    try {
+        const result: CalculateCashbackOutput = await calculateCashback(input);
+        if (result) {
+            return { result, error: null };
+        }
+        return { result: null, error: "Failed to calculate cashback." };
+    } catch (e) {
+        console.error(e);
+        const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
+        return { result: null, error: `An error occurred: ${errorMessage}` };
     }
 }
