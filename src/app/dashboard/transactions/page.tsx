@@ -40,8 +40,12 @@ export default function TransactionsPage() {
         if (user) {
           setIsLoading(true);
           try {
-            // Fetch trading accounts for the filter dropdown
-            const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
+            // Fetch approved trading accounts for the filter dropdown
+            const accountsQuery = query(
+              collection(db, "tradingAccounts"), 
+              where("userId", "==", user.uid),
+              where("status", "==", "Approved")
+            );
             const accountsSnapshot = await getDocs(accountsQuery);
             const userAccounts = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TradingAccount));
             setAccounts(userAccounts);
