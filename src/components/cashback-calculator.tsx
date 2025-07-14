@@ -16,10 +16,12 @@ import { useToast } from "@/hooks/use-toast";
 import { handleCalculateCashback } from "@/app/actions";
 import { Skeleton } from "./ui/skeleton";
 import type { CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
+import { Label } from "./ui/label";
 
 export function CashbackCalculator() {
   const [isPending, startTransition] = useTransition();
   const [amount, setAmount] = useState("");
+  const [mcc, setMcc] = useState("");
   const [result, setResult] = useState<CalculateCashbackOutput | null>(null);
   const { toast } = useToast();
 
@@ -33,9 +35,17 @@ export function CashbackCalculator() {
       });
       return;
     }
+    if (!mcc) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Please enter a Merchant Category Code (MCC).",
+        });
+        return;
+      }
 
     startTransition(async () => {
-      const { result: apiResult, error } = await handleCalculateCashback({ amount: transactionAmount });
+      const { result: apiResult, error } = await handleCalculateCashback({ amount: transactionAmount, mcc });
       if (error) {
         toast({
           variant: "destructive",
@@ -59,35 +69,49 @@ export function CashbackCalculator() {
             <div>
                 <CardTitle className="font-headline">Cashback Calculator</CardTitle>
                 <CardDescription>
-                Enter a transaction amount to calculate the cashback award.
+                Enter transaction details to calculate the cashback award based on the project's rules.
                 </CardDescription>
             </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-2">
-           <Input
-            type="number"
-            placeholder="Enter transaction amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            disabled={isPending}
-            className="max-w-xs"
-            />
-             <Button onClick={onSubmit} disabled={isPending} className="bg-accent hover:bg-accent/90 text-accent-foreground">
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Calculating...
-                </>
-              ) : (
-                <>
-                    <DollarSign className="mr-2 h-4 w-4" />
-                    Calculate
-                </>
-              )}
-            </Button>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+                <Label htmlFor="amount">Transaction Amount</Label>
+                <Input
+                    id="amount"
+                    type="number"
+                    placeholder="e.g., 125.50"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    disabled={isPending}
+                />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="mcc">Merchant Category Code (MCC)</Label>
+                <Input
+                    id="mcc"
+                    type="text"
+                    placeholder="e.g., 5812 (Restaurants)"
+                    value={mcc}
+                    onChange={(e) => setMcc(e.target.value)}
+                    disabled={isPending}
+                />
+            </div>
         </div>
+         <Button onClick={onSubmit} disabled={isPending} className="bg-accent hover:bg-accent/90 text-accent-foreground mt-2">
+            {isPending ? (
+            <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Calculating...
+            </>
+            ) : (
+            <>
+                <DollarSign className="mr-2 h-4 w-4" />
+                Calculate
+            </>
+            )}
+        </Button>
         
         {isPending && (
           <div className="space-y-2 pt-4">

@@ -13,6 +13,7 @@ import {z} from 'genkit';
 
 const CalculateCashbackInputSchema = z.object({
   amount: z.number().describe('The transaction amount.'),
+  mcc: z.string().describe('The Merchant Category Code (MCC) of the transaction.'),
 });
 export type CalculateCashbackInput = z.infer<typeof CalculateCashbackInputSchema>;
 
@@ -32,13 +33,17 @@ const prompt = ai.definePrompt({
   name: 'calculateCashbackPrompt',
   input: {schema: CalculateCashbackInputSchema},
   output: {schema: CalculateCashbackOutputSchema},
-  prompt: `You are a cashback calculation engine.
-  
-  The current rule is: "10% cashback on all transactions".
+  prompt: `You are a cashback calculation engine. You must follow these rules precisely.
 
-  Calculate the cashback for a transaction with the amount of \${{{amount}}}.
+  Rules:
+  1.  **Standard Cashback**: All transactions receive 1% cashback.
+  2.  **High-Value Transaction Bonus**: If a transaction amount is over $100, it receives an *additional* 2% cashback. This is cumulative with the standard cashback.
+  3.  **MCC Blacklist**: Transactions with the following Merchant Category Codes (MCCs) are blacklisted: "7995", "6011". If a transaction is on the blacklist, the total cashback amount is $0, regardless of other rules.
   
-  Provide the final cashback amount and a brief explanation of the calculation.`,
+  Calculate the final cashback amount for a transaction of \${{{amount}}} with MCC "{{{mcc}}}".
+
+  Provide the final cashback amount and a step-by-step explanation of how you applied the rules to reach the final amount.
+  For blacklisted transactions, state clearly that the MCC is blacklisted and that's why the cashback is $0.`,
 });
 
 const calculateCashbackFlow = ai.defineFlow(
