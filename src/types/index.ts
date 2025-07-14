@@ -31,7 +31,8 @@ export interface Withdrawal {
 
 export interface CashbackTransaction {
     id: string;
-    date: Date;
+    userId: string;
+    date: Date | Timestamp;
     accountNumber: string;
     broker: string;
     merchant: string;
