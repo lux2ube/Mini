@@ -28,31 +28,34 @@ export default function MyAccountsPage() {
       try {
         const q = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
         const querySnapshot = await getDocs(q);
-        const userAccounts: TradingAccount[] = querySnapshot.docs.map(doc => {
+        const userAccounts = querySnapshot.docs.map(doc => {
             const data = doc.data();
+            // Ensure createdAt is a valid Timestamp, defaulting to now if missing
+            const createdAt = data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now();
             return {
                 id: doc.id,
-                ...data,
-                createdAt: data.createdAt || Timestamp.now()
+                userId: data.userId,
+                broker: data.broker,
+                accountNumber: data.accountNumber,
+                status: data.status,
+                createdAt: createdAt,
             } as TradingAccount;
         });
 
-        userAccounts.sort((a, b) => {
-          const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
-          const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
-          return dateB - dateA;
-        });
+        // Sort accounts by creation date, most recent first
+        userAccounts.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
 
         setAccounts(userAccounts);
       } catch (error) {
         console.error("Error fetching trading accounts:", error);
+        // Optionally, set an error state to show a message to the user
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAccounts();
-  }, [user, setAccounts, setIsLoading]);
+  }, [user]);
 
   return (
     <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
