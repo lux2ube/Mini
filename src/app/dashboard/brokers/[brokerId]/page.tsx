@@ -114,18 +114,18 @@ export default function BrokerDetailPage() {
       
       {/* Broker Preview Card */}
       <Card>
-        <CardHeader className="flex flex-col md:flex-row items-start gap-6 space-y-0">
+        <CardHeader className="flex flex-col md:flex-row items-start gap-4 space-y-0">
            <Image
               src={broker.logoUrl}
               alt={`${broker.name} logo`}
-              width={80}
-              height={80}
-              className="w-20 h-20 object-contain rounded-lg border p-2 bg-background"
+              width={64}
+              height={64}
+              className="w-16 h-16 object-contain rounded-lg border p-1 bg-background"
               data-ai-hint="logo"
             />
           <div className="flex-1">
-            <CardTitle className="text-3xl font-headline">{broker.name}</CardTitle>
-            <CardDescription className="mt-2 text-base">{broker.description}</CardDescription>
+            <CardTitle className="text-2xl font-headline">{broker.name}</CardTitle>
+            <CardDescription className="mt-1 text-sm">{broker.description}</CardDescription>
           </div>
         </CardHeader>
         <CardContent>
