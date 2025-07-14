@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams, notFound } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,7 +19,6 @@ import { brokers } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info, Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
 
 const formSchema = z.object({
   accountNumber: z.string().min(5, { message: 'Account number must be at least 5 characters.' }),
@@ -43,7 +42,7 @@ export default function BrokerDetailPage() {
   });
 
   if (!broker) {
-    return notFound();
+    notFound();
   }
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
