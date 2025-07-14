@@ -44,8 +44,8 @@ export default function MyAccountsPage() {
       }
     };
 
-    if(user) {
-        fetchAccounts();
+    if (user) {
+      fetchAccounts();
     }
   }, [user]);
 
