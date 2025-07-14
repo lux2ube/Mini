@@ -165,7 +165,7 @@ export default function BrokerDetailPage() {
                   </div>
                   <p className={cn("mt-2 text-xs sm:text-sm font-medium", currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground')}>{step.name}</p>
                 </div>
-                {index < STEPS.length - 1 && <div className={cn("flex-1 h-0.5 mx-2 sm:mx-4", currentStep > step.id + 1 ? 'bg-primary' : 'bg-border')}></div>}
+                {index < STEPS.length - 1 && <div className={cn("flex-1 h-0.5 mx-2 sm:mx-4", currentStep > step.id ? 'bg-primary' : 'bg-border')}></div>}
               </React.Fragment>
             ))}
         </div>
