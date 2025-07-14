@@ -19,19 +19,24 @@ export default function MyAccountsPage() {
 
   useEffect(() => {
     const fetchAccounts = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
       try {
-        const q = query(collection(db, "tradingAccounts"), where("userId", "==", user!.uid));
+        const q = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
         const querySnapshot = await getDocs(q);
         const userAccounts: TradingAccount[] = querySnapshot.docs.map(doc => {
             const data = doc.data();
-            return { 
-                id: doc.id, 
+            return {
+                id: doc.id,
                 ...data,
-                createdAt: data.createdAt || Timestamp.now() 
-            } as TradingAccount
+                createdAt: data.createdAt || Timestamp.now()
+            } as TradingAccount;
         });
-        
+
         userAccounts.sort((a, b) => {
           const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
           const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
@@ -46,13 +51,8 @@ export default function MyAccountsPage() {
       }
     };
 
-    if (user) {
-      fetchAccounts();
-    } else {
-      setAccounts([]);
-      setIsLoading(false);
-    }
-  }, [user]);
+    fetchAccounts();
+  }, [user, setAccounts, setIsLoading]);
 
   return (
     <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
