@@ -17,7 +17,7 @@ import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { brokers } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info, Loader2, ArrowRight, ExternalLink, Check, UserPlus, FileText, Link2, Briefcase, BarChart, Zap } from 'lucide-react';
+import { Info, Loader2, ArrowRight, ExternalLink, Check, UserPlus, FileText, Link2 } from 'lucide-react';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
@@ -114,36 +114,36 @@ export default function BrokerDetailPage() {
       
       {/* Broker Preview Card */}
       <Card>
-        <CardHeader className="flex flex-col md:flex-row items-start gap-4 space-y-0">
-           <Image
-              src={broker.logoUrl}
-              alt={`${broker.name} logo`}
-              width={64}
-              height={64}
-              className="w-16 h-16 object-contain rounded-lg border p-1 bg-background"
-              data-ai-hint="logo"
-            />
-          <div className="flex-1">
-            <CardTitle className="text-2xl font-headline">{broker.name}</CardTitle>
-            <CardDescription className="mt-1 text-sm">{broker.description}</CardDescription>
-          </div>
-        </CardHeader>
-        <CardContent>
-            <Separator className="my-4" />
-            <div className="grid grid-cols-3 divide-x divide-border text-center">
-                <div className="px-2">
-                    <p className="text-sm text-muted-foreground">Min. Deposit</p>
-                    <p className="font-semibold">{broker.details.minDeposit}</p>
-                </div>
-                <div className="px-2">
-                    <p className="text-sm text-muted-foreground">Max. Leverage</p>
-                    <p className="font-semibold">{broker.details.leverage}</p>
-                </div>
-                 <div className="px-2">
-                    <p className="text-sm text-muted-foreground">Spreads From</p>
-                    <p className="font-semibold">{broker.details.spreads}</p>
-                </div>
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <Image
+                src={broker.logoUrl}
+                alt={`${broker.name} logo`}
+                width={48}
+                height={48}
+                className="w-12 h-12 object-contain rounded-lg border p-1 bg-background"
+                data-ai-hint="logo"
+              />
+            <div className="flex-1">
+              <h1 className="text-xl font-bold font-headline">{broker.name}</h1>
+              <p className="text-xs text-muted-foreground truncate">{broker.description}</p>
             </div>
+          </div>
+          <Separator className="my-3" />
+          <div className="grid grid-cols-3 divide-x divide-border text-center">
+              <div className="px-2">
+                  <p className="text-xs text-muted-foreground">Min. Deposit</p>
+                  <p className="font-semibold text-sm">{broker.details.minDeposit}</p>
+              </div>
+              <div className="px-2">
+                  <p className="text-xs text-muted-foreground">Max. Leverage</p>
+                  <p className="font-semibold text-sm">{broker.details.leverage}</p>
+              </div>
+                <div className="px-2">
+                  <p className="text-xs text-muted-foreground">Spreads From</p>
+                  <p className="font-semibold text-sm">{broker.details.spreads}</p>
+              </div>
+          </div>
         </CardContent>
       </Card>
       
