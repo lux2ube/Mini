@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -18,39 +19,48 @@ export default function MyAccountsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Define the async function to fetch data
     const fetchAccounts = async () => {
       if (!user) {
         setIsLoading(false);
         return;
       }
 
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        const q = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
+        const q = query(
+          collection(db, "tradingAccounts"),
+          where("userId", "==", user.uid)
+        );
         const querySnapshot = await getDocs(q);
         
         const userAccounts = querySnapshot.docs.map(doc => {
           const data = doc.data();
-          const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
+          // Safely handle timestamp conversion
+          const createdAt = data.createdAt instanceof Timestamp 
+            ? data.createdAt.toDate() 
+            : new Date();
+          
           return {
             id: doc.id,
-            userId: data.userId,
-            broker: data.broker,
-            accountNumber: data.accountNumber,
-            status: data.status,
+            ...data,
             createdAt: createdAt,
           } as TradingAccount;
         });
 
+        // Sort accounts by most recent
         userAccounts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         setAccounts(userAccounts);
+
       } catch (error) {
         console.error("Error fetching trading accounts:", error);
+        // Optionally, set an error state here to show in the UI
       } finally {
         setIsLoading(false);
       }
     };
 
+    // Call the fetch function
     fetchAccounts();
   }, [user]);
 
