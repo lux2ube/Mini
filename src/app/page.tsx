@@ -13,22 +13,16 @@ export default function Home() {
       icon: <LogIn className="w-8 h-8 text-primary" />,
       title: "Sign Up for Free",
       description: "Create your account in seconds with just your email. No lengthy forms, no fees.",
-      buttonText: "Get Started",
-      link: "/register"
     },
     {
       icon: <LucideLinkIcon className="w-8 h-8 text-primary" />,
       title: "Link Your Trading Account",
       description: "Securely connect your existing trading account from any of our partner brokers.",
-      buttonText: "See Brokers",
-      link: "/dashboard/brokers"
     },
     {
       icon: <HandCoins className="w-8 h-8 text-primary" />,
       title: "Trade & Earn Cashback",
       description: "Trade as you normally would. We track your trades and automatically credit cashback to your account.",
-      buttonText: "Learn More",
-      link: "#benefits"
     },
   ];
 
@@ -159,24 +153,37 @@ export default function Home() {
 
         {/* How It Works Section */}
         <section id="how-it-works" className="py-16 sm:py-24 bg-muted/40">
-          <div className="container">
+          <div className="container max-w-3xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold font-headline">Get Paid in 3 Simple Steps</h2>
               <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Start earning cashback in under 5 minutes. It's that easy.</p>
             </div>
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="relative">
               {howItWorksSteps.map((step, index) => (
-                <Card key={index} className="text-center shadow-lg hover:shadow-xl transition-shadow">
-                  <CardHeader>
-                    <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
-                      {step.icon}
+                <div key={index} className="flex gap-8 relative">
+                  {/* Journey Line */}
+                  <div className="absolute left-5 top-5 h-full border-l-2 border-dashed border-border"></div>
+                  
+                  {/* Step Number and Icon */}
+                  <div className="flex flex-col items-center">
+                    <div className="z-10 w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg ring-8 ring-muted/40">
+                      {index + 1}
                     </div>
-                    <CardTitle className="mt-4">{step.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground">{step.description}</p>
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  {/* Step Content */}
+                  <div className="pb-12">
+                     <div className="flex items-center gap-4">
+                        <div className="bg-primary/10 p-3 rounded-lg">
+                           {step.icon}
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-semibold font-headline">{step.title}</h3>
+                            <p className="mt-1 text-muted-foreground">{step.description}</p>
+                        </div>
+                     </div>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
