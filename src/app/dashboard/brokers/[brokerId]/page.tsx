@@ -130,18 +130,18 @@ export default function BrokerDetailPage() {
         </CardHeader>
         <CardContent>
             <Separator className="my-4" />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
-                <div className="p-2">
+            <div className="grid grid-cols-3 divide-x divide-border text-center">
+                <div className="px-2">
                     <p className="text-sm text-muted-foreground">Min. Deposit</p>
-                    <p className="font-semibold text-lg">{broker.details.minDeposit}</p>
+                    <p className="font-semibold">{broker.details.minDeposit}</p>
                 </div>
-                <div className="p-2">
+                <div className="px-2">
                     <p className="text-sm text-muted-foreground">Max. Leverage</p>
-                    <p className="font-semibold text-lg">{broker.details.leverage}</p>
+                    <p className="font-semibold">{broker.details.leverage}</p>
                 </div>
-                 <div className="p-2">
+                 <div className="px-2">
                     <p className="text-sm text-muted-foreground">Spreads From</p>
-                    <p className="font-semibold text-lg">{broker.details.spreads}</p>
+                    <p className="font-semibold">{broker.details.spreads}</p>
                 </div>
             </div>
         </CardContent>
