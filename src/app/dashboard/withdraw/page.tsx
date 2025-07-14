@@ -50,7 +50,7 @@ export default function WithdrawPage() {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            amount: undefined,
+            amount: '' as any, // Use empty string to avoid uncontrolled to controlled error
             network: undefined,
             address: "",
         },
