@@ -52,23 +52,28 @@ export default function BrokersPage() {
         <CardHeader>
           <CardTitle className="text-lg">Filter & Sort</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <Input
-            placeholder="Search by broker name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-2/3"
-          />
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Sort by..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name-asc">Name (A-Z)</SelectItem>
-              <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-              <SelectItem value="min-deposit-asc">Min. Deposit (Low-High)</SelectItem>
-            </SelectContent>
-          </Select>
+        <CardContent>
+          <div className="flex items-center space-x-2">
+            <div className="flex-grow">
+               <Input
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="w-1/2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sort by..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+                  <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+                  <SelectItem value="min-deposit-asc">Min. Deposit</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
