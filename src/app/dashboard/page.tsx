@@ -15,7 +15,8 @@ import { Loader2 } from "lucide-react";
 export default function UserDashboardPage() {
   const { user } = useAuthContext();
   const [stats, setStats] = useState({
-    totalCashback: 0,
+    availableBalance: 0,
+    totalEarned: 0,
     linkedAccounts: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -28,10 +29,13 @@ export default function UserDashboardPage() {
           const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
           const accountsSnapshot = await getCountFromServer(accountsQuery);
           
-          const totalCashback = 254.30; 
+          // Placeholder values
+          const availableBalance = 254.30; 
+          const totalEarned = 578.55;
 
           setStats({
-            totalCashback,
+            availableBalance,
+            totalEarned,
             linkedAccounts: accountsSnapshot.data().count,
           });
 
@@ -69,10 +73,13 @@ export default function UserDashboardPage() {
         <Card className="shadow-lg bg-gradient-to-br from-primary/10 via-background to-background border-primary/20">
             <CardHeader>
                 <CardDescription className="text-foreground">Available Balance</CardDescription>
-                <CardTitle className="text-4xl font-bold text-primary">${stats.totalCashback.toFixed(2)}</CardTitle>
+                <CardTitle className="text-4xl font-bold text-primary">${stats.availableBalance.toFixed(2)}</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                    Total earned: ${stats.totalEarned.toFixed(2)}
+                </p>
             </CardHeader>
              <CardContent className="flex flex-col sm:flex-row gap-4">
-                <Button asChild size="lg" className="w-full bg-gradient-to-r from-primary to-green-400 text-primary-foreground hover:shadow-lg transition-shadow">
+                <Button asChild size="lg" className="w-full">
                     <Link href="/dashboard/withdraw">
                         Withdraw
                     </Link>
