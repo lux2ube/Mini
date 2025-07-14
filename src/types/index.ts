@@ -7,7 +7,7 @@ export interface UserProfile {
     uid: string;
     email: string;
     name: string;
-    createdAt: Timestamp;
+    createdAt: any;
 }
 
 /**
@@ -19,7 +19,7 @@ export interface TradingAccount {
     broker: string;
     accountNumber: string;
     status: 'Pending' | 'Approved' | 'Rejected';
-    createdAt: Timestamp;
+    createdAt: any;
 }
 
 /**
@@ -31,7 +31,7 @@ export interface CashbackTransaction {
     accountId: string; // Reference to the TradingAccount document ID
     accountNumber: string;
     broker: string;
-    date: Timestamp;
+    date: any;
     tradeDetails: string; // e.g., "Trade 1.5 lots EURUSD"
     cashbackAmount: number;
 }
@@ -47,6 +47,6 @@ export interface Withdrawal {
     status: 'Processing' | 'Completed' | 'Failed';
     network: 'bep20' | 'trc20';
     walletAddress: string;
-    requestedAt: Timestamp;
-    completedAt?: Timestamp;
+    requestedAt: any;
+    completedAt?: any;
 }

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -25,14 +24,14 @@ export default function MyAccountsPage() {
         return;
       }
 
-      setIsLoading(true);
       try {
+        setIsLoading(true);
         const q = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
         const querySnapshot = await getDocs(q);
         
         const userAccounts = querySnapshot.docs.map(doc => {
           const data = doc.data();
-          const createdAt = data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now();
+          const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
           return {
             id: doc.id,
             userId: data.userId,
@@ -43,7 +42,7 @@ export default function MyAccountsPage() {
           } as TradingAccount;
         });
 
-        userAccounts.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+        userAccounts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
         setAccounts(userAccounts);
       } catch (error) {
         console.error("Error fetching trading accounts:", error);
@@ -57,7 +56,7 @@ export default function MyAccountsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center h-full min-h-screen">
+      <div className="flex justify-center items-center h-full min-h-[calc(100vh-theme(spacing.14))]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
