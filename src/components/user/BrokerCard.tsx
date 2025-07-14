@@ -12,14 +12,8 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { ArrowRight } from "lucide-react";
+import type { Broker } from "@/lib/data";
 
-interface Broker {
-    id: string;
-    name: string;
-    description: string;
-    logoUrl: string;
-    link: string;
-}
 
 interface BrokerCardProps {
     broker: Broker;
@@ -44,8 +38,8 @@ export function BrokerCard({ broker }: BrokerCardProps) {
       </CardHeader>
       <CardFooter className="mt-auto">
         <Button asChild className="w-full">
-            <Link href={`/dashboard/my-accounts/add?broker=${broker.id}`}>
-                Select Broker <ArrowRight className="ml-2 h-4 w-4" />
+            <Link href={`/dashboard/brokers/${broker.id}`}>
+                View Details & Link <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
         </Button>
       </CardFooter>
