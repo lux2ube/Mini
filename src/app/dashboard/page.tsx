@@ -5,19 +5,30 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, PlusCircle } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle, Landmark } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getCountFromServer } from "firebase/firestore";
+import { collection, query, where, getDocs, getCountFromServer, Timestamp } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
+import type { CashbackTransaction, Withdrawal } from "@/types";
+
+interface DashboardStats {
+    availableBalance: number;
+    totalEarned: number;
+    linkedAccounts: number;
+    pendingWithdrawals: number;
+    completedWithdrawals: number;
+}
 
 export default function UserDashboardPage() {
   const { user } = useAuthContext();
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     availableBalance: 0,
     totalEarned: 0,
     linkedAccounts: 0,
+    pendingWithdrawals: 0,
+    completedWithdrawals: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -26,16 +37,39 @@ export default function UserDashboardPage() {
       if (user) {
         setIsLoading(true);
         try {
+          // Fetch accounts count
           const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
           const accountsSnapshot = await getCountFromServer(accountsQuery);
-          
-          const availableBalance = 254.30; 
-          const totalEarned = 578.55;
+          const linkedAccounts = accountsSnapshot.data().count;
 
+          // Fetch transactions to calculate earnings
+          const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid));
+          const transactionsSnapshot = await getDocs(transactionsQuery);
+          const totalEarned = transactionsSnapshot.docs.reduce((acc, doc) => acc + doc.data().cashbackAmount, 0);
+
+          // Fetch withdrawals to calculate balance and withdrawal stats
+          const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
+          const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+          
+          let pendingWithdrawals = 0;
+          let completedWithdrawals = 0;
+          withdrawalsSnapshot.docs.forEach(doc => {
+              const withdrawal = doc.data() as Withdrawal;
+              if(withdrawal.status === 'Processing') {
+                  pendingWithdrawals += withdrawal.amount;
+              } else if (withdrawal.status === 'Completed') {
+                  completedWithdrawals += withdrawal.amount;
+              }
+          });
+
+          const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals;
+          
           setStats({
             availableBalance,
             totalEarned,
-            linkedAccounts: accountsSnapshot.data().count,
+            linkedAccounts,
+            pendingWithdrawals,
+            completedWithdrawals,
           });
 
         } catch (error) {
@@ -53,7 +87,7 @@ export default function UserDashboardPage() {
 
   if (isLoading) {
     return (
-        <div className="flex justify-center items-center h-full">
+        <div className="flex justify-center items-center h-full min-h-[calc(100vh-theme(spacing.14))]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
@@ -102,9 +136,9 @@ export default function UserDashboardPage() {
                   <span className="text-2xl font-bold text-primary">{stats.linkedAccounts}</span>
               </div>
                <Button asChild className="w-full">
-                  <Link href="/dashboard/brokers">
+                  <Link href="/dashboard/my-accounts">
                       <PlusCircle className="mr-2 h-5 w-5" />
-                      Add Trading Account
+                      Manage Accounts
                   </Link>
               </Button>
           </CardContent>
@@ -114,7 +148,7 @@ export default function UserDashboardPage() {
           <CardHeader>
               <div className="flex items-start gap-4">
                   <div className="p-3 rounded-lg bg-primary/10">
-                      <DollarSign className="h-6 w-6 text-primary" />
+                      <Landmark className="h-6 w-6 text-primary" />
                   </div>
                   <div>
                       <CardTitle>Withdrawals</CardTitle>
@@ -126,11 +160,11 @@ export default function UserDashboardPage() {
               <div className="p-4 rounded-lg bg-muted flex flex-col space-y-2">
                   <div>
                       <p className="font-medium">Pending</p>
-                      <p className="text-lg font-bold text-muted-foreground">$0.00</p>
+                      <p className="text-lg font-bold text-muted-foreground">${stats.pendingWithdrawals.toFixed(2)}</p>
                   </div>
                    <div>
                       <p className="font-medium">Completed</p>
-                      <p className="text-lg font-bold text-muted-foreground">$0.00</p>
+                      <p className="text-lg font-bold text-muted-foreground">${stats.completedWithdrawals.toFixed(2)}</p>
                   </div>
               </div>
               <Button asChild variant="outline" className="w-full">
@@ -141,5 +175,3 @@ export default function UserDashboardPage() {
     </div>
   );
 }
-
-    

@@ -9,7 +9,8 @@ import {
     Briefcase,
     Landmark,
     ReceiptText,
-    LogOut
+    LogOut,
+    Users
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -32,6 +33,7 @@ export default function DashboardLayout({
 }) {
     const navLinks = [
         { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        { href: "/dashboard/my-accounts", icon: Users, label: "My Accounts" },
         { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
         { href: "/dashboard/transactions", icon: ReceiptText, label: "Transactions" },
         { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
