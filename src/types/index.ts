@@ -28,3 +28,13 @@ export interface Withdrawal {
     network: 'bep20' | 'trc20';
     address: string;
 }
+
+export interface CashbackTransaction {
+    id: string;
+    date: Date;
+    accountNumber: string;
+    broker: string;
+    merchant: string;
+    transactionAmount: number;
+    cashbackAmount: number;
+}
