@@ -5,13 +5,12 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, Upload, ArrowRight, PlusCircle } from "lucide-react";
+import { DollarSign, Briefcase, ArrowRight, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getCountFromServer } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function UserDashboardPage() {
   const { user } = useAuthContext();
@@ -29,8 +28,7 @@ export default function UserDashboardPage() {
           const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
           const accountsSnapshot = await getCountFromServer(accountsQuery);
           
-          // Placeholder for real cashback data
-          const totalCashback = 0; 
+          const totalCashback = 254.30; 
 
           setStats({
             totalCashback,
@@ -66,20 +64,24 @@ export default function UserDashboardPage() {
         description="Here’s an overview of your cashback activity."
       />
       
-      {/* Summary Area */}
+      {/* Balance Card */}
       <div className="mb-6">
-        <Card className="shadow-lg bg-primary/5 border-primary/20">
+        <Card className="shadow-lg bg-gradient-to-br from-primary/10 via-background to-background border-primary/20">
             <CardHeader>
-                <div className="flex items-center gap-4">
-                    <DollarSign className="w-8 h-8 text-primary" />
-                    <div>
-                        <CardDescription>Total Cashback Earned</CardDescription>
-                        <CardTitle className="text-4xl font-bold text-primary">${stats.totalCashback.toFixed(2)}</CardTitle>
-                    </div>
-                </div>
+                <CardDescription className="text-foreground">Available Balance</CardDescription>
+                <CardTitle className="text-4xl font-bold text-primary">${stats.totalCashback.toFixed(2)}</CardTitle>
             </CardHeader>
-             <CardContent>
-                <p className="text-xs text-muted-foreground">This is the total cashback earned across all your approved accounts.</p>
+             <CardContent className="flex flex-col sm:flex-row gap-4">
+                <Button asChild size="lg" className="w-full bg-gradient-to-r from-primary to-green-400 text-primary-foreground hover:shadow-lg transition-shadow">
+                    <Link href="/dashboard/withdraw">
+                        Withdraw
+                    </Link>
+                </Button>
+                <Button asChild size="lg" variant="secondary" className="w-full">
+                    <Link href="/dashboard/brokers">
+                        Earn Now
+                    </Link>
+                </Button>
             </CardContent>
         </Card>
       </div>
@@ -124,37 +126,32 @@ export default function UserDashboardPage() {
             <CardHeader>
                 <div className="flex items-start gap-4">
                     <div className="p-3 rounded-lg bg-primary/10">
-                        <Upload className="h-6 w-6 text-primary" />
+                        <DollarSign className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                        <CardTitle>Withdrawals</CardTitle>
-                        <CardDescription>Withdraw your earned cashback to your wallet.</CardDescription>
+                        <CardTitle>Withdrawal History</CardTitle>
+                        <CardDescription>View your past and pending withdrawals.</CardDescription>
                     </div>
                 </div>
             </CardHeader>
             <CardContent className="flex-grow space-y-4">
-                <div className="p-4 rounded-lg bg-muted flex justify-between items-center">
+                <div className="p-4 rounded-lg bg-muted grid grid-cols-2 gap-4">
                     <div>
-                        <p className="font-medium">Pending Withdrawals</p>
+                        <p className="font-medium">Pending</p>
                         {/* Placeholder Value */}
-                        <p className="text-sm text-muted-foreground">0</p>
+                        <p className="text-lg font-bold text-muted-foreground">$0.00</p>
                     </div>
                      <div>
-                        <p className="font-medium">Approved</p>
+                        <p className="font-medium">Completed</p>
                         {/* Placeholder Value */}
-                        <p className="text-sm text-muted-foreground">0</p>
+                        <p className="text-lg font-bold text-muted-foreground">$0.00</p>
                     </div>
                 </div>
-                 <Button asChild size="sm" variant="outline" className="w-full">
-                    <Link href="/dashboard/withdraw">
-                        View Withdrawal History <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
             </CardContent>
             <CardContent>
-                 <Button asChild size="lg" className="w-full">
+                 <Button asChild size="lg" variant="outline" className="w-full">
                     <Link href="/dashboard/withdraw">
-                        Request Withdrawal
+                        View History <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                 </Button>
             </CardContent>
