@@ -87,7 +87,10 @@ export default function BrokerDetailPage() {
   type FieldName = keyof FormData;
 
   const next = async () => {
-    const fields: FieldName[] = currentStep === 1 ? ['hasAccount'] : [];
+    const fields: FieldName[] = [];
+    if (currentStep === 1) {
+        fields.push('hasAccount');
+    }
     if (currentStep === 3) {
         fields.push('accountNumber');
     }
@@ -116,18 +119,18 @@ export default function BrokerDetailPage() {
       {/* Broker Preview Card */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Image
                 src={broker.logoUrl}
                 alt={`${broker.name} logo`}
                 width={48}
                 height={48}
-                className="w-12 h-12 object-contain rounded-lg border p-1 bg-background"
+                className="w-12 h-12 object-contain rounded-lg border p-1 bg-background flex-shrink-0"
                 data-ai-hint="logo"
               />
             <div className="flex-1">
               <h1 className="text-xl font-bold font-headline">{broker.name}</h1>
-              <p className="text-xs text-muted-foreground truncate">{broker.description}</p>
+              <p className="text-xs text-muted-foreground">{broker.description}</p>
             </div>
           </div>
           <Separator className="my-3" />
@@ -322,5 +325,3 @@ function Step3() {
         </>
     )
 }
-
-    
