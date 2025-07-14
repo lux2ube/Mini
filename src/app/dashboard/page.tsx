@@ -37,8 +37,12 @@ export default function UserDashboardPage() {
       if (user) {
         setIsLoading(true);
         try {
-          // Fetch accounts count
-          const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
+          // Fetch approved accounts count
+          const accountsQuery = query(
+            collection(db, "tradingAccounts"), 
+            where("userId", "==", user.uid),
+            where("status", "==", "Approved")
+          );
           const accountsSnapshot = await getCountFromServer(accountsQuery);
           const linkedAccounts = accountsSnapshot.data().count;
 
