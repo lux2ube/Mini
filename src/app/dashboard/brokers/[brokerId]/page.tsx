@@ -17,7 +17,7 @@ import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { brokers } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info, Loader2 } from 'lucide-react';
+import { Info, Loader2, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 
 const formSchema = z.object({
@@ -30,6 +30,7 @@ export default function BrokerDetailPage() {
   const { user } = useAuthContext();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [step, setStep] = useState<'initial' | 'hasAccount' | 'needsAccount'>('initial');
 
   const brokerId = params.brokerId as string;
   const broker = brokers.find(b => b.id === brokerId);
@@ -67,7 +68,7 @@ export default function BrokerDetailPage() {
       });
 
       toast({
-        title: 'Success',
+        title: 'Success!',
         description: 'Your trading account has been submitted for approval.',
       });
       router.push('/dashboard/my-accounts');
@@ -83,75 +84,146 @@ export default function BrokerDetailPage() {
     }
   };
 
+  const AccountLinkForm = () => (
+    <Card>
+        <CardHeader>
+            <CardTitle>Link Your Account</CardTitle>
+            <CardDescription>Enter your account number below to submit it for approval.</CardDescription>
+        </CardHeader>
+        <CardContent>
+            <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                control={form.control}
+                name="accountNumber"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Trading Account Number</FormLabel>
+                    <FormControl>
+                        <Input placeholder="e.g., 123456789" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Submit for Approval
+                </Button>
+            </form>
+            </Form>
+        </CardContent>
+    </Card>
+  );
+
   return (
     <>
       <PageHeader
         title={broker.name}
-        description={`Link your ${broker.name} account to start earning cashback.`}
+        description={`Follow the steps below to link your ${broker.name} account.`}
       />
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Broker Details</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                        <div className="space-y-1">
-                            <p className="text-muted-foreground">Min. Deposit</p>
-                            <p className="font-medium">{broker.details.minDeposit}</p>
-                        </div>
-                         <div className="space-y-1">
-                            <p className="text-muted-foreground">Max. Leverage</p>
-                            <p className="font-medium">{broker.details.leverage}</p>
-                        </div>
-                         <div className="space-y-1">
-                            <p className="text-muted-foreground">Typical Spread</p>
-                            <p className="font-medium">{broker.details.spreads}</p>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
+            
+            {/* Step 1: Initial Choice */}
+            <div className={`transition-all duration-300 ${step === 'initial' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Step 1: Account Status</CardTitle>
+                        <CardDescription>Do you already have a trading account with {broker.name}?</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col sm:flex-row gap-4">
+                        <Button onClick={() => setStep('hasAccount')} size="lg" className="w-full">Yes, I have an account</Button>
+                        <Button onClick={() => setStep('needsAccount')} size="lg" variant="secondary" className="w-full">No, I need to create one</Button>
+                    </CardContent>
+                </Card>
+            </div>
 
-            <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>Important Instructions</AlertTitle>
-                <AlertDescription>
-                    <p className="mb-2">{broker.instructions.description}</p>
-                    <p>Follow our partner link to ensure your account is correctly tracked for cashback: <a href={broker.instructions.link} target="_blank" rel="noopener noreferrer" className="underline font-medium hover:text-primary">{broker.instructions.linkText}</a></p>
-                </AlertDescription>
-            </Alert>
+            {/* Step 2A: Has Account */}
+            <div className={`space-y-6 transition-all duration-500 ${step === 'hasAccount' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+                <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Important: Is your account under our Partner Link?</AlertTitle>
+                    <AlertDescription>
+                        <p className="mb-2">For us to track your trades for cashback, your account must be registered under our partner link. If it's not, you'll need to create a new one using the link provided.</p>
+                        <p>If you're sure your account is correctly linked, proceed to enter your account number below.</p>
+                    </AlertDescription>
+                </Alert>
+                <AccountLinkForm />
+            </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Link Your Account</CardTitle>
-                    <CardDescription>Once your account is created or linked under our partner ID, enter your account number below.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                        <FormField
-                        control={form.control}
-                        name="accountNumber"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Trading Account Number</FormLabel>
-                            <FormControl>
-                                <Input placeholder="e.g., 123456789" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                        />
-                        <Button type="submit" disabled={isLoading}>
-                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Submit for Approval
+            {/* Step 2B: Needs Account */}
+            <div className={`space-y-6 transition-all duration-500 ${step === 'needsAccount' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+                 <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>Step 2: Create Your New Account</AlertTitle>
+                    <AlertDescription>
+                        <p className="mb-2">{broker.instructions.description}</p>
+                        <p className="mb-4">Click the button below to go to the broker's website and create your account. This will ensure it's correctly tracked for cashback.</p>
+                         <Button asChild>
+                            <a href={broker.instructions.link} target="_blank" rel="noopener noreferrer">
+                                {broker.instructions.linkText} <ArrowRight className="ml-2 h-4 w-4" />
+                            </a>
                         </Button>
-                    </form>
-                    </Form>
-                </CardContent>
-            </Card>
+                    </AlertDescription>
+                </Alert>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Step 3: Link Your New Account</CardTitle>
+                        <CardDescription>Once you've created your account, come back here and enter the new account number below.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Form {...form}>
+                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                                <FormField
+                                control={form.control}
+                                name="accountNumber"
+                                render={({ field }) => (
+                                    <FormItem>
+                                    <FormLabel>New Trading Account Number</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Enter the new account number here" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                    </FormItem>
+                                )}
+                                />
+                                <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+                                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Submit for Approval
+                                </Button>
+                            </form>
+                        </Form>
+                    </CardContent>
+                 </Card>
+            </div>
+
+             {/* Broker Details visible in all steps */}
+             <div className={`transition-opacity duration-500 ${step !== 'initial' ? 'opacity-100' : 'opacity-50 pointer-events-none'}`}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Broker Details</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                            <div className="space-y-1">
+                                <p className="text-muted-foreground">Min. Deposit</p>
+                                <p className="font-medium">{broker.details.minDeposit}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-muted-foreground">Max. Leverage</p>
+                                <p className="font-medium">{broker.details.leverage}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-muted-foreground">Typical Spread</p>
+                                <p className="font-medium">{broker.details.spreads}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
         </div>
 
         <aside className="space-y-6">
