@@ -215,10 +215,10 @@ export default function TransactionsPage() {
                                         filteredTransactions.map(tx => (
                                             <TableRow key={tx.id}>
                                                 <TableCell className="font-medium whitespace-nowrap">{format(tx.date, "PP")}</TableCell>
-                                                <TableCell>{tx.broker} - {tx.accountNumber}</TableCell>
+                                                <TableCell className="whitespace-nowrap">{tx.broker} - {tx.accountNumber}</TableCell>
                                                 <TableCell>{tx.merchant}</TableCell>
-                                                <TableCell className="text-right">${tx.transactionAmount.toLocaleString()}</TableCell>
-                                                <TableCell className="text-right font-semibold text-primary">${tx.cashbackAmount.toFixed(2)}</TableCell>
+                                                <TableCell className="text-right whitespace-nowrap">${tx.transactionAmount.toLocaleString()}</TableCell>
+                                                <TableCell className="text-right font-semibold text-primary whitespace-nowrap">${tx.cashbackAmount.toFixed(2)}</TableCell>
                                             </TableRow>
                                         ))
                                     ) : (
