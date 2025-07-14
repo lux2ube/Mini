@@ -5,18 +5,19 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, ListChecks, Briefcase, ArrowRight, Loader2, PlusCircle } from "lucide-react";
+import { DollarSign, Briefcase, Upload, ArrowRight, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getCountFromServer } from "firebase/firestore";
+import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function UserDashboardPage() {
   const { user } = useAuthContext();
   const [stats, setStats] = useState({
     totalCashback: 0,
     linkedAccounts: 0,
-    pendingOrders: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -27,16 +28,13 @@ export default function UserDashboardPage() {
         try {
           const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
           const accountsSnapshot = await getCountFromServer(accountsQuery);
-          const linkedAccounts = accountsSnapshot.data().count;
-
-          // Placeholder for fetching orders and cashback - these would be real queries in a full app
+          
+          // Placeholder for real cashback data
           const totalCashback = 0; 
-          const pendingOrders = 0; 
 
           setStats({
             totalCashback,
-            linkedAccounts,
-            pendingOrders,
+            linkedAccounts: accountsSnapshot.data().count,
           });
 
         } catch (error) {
@@ -59,97 +57,110 @@ export default function UserDashboardPage() {
         </div>
     );
   }
-  
-  // Empty state for new users
-  if (stats.linkedAccounts === 0) {
-    return (
-        <>
-            <PageHeader
-                title={`Welcome, ${user?.displayName || 'User'}`}
-                description="Let's get you started on earning cashback."
-            />
-            <Card className="shadow-lg text-center py-8">
-            <CardHeader>
-                <Briefcase className="mx-auto h-12 w-12 text-primary/80 mb-4" />
-                <CardTitle>Get Started by Linking an Account</CardTitle>
-                <CardDescription>You haven't linked any trading accounts yet. Explore our partner brokers to begin.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button asChild size="lg">
-                    <Link href="/dashboard/brokers">
-                        Explore Brokers <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-            </CardContent>
-            </Card>
-        </>
-    )
-  }
 
-  // Main dashboard for existing users
+  // Main dashboard layout
   return (
     <>
       <PageHeader
-        title={`Welcome, ${user?.displayName || 'User'}`}
-        description="Here is a summary of your trading cashback activity."
+        title={`Welcome, ${user?.displayName || 'User'}!`}
+        description="Here’s an overview of your cashback activity."
       />
       
-      <div className="grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Cashback Earned</CardTitle>
-            <DollarSign className="h-5 w-5 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-primary">${stats.totalCashback.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">From all approved orders</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Linked Accounts</CardTitle>
-            <Briefcase className="h-5 w-5 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.linkedAccounts}</div>
-            <Link href="/dashboard/my-accounts" className="text-xs text-muted-foreground hover:text-primary mt-1 flex items-center">
-              Manage Accounts <ArrowRight className="ml-1 h-3 w-3" />
-            </Link>
-          </CardContent>
-        </Card>
-        <Card className="shadow-lg">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Orders</CardTitle>
-            <ListChecks className="h-5 w-5 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-primary">{stats.pendingOrders}</div>
-            {/* This link will eventually go to an "Orders" page */}
-            <Link href="#" className="text-xs text-muted-foreground hover:text-primary mt-1 flex items-center">
-              View Orders <ArrowRight className="ml-1 h-3 w-3" />
-            </Link>
-          </CardContent>
+      {/* Summary Area */}
+      <div className="mb-6">
+        <Card className="shadow-lg bg-primary/5 border-primary/20">
+            <CardHeader>
+                <div className="flex items-center gap-4">
+                    <DollarSign className="w-8 h-8 text-primary" />
+                    <div>
+                        <CardDescription>Total Cashback Earned</CardDescription>
+                        <CardTitle className="text-4xl font-bold text-primary">${stats.totalCashback.toFixed(2)}</CardTitle>
+                    </div>
+                </div>
+            </CardHeader>
+             <CardContent>
+                <p className="text-xs text-muted-foreground">This is the total cashback earned across all your approved accounts.</p>
+            </CardContent>
         </Card>
       </div>
 
-      <div className="mt-6 md:mt-8">
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Ready to Earn More?</CardTitle>
-            <CardDescription>
-              Submit a new trading order to get cashback rewards.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-             {/* This link will eventually go to a "Submit Order" page */}
-            <Button asChild>
-                <Link href="#">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Submit New Order
-                </Link>
-            </Button>
-          </CardContent>
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Action Block #1 – Account Linking */}
+        <Card className="flex flex-col">
+            <CardHeader>
+                 <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-lg bg-primary/10">
+                        <Briefcase className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <CardTitle>Trading Accounts</CardTitle>
+                        <CardDescription>Link a new trading account to start earning cashback.</CardDescription>
+                    </div>
+                 </div>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-4">
+                <div className="p-4 rounded-lg bg-muted flex justify-between items-center">
+                    <span className="font-medium">Approved Accounts</span>
+                    <span className="text-2xl font-bold text-primary">{stats.linkedAccounts}</span>
+                </div>
+                 <Button asChild size="sm" variant="outline" className="w-full">
+                    <Link href="/dashboard/my-accounts">
+                        Manage Accounts <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            </CardContent>
+            <CardContent>
+                 <Button asChild size="lg" className="w-full">
+                    <Link href="/dashboard/brokers">
+                        <PlusCircle className="mr-2 h-5 w-5" />
+                        Add Trading Account
+                    </Link>
+                </Button>
+            </CardContent>
+        </Card>
+
+        {/* Action Block #2 – Withdrawals */}
+        <Card className="flex flex-col">
+            <CardHeader>
+                <div className="flex items-start gap-4">
+                    <div className="p-3 rounded-lg bg-primary/10">
+                        <Upload className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                        <CardTitle>Withdrawals</CardTitle>
+                        <CardDescription>Withdraw your earned cashback to your wallet.</CardDescription>
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-grow space-y-4">
+                <div className="p-4 rounded-lg bg-muted flex justify-between items-center">
+                    <div>
+                        <p className="font-medium">Pending Withdrawals</p>
+                        {/* Placeholder Value */}
+                        <p className="text-sm text-muted-foreground">0</p>
+                    </div>
+                     <div>
+                        <p className="font-medium">Approved</p>
+                        {/* Placeholder Value */}
+                        <p className="text-sm text-muted-foreground">0</p>
+                    </div>
+                </div>
+                 <Button asChild size="sm" variant="outline" className="w-full">
+                    <Link href="/dashboard/withdraw">
+                        View Withdrawal History <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            </CardContent>
+            <CardContent>
+                 <Button asChild size="lg" className="w-full">
+                    <Link href="/dashboard/withdraw">
+                        Request Withdrawal
+                    </Link>
+                </Button>
+            </CardContent>
         </Card>
       </div>
+
     </>
   );
 }
