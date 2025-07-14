@@ -87,7 +87,7 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="py-20 sm:py-28 text-center bg-muted/20">
+        <section className="py-20 sm:py-28 text-center">
           <div className="container">
             <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl font-headline text-primary">
               Earn Real Cashback Every Time You Trade
@@ -95,7 +95,7 @@ export default function Home() {
             <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto">
               Works with top brokers like Exness, IC Markets, & XM. We pay you for the trades you're already making. Zero risk, zero fees, just pure cashback.
             </p>
-            <div className="mt-8 flex justify-center gap-4">
+            <div className="mt-8 flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg">
                 <Link href="/register">Start Earning Cashback</Link>
               </Button>
@@ -160,8 +160,8 @@ export default function Home() {
             </div>
             <div className="space-y-8">
               {howItWorksSteps.map((step, index) => (
-                <Card key={index} className="p-6 flex gap-6 items-start shadow-md hover:shadow-lg transition-shadow">
-                  <div className="bg-primary/10 p-4 rounded-full">
+                <Card key={index} className="p-6 flex flex-col sm:flex-row gap-6 items-start shadow-md hover:shadow-lg transition-shadow">
+                  <div className="bg-primary/10 p-4 rounded-full self-start">
                     {step.icon}
                   </div>
                   <div>
@@ -207,7 +207,7 @@ export default function Home() {
                         alt="Dashboard Preview"
                         width={1200}
                         height={700}
-                        className="rounded-xl shadow-2xl border-4 border-foreground/5 mx-auto"
+                        className="rounded-xl shadow-2xl border-4 border-foreground/5 mx-auto w-full h-auto"
                         data-ai-hint="dashboard analytics"
                     />
                 </div>
@@ -264,13 +264,13 @@ export default function Home() {
                 </div>
                 <span>Cashback Companion</span>
             </div>
-            <nav className="flex gap-4 text-sm text-muted-foreground">
+            <nav className="flex flex-col sm:flex-row gap-4 text-sm text-muted-foreground">
               <Link href="#" className="hover:text-primary">About</Link>
               <Link href="#" className="hover:text-primary">Contact</Link>
               <Link href="#" className="hover:text-primary">Terms</Link>
               <Link href="#" className="hover:text-primary">Privacy</Link>
             </nav>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground text-center md:text-left">
               © {new Date().getFullYear()} Cashback Companion. All rights reserved.
             </div>
           </div>

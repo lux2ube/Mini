@@ -192,6 +192,7 @@ export default function WithdrawPage() {
                             <CardTitle>Recent Withdrawals</CardTitle>
                         </CardHeader>
                         <CardContent>
+                           <div className="w-full overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -214,6 +215,7 @@ export default function WithdrawPage() {
                                     ))}
                                 </TableBody>
                             </Table>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
