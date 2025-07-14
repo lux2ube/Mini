@@ -11,27 +11,28 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CalendarIcon, Search, X, Loader2 } from "lucide-react";
+import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 import type { CashbackTransaction, TradingAccount } from "@/types";
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
+import { cn } from '@/lib/utils';
 
 export default function TransactionsPage() {
     const { user } = useAuthContext();
     const [transactions, setTransactions] = useState<CashbackTransaction[]>([]);
     const [accounts, setAccounts] = useState<TradingAccount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    
     const [filters, setFilters] = useState<{
         search: string;
         account: string;
-        dateFrom: Date | undefined;
-        dateTo: Date | undefined;
+        date: DateRange | undefined;
     }>({
         search: '',
         account: 'all',
-        dateFrom: undefined,
-        dateTo: undefined,
+        date: undefined,
     });
 
     useEffect(() => {
@@ -86,8 +87,8 @@ export default function TransactionsPage() {
             const matchesAccount = filters.account === 'all' || tx.accountNumber === filters.account;
 
             const txDate = tx.date;
-            const fromDate = filters.dateFrom;
-            const toDate = filters.dateTo;
+            const fromDate = filters.date?.from;
+            const toDate = filters.date?.to;
             
             if (fromDate) fromDate.setHours(0, 0, 0, 0);
             if (toDate) toDate.setHours(23, 59, 59, 999);
@@ -106,8 +107,7 @@ export default function TransactionsPage() {
         setFilters({
             search: '',
             account: 'all',
-            dateFrom: undefined,
-            dateTo: undefined,
+            date: undefined,
         });
     };
 
@@ -123,7 +123,7 @@ export default function TransactionsPage() {
                     <CardTitle>Filters</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -146,48 +146,44 @@ export default function TransactionsPage() {
                             </SelectContent>
                         </Select>
 
-                         <Popover>
+                        <Popover>
                             <PopoverTrigger asChild>
                                 <Button
+                                    id="date"
                                     variant={"outline"}
-                                    className="w-full justify-start text-left font-normal"
+                                    className={cn(
+                                        "w-full justify-start text-left font-normal",
+                                        !filters.date && "text-muted-foreground"
+                                    )}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {filters.dateFrom ? format(filters.dateFrom, "PPP") : <span>Date from</span>}
+                                    {filters.date?.from ? (
+                                        filters.date.to ? (
+                                            <>
+                                                {format(filters.date.from, "LLL dd, y")} -{" "}
+                                                {format(filters.date.to, "LLL dd, y")}
+                                            </>
+                                        ) : (
+                                            format(filters.date.from, "LLL dd, y")
+                                        )
+                                    ) : (
+                                        <span>Pick a date range</span>
+                                    )}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
+                            <PopoverContent className="w-auto p-0" align="start">
                                 <Calendar
-                                    mode="single"
-                                    selected={filters.dateFrom}
-                                    onSelect={(date) => handleFilterChange('dateFrom', date)}
                                     initialFocus
+                                    mode="range"
+                                    defaultMonth={filters.date?.from}
+                                    selected={filters.date}
+                                    onSelect={(date) => handleFilterChange('date', date)}
+                                    numberOfMonths={2}
                                 />
                             </PopoverContent>
                         </Popover>
-                        
-                         <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className="w-full justify-start text-left font-normal"
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {filters.dateTo ? format(filters.dateTo, "PPP") : <span>Date to</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                    mode="single"
-                                    selected={filters.dateTo}
-                                    onSelect={(date) => handleFilterChange('dateTo', date)}
-                                    initialFocus
-                                />
-                            </PopoverContent>
-                        </Popover>
-
                     </div>
-                    <Button variant="ghost" onClick={clearFilters} size="sm">
+                     <Button variant="ghost" onClick={clearFilters} size="sm">
                         <X className="mr-2 h-4 w-4"/>
                         Clear Filters
                     </Button>
