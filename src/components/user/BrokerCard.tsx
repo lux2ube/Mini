@@ -44,7 +44,7 @@ export function BrokerCard({ broker }: BrokerCardProps) {
       </CardHeader>
       <CardFooter className="mt-auto">
         <Button asChild className="w-full">
-            <Link href={`/my-accounts/add?broker=${broker.id}`}>
+            <Link href={`/dashboard/my-accounts/add?broker=${broker.id}`}>
                 Select Broker <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
         </Button>

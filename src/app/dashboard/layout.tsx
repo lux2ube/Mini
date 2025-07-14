@@ -36,9 +36,9 @@ export default function DashboardLayout({
 }) {
     const navLinks = [
         { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-        { href: "/brokers", icon: Briefcase, label: "Brokers" },
-        { href: "/my-accounts", icon: CreditCard, label: "My Accounts" },
-        { href: "/settings", icon: Settings, label: "Settings" },
+        { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
+        { href: "/dashboard/my-accounts", icon: CreditCard, label: "My Accounts" },
+        { href: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
 
     return (
@@ -48,7 +48,7 @@ export default function DashboardLayout({
                     <div className="hidden border-r bg-muted/40 md:block">
                         <div className="flex h-full max-h-screen flex-col gap-2">
                             <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-                                <Link href="/" className="flex items-center gap-2 font-semibold">
+                                <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
                                     <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M15.5 8.5 12 12l-3.5 3.5"/><path d="m8.5 8.5 7 7"/></svg>
                                     </div>
@@ -105,7 +105,7 @@ export default function DashboardLayout({
                                     </SheetHeader>
                                     <nav className="grid gap-2 text-lg font-medium">
                                         <Link
-                                            href="#"
+                                            href="/dashboard"
                                             className="flex items-center gap-2 text-lg font-semibold mb-4"
                                         >
                                             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
@@ -138,7 +138,9 @@ export default function DashboardLayout({
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem>Settings</DropdownMenuItem>
+                                    <Link href="/dashboard/settings">
+                                        <DropdownMenuItem>Settings</DropdownMenuItem>
+                                    </Link>
                                     <DropdownMenuItem>Support</DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <Link href="/">

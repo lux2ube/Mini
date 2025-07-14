@@ -34,7 +34,7 @@ export default function AdminPage() {
       <div className="flex items-center">
         <h1 className="text-lg font-semibold md:text-2xl">Admin Dashboard</h1>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8">
+      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Total Users</CardTitle>
@@ -54,7 +54,7 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
-      <div>
+      <div className="grid gap-4 md:gap-8">
         <Card>
           <CardHeader>
             <CardTitle>Cashback Approval Queue</CardTitle>
@@ -89,7 +89,7 @@ export default function AdminPage() {
           </CardContent>
         </Card>
       </div>
-       <div>
+       <div className="grid gap-4 md:gap-8">
         <Card>
           <CardHeader>
             <CardTitle>User Management</CardTitle>
@@ -128,5 +128,3 @@ export default function AdminPage() {
     </>
   );
 }
-
-    

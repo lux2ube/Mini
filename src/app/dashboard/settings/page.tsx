@@ -12,10 +12,6 @@ import { Label } from "@/components/ui/label";
 export default function SettingsPage() {
   return (
     <>
-        <div className="flex items-center">
-            <h1 className="text-lg font-semibold md:text-2xl">Settings</h1>
-        </div>
-
         <div className="max-w-2xl grid gap-6">
             <Card>
                 <CardHeader>
@@ -44,7 +40,7 @@ export default function SettingsPage() {
                     <CardDescription>
                        Update your account password.
                     </CardDescription>
-                </CardHeader>
+                </Header>
                 <CardContent>
                     <div className="space-y-4">
                         <div className="space-y-2">
@@ -67,5 +63,3 @@ export default function SettingsPage() {
     </>
   );
 }
-
-    
