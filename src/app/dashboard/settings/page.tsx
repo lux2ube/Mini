@@ -40,7 +40,7 @@ export default function SettingsPage() {
                     <CardDescription>
                        Update your account password.
                     </CardDescription>
-                </Header>
+                </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
                         <div className="space-y-2">
