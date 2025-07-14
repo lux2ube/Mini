@@ -15,8 +15,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { auth } from '@/lib/firebase/config';
+import { auth, db } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from "firebase/firestore";
 import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -30,12 +31,24 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Fetch user role from Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+
       toast({
         title: "Success",
         description: "Logged in successfully.",
       });
-      router.push('/dashboard');
+
+      if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
+      
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -94,5 +107,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
