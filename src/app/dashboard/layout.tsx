@@ -1,24 +1,14 @@
 import Link from "next/link";
 import {
-    Bell,
     CircleUser,
-    Home,
-    LineChart,
     Menu,
-    Package,
-    Package2,
-    Search,
-    ShoppingCart,
-    Users,
     DollarSign,
     Settings,
     LayoutDashboard,
-    UserCog,
     CreditCard,
     Briefcase
 } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
     Card,
@@ -35,7 +25,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { AuthProvider } from "@/hooks/useAuthContext";
 import { AuthGuard } from "@/components/shared/AuthGuard";
@@ -49,8 +38,6 @@ export default function DashboardLayout({
         { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
         { href: "/brokers", icon: Briefcase, label: "Brokers" },
         { href: "/my-accounts", icon: CreditCard, label: "My Accounts" },
-        // { href: "/request-cashback", icon: DollarSign, label: "Request Cashback" },
-        { href: "/admin", icon: UserCog, label: "Admin" },
         { href: "/settings", icon: Settings, label: "Settings" },
     ];
 
