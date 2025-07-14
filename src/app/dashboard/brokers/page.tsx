@@ -57,7 +57,7 @@ export default function BrokersPage() {
             placeholder="Search by broker name..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full"
+            className="w-2/3"
           />
           <Select value={sortBy} onValueChange={setSortBy}>
             <SelectTrigger className="w-full">
