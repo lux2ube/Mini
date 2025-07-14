@@ -6,7 +6,8 @@ import {
     Settings,
     LayoutDashboard,
     CreditCard,
-    Briefcase
+    Briefcase,
+    Landmark
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -38,6 +39,7 @@ export default function DashboardLayout({
         { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
         { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
         { href: "/dashboard/my-accounts", icon: CreditCard, label: "My Accounts" },
+        { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
         { href: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
 

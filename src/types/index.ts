@@ -19,3 +19,12 @@ export interface TradingAccount {
     status: 'Pending' | 'Approved' | 'Rejected';
     createdAt: Timestamp;
 }
+
+export interface Withdrawal {
+    id: string;
+    amount: number;
+    status: 'Processing' | 'Completed' | 'Failed';
+    date: Date;
+    network: 'bep20' | 'trc20';
+    address: string;
+}
