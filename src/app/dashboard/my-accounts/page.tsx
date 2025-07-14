@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,7 +10,7 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 import type { TradingAccount } from "@/types";
 import { PlusCircle, Loader2 } from "lucide-react";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, Timestamp } from "firebase/firestore";
 
 export default function MyAccountsPage() {
   const { user } = useAuthContext();
@@ -24,16 +23,24 @@ export default function MyAccountsPage() {
         setIsLoading(true);
         try {
           const tradingAccountsCollectionRef = collection(db, "tradingAccounts");
+          // Simplified query to avoid composite index requirement
           const q = query(
             tradingAccountsCollectionRef,
-            where("userId", "==", user.uid),
-            orderBy("createdAt", "desc")
+            where("userId", "==", user.uid)
           );
           const querySnapshot = await getDocs(q);
           const userAccounts: TradingAccount[] = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
           } as TradingAccount));
+
+          // Sort accounts on the client side
+          userAccounts.sort((a, b) => {
+            const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+            const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
+            return dateB - dateA;
+          });
+
           setAccounts(userAccounts);
         } catch (error) {
           console.error("Error fetching trading accounts:", error);
