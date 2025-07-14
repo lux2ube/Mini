@@ -1,11 +1,5 @@
 
-interface PageHeaderProps {
-  title: string;
-  description?: string;
-  actions?: React.ReactNode; // Actions will be ignored in the new layout
-}
-
-export function PageHeader({ title, description }: PageHeaderProps) {
+export function PageHeader({ title, description }: { title: string; description?: string; }) {
   return (
     <div className="space-y-1">
       <h1 className="text-2xl font-bold font-headline">{title}</h1>
@@ -13,5 +7,3 @@ export function PageHeader({ title, description }: PageHeaderProps) {
     </div>
   );
 }
-
-    

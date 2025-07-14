@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { Loader2, PlusCircle } from "lucide-react";
-
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AccountCard } from "@/components/user/AccountCard";
 import { Button } from "@/components/ui/button";
@@ -33,37 +32,39 @@ export default function MyAccountsPage() {
           where("userId", "==", user.uid)
         );
         const querySnapshot = await getDocs(q);
-        
-        const userAccounts = querySnapshot.docs.map(doc => {
+        const userAccounts = querySnapshot.docs.map((doc) => {
           const data = doc.data();
-          // Safely handle timestamp conversion
-          const createdAt = data.createdAt instanceof Timestamp 
-            ? data.createdAt.toDate() 
+          // Safely handle Firestore Timestamp conversion
+          const createdAtDate = (data.createdAt && typeof data.createdAt.toDate === 'function')
+            ? data.createdAt.toDate()
             : new Date();
-          
+
           return {
             id: doc.id,
-            ...data,
-            createdAt: createdAt,
+            userId: data.userId,
+            broker: data.broker,
+            accountNumber: data.accountNumber,
+            status: data.status,
+            createdAt: createdAtDate,
           } as TradingAccount;
         });
 
-        // Sort accounts by most recent
-        userAccounts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        // Sort accounts by creation date, most recent first
+        userAccounts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         setAccounts(userAccounts);
 
       } catch (error) {
         console.error("Error fetching trading accounts:", error);
-        // Optionally, set an error state here to show in the UI
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Call the fetch function
+    // Call the async function
     fetchAccounts();
-  }, [user]);
+  }, [user]); // Dependency array ensures this runs when user object changes
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full min-h-[calc(100vh-theme(spacing.14))]">
@@ -72,6 +73,7 @@ export default function MyAccountsPage() {
     );
   }
 
+  // Main component render
   return (
     <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
       <PageHeader
