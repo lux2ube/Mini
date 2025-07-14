@@ -17,10 +17,11 @@ import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { brokers } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info, Loader2, ArrowRight, ExternalLink, Check, FileText, UserPlus, Link2 } from 'lucide-react';
+import { Info, Loader2, ArrowRight, ExternalLink, Check, UserPlus, FileText, Link2, Briefcase, BarChart, Zap } from 'lucide-react';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
   hasAccount: z.enum(["yes", "no"], { required_error: "Please select an option." }),
@@ -30,8 +31,8 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const STEPS = [
-  { id: 1, name: 'Select Path', icon: UserPlus },
-  { id: 2, name: 'Follow Instructions', icon: FileText },
+  { id: 1, name: 'Choose Path', icon: UserPlus },
+  { id: 2, name: 'Instructions', icon: FileText },
   { id: 3, name: 'Link Account', icon: Link2 },
 ];
 
@@ -109,50 +110,81 @@ export default function BrokerDetailPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <PageHeader
-        title={`Link ${broker.name} Account`}
-        description="Follow the steps below to link your account and start earning cashback."
-      />
+    <div className="max-w-4xl mx-auto space-y-8">
       
-      <div className="grid md:grid-cols-[1fr_2fr] gap-8">
-        {/* Stepper */}
-        <div className="space-y-0">
-          {STEPS.map((step, index) => (
-            <div key={step.id} className="flex items-start">
-              <div className="flex flex-col items-center">
-                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border-2", 
-                    currentStep > step.id ? 'bg-primary border-primary text-primary-foreground' : 
-                    currentStep === step.id ? 'bg-primary/10 border-primary text-primary' : 
-                    'bg-muted border-border text-muted-foreground'
-                  )}>
-                    {currentStep > step.id ? <Check className="w-6 h-6"/> : <step.icon className="w-5 h-5"/>}
-                  </div>
-                  {index < STEPS.length - 1 && <div className={cn("w-0.5 h-16", currentStep > step.id ? 'bg-primary' : 'bg-border')}></div>}
-              </div>
-              <div className="ml-4 pt-1.5">
-                <p className="text-xs text-muted-foreground">STEP {step.id}</p>
-                <p className="font-medium text-foreground">{step.name}</p>
-              </div>
+      {/* Broker Preview Card */}
+      <Card>
+        <CardHeader className="flex flex-col md:flex-row items-start gap-6 space-y-0">
+           <Image
+              src={broker.logoUrl}
+              alt={`${broker.name} logo`}
+              width={80}
+              height={80}
+              className="w-20 h-20 object-contain rounded-lg border p-2 bg-background"
+              data-ai-hint="logo"
+            />
+          <div className="flex-1">
+            <CardTitle className="text-3xl font-headline">{broker.name}</CardTitle>
+            <CardDescription className="mt-2 text-base">{broker.description}</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent>
+            <Separator className="my-4" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                <div className="p-2">
+                    <p className="text-sm text-muted-foreground">Min. Deposit</p>
+                    <p className="font-semibold text-lg">{broker.details.minDeposit}</p>
+                </div>
+                <div className="p-2">
+                    <p className="text-sm text-muted-foreground">Max. Leverage</p>
+                    <p className="font-semibold text-lg">{broker.details.leverage}</p>
+                </div>
+                 <div className="p-2">
+                    <p className="text-sm text-muted-foreground">Spreads From</p>
+                    <p className="font-semibold text-lg">{broker.details.spreads}</p>
+                </div>
             </div>
-          ))}
+        </CardContent>
+      </Card>
+      
+      {/* Horizontal Stepper */}
+      <div className="w-full">
+        <div className="flex items-center justify-between">
+            {STEPS.map((step, index) => (
+              <React.Fragment key={step.id}>
+                <div className="flex flex-col items-center text-center">
+                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border-2", 
+                      currentStep > step.id ? 'bg-primary border-primary text-primary-foreground' : 
+                      currentStep === step.id ? 'bg-primary/10 border-primary text-primary' : 
+                      'bg-muted border-border text-muted-foreground'
+                    )}>
+                      {currentStep > step.id ? <Check className="w-6 h-6"/> : <step.icon className="w-5 h-5"/>}
+                  </div>
+                  <p className={cn("mt-2 text-sm font-medium", currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground')}>{step.name}</p>
+                </div>
+                {index < STEPS.length - 1 && <div className={cn("flex-1 h-0.5 mx-4", currentStep > step.id ? 'bg-primary' : 'bg-border')}></div>}
+              </React.Fragment>
+            ))}
         </div>
+      </div>
 
-        {/* Form Content */}
-        <FormProvider {...form}>
-            <form onSubmit={form.handleSubmit(processForm)} className="space-y-8">
-            {currentStep === 1 && (
-                <Step1 hasAccount={hasAccountValue} brokerName={broker.name} />
-            )}
-            {currentStep === 2 && (
-                <Step2 hasAccount={hasAccountValue} broker={broker} />
-            )}
-            {currentStep === 3 && (
-                <Step3 />
-            )}
+      {/* Form Content in a Card */}
+      <FormProvider {...form}>
+        <form onSubmit={form.handleSubmit(processForm)}>
+            <Card>
+                {currentStep === 1 && (
+                    <Step1 hasAccount={hasAccountValue} brokerName={broker.name} />
+                )}
+                {currentStep === 2 && (
+                    <Step2 hasAccount={hasAccountValue} broker={broker} />
+                )}
+                {currentStep === 3 && (
+                    <Step3 />
+                )}
+            </Card>
 
             {/* Navigation */}
-            <div className="mt-8 pt-5 flex justify-between">
+            <div className="mt-6 flex justify-between">
                 <div>
                 {currentStep > 1 && (
                     <Button type="button" onClick={prev} variant="secondary">
@@ -168,9 +200,8 @@ export default function BrokerDetailPage() {
                   </Button>
                 </div>
             </div>
-          </form>
-        </FormProvider>
-      </div>
+        </form>
+      </FormProvider>
     </div>
   );
 }
@@ -181,7 +212,7 @@ export default function BrokerDetailPage() {
 function Step1({ hasAccount, brokerName }: { hasAccount: string | undefined; brokerName: string }) {
     const { control } = useFormContext();
     return (
-        <Card>
+        <>
             <CardHeader>
                 <CardTitle>Choose Your Path</CardTitle>
                 <CardDescription>Do you already have a trading account with {brokerName}?</CardDescription>
@@ -198,17 +229,17 @@ function Step1({ hasAccount, brokerName }: { hasAccount: string | undefined; bro
                                     defaultValue={field.value}
                                     className="flex flex-col space-y-2"
                                 >
-                                    <FormItem className="flex items-center space-x-3 space-y-0">
+                                    <FormItem className="flex items-center space-x-3 space-y-0 p-4 border rounded-md has-[[data-state=checked]]:border-primary">
                                         <FormControl>
                                             <RadioGroupItem value="no" id="no" />
                                         </FormControl>
-                                        <FormLabel htmlFor="no" className="font-normal cursor-pointer">No, I need to create a new account</FormLabel>
+                                        <FormLabel htmlFor="no" className="font-normal cursor-pointer w-full">No, I need to create a new account</FormLabel>
                                     </FormItem>
-                                     <FormItem className="flex items-center space-x-3 space-y-0">
+                                     <FormItem className="flex items-center space-x-3 space-y-0 p-4 border rounded-md has-[[data-state=checked]]:border-primary">
                                         <FormControl>
                                             <RadioGroupItem value="yes" id="yes" />
                                         </FormControl>
-                                        <FormLabel htmlFor="yes" className="font-normal cursor-pointer">Yes, I already have an account</FormLabel>
+                                        <FormLabel htmlFor="yes" className="font-normal cursor-pointer w-full">Yes, I already have an account</FormLabel>
                                     </FormItem>
                                 </RadioGroup>
                             </FormControl>
@@ -217,13 +248,13 @@ function Step1({ hasAccount, brokerName }: { hasAccount: string | undefined; bro
                     )}
                 />
             </CardContent>
-        </Card>
+        </>
     );
 }
 
 function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker: any }) {
     return (
-        <Card>
+        <>
             <CardHeader>
                 <CardTitle>Follow Instructions</CardTitle>
                 <CardDescription>Please follow the relevant instructions below before proceeding.</CardDescription>
@@ -256,14 +287,14 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
                     </Alert>
                 )}
             </CardContent>
-        </Card>
+        </>
     );
 }
 
 function Step3() {
     const { control } = useFormContext();
     return (
-        <Card>
+        <>
             <CardHeader>
                 <CardTitle>Link Your Account</CardTitle>
                 <CardDescription>Enter the trading account number below to submit it for approval.</CardDescription>
@@ -283,6 +314,6 @@ function Step3() {
                     )}
                 />
             </CardContent>
-        </Card>
+        </>
     )
 }
