@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
     CircleUser,
     Menu,
-    DollarSign,
     Settings,
     LayoutDashboard,
     CreditCard,
@@ -51,10 +50,10 @@ export default function DashboardLayout({
                         <div className="flex h-full max-h-screen flex-col gap-2">
                             <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
                                 <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M15.5 8.5 12 12l-3.5 3.5"/><path d="m8.5 8.5 7 7"/></svg>
+                                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-6 h-6 text-primary-foreground"><path fill="currentColor" d="M213.38 181.38a8 8 0 0 1-10.76 1.35A103.92 103.92 0 0 0 128 160a103.92 103.92 0 0 0-74.62 22.73a8 8 0 1 1-9.41-12.7A119.92 119.92 0 0 1 128 144a119.92 119.92 0 0 1 83.94 25.32a8 8 0 0 1 1.44 12.06M240 128a112 112 0 1 1-112-112a112 112 0 0 1 112 112m-24 0a88 88 0 1 0-88 88a88.1 88.1 0 0 0 88-88"/></svg>
                                     </div>
-                                    <span className="">Cashback Companion</span>
+                                    <span className="font-headline">Cashback Companion</span>
                                 </Link>
                             </div>
                             <div className="flex-1">
@@ -103,17 +102,17 @@ export default function DashboardLayout({
                                 </SheetTrigger>
                                 <SheetContent side="left" className="flex flex-col">
                                     <SheetHeader>
-                                        <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                                      <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                                     </SheetHeader>
                                     <nav className="grid gap-2 text-lg font-medium">
                                         <Link
                                             href="/dashboard"
                                             className="flex items-center gap-2 text-lg font-semibold mb-4"
                                         >
-                                            <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary-foreground"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M15.5 8.5 12 12l-3.5 3.5"/><path d="m8.5 8.5 7 7"/></svg>
+                                            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-6 h-6 text-primary-foreground"><path fill="currentColor" d="M213.38 181.38a8 8 0 0 1-10.76 1.35A103.92 103.92 0 0 0 128 160a103.92 103.92 0 0 0-74.62 22.73a8 8 0 1 1-9.41-12.7A119.92 119.92 0 0 1 128 144a119.92 119.92 0 0 1 83.94 25.32a8 8 0 0 1 1.44 12.06M240 128a112 112 0 1 1-112-112a112 112 0 0 1 112 112m-24 0a88 88 0 1 0-88 88a88.1 88.1 0 0 0 88-88"/></svg>
                                             </div>
-                                            <span className="">Cashback Companion</span>
+                                            <span className="font-headline">Cashback Companion</span>
                                         </Link>
                                         {navLinks.map(link => (
                                             <Link
