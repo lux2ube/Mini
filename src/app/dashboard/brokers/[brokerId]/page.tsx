@@ -92,8 +92,10 @@ export default function BrokerDetailPage() {
         fields.push('accountNumber');
     }
 
-    const output = await form.trigger(fields, { shouldFocus: true });
-    if (!output) return;
+    if (fields.length > 0) {
+      const output = await form.trigger(fields as FieldName[], { shouldFocus: true });
+      if (!output) return;
+    }
     
     if (currentStep < STEPS.length) {
       setCurrentStep(step => step + 1);
@@ -129,12 +131,12 @@ export default function BrokerDetailPage() {
             </div>
           </div>
           <Separator className="my-3" />
-          <div className="grid grid-cols-1 md:grid-cols-3 md:divide-x text-center gap-2 md:gap-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 text-center gap-2 md:gap-0">
               <div className="px-2">
                   <p className="text-xs text-muted-foreground">Min. Deposit</p>
                   <p className="font-semibold text-sm">{broker.details.minDeposit}</p>
               </div>
-              <div className="px-2">
+              <div className="px-2 md:border-l md:border-r">
                   <p className="text-xs text-muted-foreground">Max. Leverage</p>
                   <p className="font-semibold text-sm">{broker.details.leverage}</p>
               </div>
@@ -320,3 +322,5 @@ function Step3() {
         </>
     )
 }
+
+    
