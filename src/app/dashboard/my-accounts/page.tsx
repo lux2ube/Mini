@@ -22,19 +22,10 @@ export default function MyAccountsPage() {
       if (user) {
         setIsLoading(true);
         try {
-          const tradingAccountsCollectionRef = collection(db, "tradingAccounts");
-          // Simplified query to avoid composite index requirement
-          const q = query(
-            tradingAccountsCollectionRef,
-            where("userId", "==", user.uid)
-          );
+          const q = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
           const querySnapshot = await getDocs(q);
-          const userAccounts: TradingAccount[] = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as TradingAccount));
-
-          // Sort accounts on the client side
+          const userAccounts: TradingAccount[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TradingAccount));
+          
           userAccounts.sort((a, b) => {
             const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
             const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
@@ -44,12 +35,11 @@ export default function MyAccountsPage() {
           setAccounts(userAccounts);
         } catch (error) {
           console.error("Error fetching trading accounts:", error);
-          // Optionally show a toast to the user
         } finally {
           setIsLoading(false);
         }
       } else {
-        setAccounts([]); // Clear accounts if no user
+        setAccounts([]);
         setIsLoading(false);
       }
     };
@@ -60,18 +50,10 @@ export default function MyAccountsPage() {
   }, [user]);
 
   return (
-    <>
+    <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
       <PageHeader
         title="My Trading Accounts"
-        description="View and manage your linked forex trading accounts."
-        actions={
-          <Link href="/dashboard/my-accounts/add">
-            <Button size="sm" className="text-xs sm:text-sm">
-              <PlusCircle className="mr-1 sm:mr-2 h-4 w-4" />
-              Add New Account
-            </Button>
-          </Link>
-        }
+        description="Your linked forex trading accounts."
       />
       {isLoading && (
         <div className="flex justify-center items-center py-10">
@@ -79,20 +61,28 @@ export default function MyAccountsPage() {
         </div>
       )}
       {!isLoading && accounts.length === 0 && (
-        <div className="text-center py-10">
-          <p className="text-lg text-muted-foreground mb-4">You have not added any trading accounts yet.</p>
-          <Link href="/dashboard/my-accounts/add">
-            <Button size="lg">Link Your First Account</Button>
-          </Link>
+        <div className="text-center py-10 space-y-4">
+          <p className="text-lg text-muted-foreground">No accounts added yet.</p>
+          <Button asChild className="w-full">
+            <Link href="/dashboard/brokers">Link Your First Account</Link>
+          </Button>
         </div>
       )}
       {!isLoading && accounts.length > 0 && (
-        <div className="grid gap-4 md:gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="flex flex-col space-y-4">
           {accounts.map((account) => (
             <AccountCard key={account.id} account={account} />
           ))}
+           <Button asChild className="w-full">
+            <Link href="/dashboard/brokers">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add New Account
+            </Button>
+          </Link>
         </div>
       )}
-    </>
+    </div>
   );
 }
+
+    

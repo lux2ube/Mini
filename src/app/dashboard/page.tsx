@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, ArrowRight, PlusCircle } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase/config";
@@ -29,7 +29,6 @@ export default function UserDashboardPage() {
           const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
           const accountsSnapshot = await getCountFromServer(accountsQuery);
           
-          // Placeholder values
           const availableBalance = 254.30; 
           const totalEarned = 578.55;
 
@@ -54,117 +53,93 @@ export default function UserDashboardPage() {
 
   if (isLoading) {
     return (
-        <div className="flex justify-center items-center py-10">
+        <div className="flex justify-center items-center h-full">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
   }
 
-  // Main dashboard layout
   return (
-    <>
+    <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
       <PageHeader
         title={`Welcome, ${user?.displayName || 'User'}!`}
-        description="Here’s an overview of your cashback activity."
+        description="Your cashback overview."
       />
       
-      {/* Balance Card */}
-      <div className="mb-6">
-        <Card className="shadow-lg bg-gradient-to-br from-primary/10 via-background to-background border-primary/20">
-            <CardHeader>
-                <CardDescription className="text-foreground">Available Balance</CardDescription>
-                <CardTitle className="text-4xl font-bold text-primary">${stats.availableBalance.toFixed(2)}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                    Total earned: ${stats.totalEarned.toFixed(2)}
-                </p>
-            </CardHeader>
-             <CardContent className="flex flex-col sm:flex-row gap-4">
-                <Button asChild size="lg" className="w-full">
-                    <Link href="/dashboard/withdraw">
-                        Withdraw
-                    </Link>
-                </Button>
-                <Button asChild size="lg" variant="secondary" className="w-full">
-                    <Link href="/dashboard/brokers">
-                        Earn Now
-                    </Link>
-                </Button>
-            </CardContent>
-        </Card>
-      </div>
+      <Card>
+          <CardHeader>
+              <CardDescription>Available Balance</CardDescription>
+              <CardTitle className="text-4xl font-bold">${stats.availableBalance.toFixed(2)}</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                  Total earned: ${stats.totalEarned.toFixed(2)}
+              </p>
+          </CardHeader>
+           <CardContent className="flex flex-col space-y-2">
+              <Button asChild className="w-full">
+                  <Link href="/dashboard/withdraw">Withdraw</Link>
+              </Button>
+              <Button asChild variant="secondary" className="w-full">
+                  <Link href="/dashboard/brokers">Earn Now</Link>
+              </Button>
+          </CardContent>
+      </Card>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Action Block #1 – Account Linking */}
-        <Card className="flex flex-col">
-            <CardHeader>
-                 <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-lg bg-primary/10">
-                        <Briefcase className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <CardTitle>Trading Accounts</CardTitle>
-                        <CardDescription>Link a new trading account to start earning cashback.</CardDescription>
-                    </div>
-                 </div>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-                <div className="p-4 rounded-lg bg-muted flex justify-between items-center">
-                    <span className="font-medium">Approved Accounts</span>
-                    <span className="text-2xl font-bold text-primary">{stats.linkedAccounts}</span>
-                </div>
-                 <Button asChild size="sm" variant="outline" className="w-full">
-                    <Link href="/dashboard/my-accounts">
-                        Manage Accounts <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-            </CardContent>
-            <CardContent>
-                 <Button asChild size="lg" className="w-full">
-                    <Link href="/dashboard/brokers">
-                        <PlusCircle className="mr-2 h-5 w-5" />
-                        Add Trading Account
-                    </Link>
-                </Button>
-            </CardContent>
-        </Card>
+      <Card>
+          <CardHeader>
+               <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                      <Briefcase className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                      <CardTitle>Trading Accounts</CardTitle>
+                      <CardDescription>Link accounts to earn.</CardDescription>
+                  </div>
+               </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg bg-muted flex justify-between items-center">
+                  <span className="font-medium">Approved Accounts</span>
+                  <span className="text-2xl font-bold text-primary">{stats.linkedAccounts}</span>
+              </div>
+               <Button asChild className="w-full">
+                  <Link href="/dashboard/brokers">
+                      <PlusCircle className="mr-2 h-5 w-5" />
+                      Add Trading Account
+                  </Link>
+              </Button>
+          </CardContent>
+      </Card>
 
-        {/* Action Block #2 – Withdrawals */}
-        <Card className="flex flex-col">
-            <CardHeader>
-                <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-lg bg-primary/10">
-                        <DollarSign className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                        <CardTitle>Withdrawal History</CardTitle>
-                        <CardDescription>View your past and pending withdrawals.</CardDescription>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="flex-grow space-y-4">
-                <div className="p-4 rounded-lg bg-muted grid grid-cols-2 gap-4">
-                    <div>
-                        <p className="font-medium">Pending</p>
-                        {/* Placeholder Value */}
-                        <p className="text-lg font-bold text-muted-foreground">$0.00</p>
-                    </div>
-                     <div>
-                        <p className="font-medium">Completed</p>
-                        {/* Placeholder Value */}
-                        <p className="text-lg font-bold text-muted-foreground">$0.00</p>
-                    </div>
-                </div>
-            </CardContent>
-            <CardContent>
-                 <Button asChild size="lg" variant="outline" className="w-full">
-                    <Link href="/dashboard/withdraw">
-                        View History <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                </Button>
-            </CardContent>
-        </Card>
-      </div>
-
-    </>
+      <Card>
+          <CardHeader>
+              <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                      <DollarSign className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                      <CardTitle>Withdrawals</CardTitle>
+                      <CardDescription>View your history.</CardDescription>
+                  </div>
+              </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg bg-muted flex flex-col space-y-2">
+                  <div>
+                      <p className="font-medium">Pending</p>
+                      <p className="text-lg font-bold text-muted-foreground">$0.00</p>
+                  </div>
+                   <div>
+                      <p className="font-medium">Completed</p>
+                      <p className="text-lg font-bold text-muted-foreground">$0.00</p>
+                  </div>
+              </div>
+              <Button asChild variant="outline" className="w-full">
+                  <Link href="/dashboard/withdraw">View History</Link>
+              </Button>
+          </CardContent>
+      </Card>
+    </div>
   );
 }
+
+    

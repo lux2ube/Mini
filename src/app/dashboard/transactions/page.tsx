@@ -3,7 +3,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,7 +40,6 @@ export default function TransactionsPage() {
         if (user) {
           setIsLoading(true);
           try {
-            // Fetch approved trading accounts for the filter dropdown
             const accountsQuery = query(
               collection(db, "tradingAccounts"), 
               where("userId", "==", user.uid),
@@ -50,7 +49,6 @@ export default function TransactionsPage() {
             const userAccounts = accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TradingAccount));
             setAccounts(userAccounts);
 
-            // Fetch cashback transactions
             const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid));
             const transactionsSnapshot = await getDocs(transactionsQuery);
             const userTransactions = transactionsSnapshot.docs.map(doc => {
@@ -62,9 +60,7 @@ export default function TransactionsPage() {
                 } as CashbackTransaction
             });
             
-            // Sort by most recent
             userTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
-            
             setTransactions(userTransactions);
 
           } catch (error) {
@@ -116,10 +112,10 @@ export default function TransactionsPage() {
     };
 
     return (
-        <>
+        <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
             <PageHeader
                 title="Transaction History"
-                description="View your cashback earnings from all linked accounts."
+                description="View your cashback earnings."
             />
 
             <Card>
@@ -127,117 +123,101 @@ export default function TransactionsPage() {
                     <CardTitle>Filters</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search transactions..."
-                                className="pl-8"
-                                value={filters.search}
-                                onChange={(e) => handleFilterChange('search', e.target.value)}
-                            />
-                        </div>
+                    <Input
+                        placeholder="Search transactions..."
+                        value={filters.search}
+                        onChange={(e) => handleFilterChange('search', e.target.value)}
+                    />
 
-                        <Select value={filters.account} onValueChange={(value) => handleFilterChange('account', value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="All Accounts" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All Accounts</SelectItem>
-                                {accounts.map(acc => (
-                                     <SelectItem key={acc.id} value={acc.accountNumber}>{acc.broker} - {acc.accountNumber}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    <Select value={filters.account} onValueChange={(value) => handleFilterChange('account', value)}>
+                        <SelectTrigger><SelectValue placeholder="All Accounts" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Accounts</SelectItem>
+                            {accounts.map(acc => (
+                                 <SelectItem key={acc.id} value={acc.accountNumber}>{acc.broker} - {acc.accountNumber}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
 
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    id="date"
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !filters.date && "text-muted-foreground"
-                                    )}
-                                >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {filters.date?.from ? (
-                                        filters.date.to ? (
-                                            <>
-                                                {format(filters.date.from, "LLL dd, y")} -{" "}
-                                                {format(filters.date.to, "LLL dd, y")}
-                                            </>
-                                        ) : (
-                                            format(filters.date.from, "LLL dd, y")
-                                        )
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant={"outline"} className="w-full justify-start text-left font-normal">
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {filters.date?.from ? (
+                                    filters.date.to ? (
+                                        <>{format(filters.date.from, "LLL dd, y")} - {format(filters.date.to, "LLL dd, y")}</>
                                     ) : (
-                                        <span>Pick a date range</span>
-                                    )}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    initialFocus
-                                    mode="range"
-                                    defaultMonth={filters.date?.from}
-                                    selected={filters.date}
-                                    onSelect={(date) => handleFilterChange('date', date)}
-                                    numberOfMonths={2}
-                                />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                     <Button variant="ghost" onClick={clearFilters} size="sm">
-                        <X className="mr-2 h-4 w-4"/>
-                        Clear Filters
-                    </Button>
+                                        format(filters.date.from, "LLL dd, y")
+                                    )
+                                ) : (
+                                    <span>Pick a date range</span>
+                                )}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="center">
+                            <Calendar
+                                initialFocus
+                                mode="range"
+                                defaultMonth={filters.date?.from}
+                                selected={filters.date}
+                                onSelect={(date) => handleFilterChange('date', date)}
+                                numberOfMonths={1}
+                            />
+                        </PopoverContent>
+                    </Popover>
+                 <Button variant="ghost" onClick={clearFilters} size="sm" className="w-full">
+                    <X className="mr-2 h-4 w-4"/>
+                    Clear Filters
+                </Button>
                 </CardContent>
             </Card>
 
-            <div className="mt-6">
-                <Card>
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Results</CardTitle>
+                    <CardDescription>
+                        Showing {filteredTransactions.length} of {transactions.length} transactions.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Account</TableHead>
+                                    <TableHead className="text-right">Cashback</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
                                     <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Account</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead className="text-right">Transaction</TableHead>
-                                        <TableHead className="text-right">Cashback</TableHead>
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoading ? (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center h-24">
-                                                <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
-                                            </TableCell>
+                                ) : filteredTransactions.length > 0 ? (
+                                    filteredTransactions.map(tx => (
+                                        <TableRow key={tx.id}>
+                                            <TableCell className="font-medium whitespace-nowrap">{format(tx.date, "PP")}</TableCell>
+                                            <TableCell className="whitespace-nowrap">{tx.accountNumber}</TableCell>
+                                            <TableCell className="text-right font-semibold text-primary whitespace-nowrap">${tx.cashbackAmount.toFixed(2)}</TableCell>
                                         </TableRow>
-                                    ) : filteredTransactions.length > 0 ? (
-                                        filteredTransactions.map(tx => (
-                                            <TableRow key={tx.id}>
-                                                <TableCell className="font-medium whitespace-nowrap">{format(tx.date, "PP")}</TableCell>
-                                                <TableCell className="whitespace-nowrap">{tx.broker} - {tx.accountNumber}</TableCell>
-                                                <TableCell>{tx.merchant}</TableCell>
-                                                <TableCell className="text-right whitespace-nowrap">${tx.transactionAmount.toLocaleString()}</TableCell>
-                                                <TableCell className="text-right font-semibold text-primary whitespace-nowrap">${tx.cashbackAmount.toFixed(2)}</TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="text-center h-24">
-                                                No transactions found.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-        </>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            No transactions found.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
     );
 }
+
+    

@@ -28,7 +28,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Wallet, Info, Loader2 } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import type { Withdrawal } from "@/types";
 
 const formSchema = z.object({
@@ -50,7 +50,7 @@ export default function WithdrawPage() {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            amount: '' as any, // Use empty string to avoid uncontrolled to controlled error
+            amount: '' as any,
             network: undefined,
             address: "",
         },
@@ -59,10 +59,7 @@ export default function WithdrawPage() {
     function onSubmit(values: z.infer<typeof formSchema>) {
         console.log(values);
         setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsLoading(false);
-        }, 2000);
+        setTimeout(() => { setIsLoading(false); }, 2000);
     }
 
     const getStatusVariant = (status: string) => {
@@ -74,180 +71,135 @@ export default function WithdrawPage() {
         }
     }
 
-
     return (
-        <>
+        <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
             <PageHeader
                 title="Withdraw Funds"
-                description="Request a withdrawal of your earned cashback."
+                description="Request a withdrawal of your cashback."
             />
 
-            <div className="grid gap-8 lg:grid-cols-3">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-3xl">${availableBalance.toFixed(2)}</CardTitle>
+                    <CardDescription>Available to Withdraw</CardDescription>
+                </CardHeader>
+            </Card>
 
-                <div className="lg:col-span-2 space-y-6">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)}>
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>Withdrawal Request</CardTitle>
-                                    <CardDescription>Only USDT withdrawals are currently supported.</CardDescription>
-                                </CardHeader>
-                                <CardContent className="space-y-6">
-                                    <div className="space-y-2">
-                                        <FormField
-                                            control={form.control}
-                                            name="amount"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>Amount (USD)</FormLabel>
-                                                    <FormControl>
-                                                        <div className="relative">
-                                                            <Input type="number" placeholder="0.00" {...field} />
-                                                            <Button
-                                                                type="button"
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                className="absolute right-1 top-1/2 -translate-y-1/2 h-auto py-0.5 px-2"
-                                                                onClick={() => form.setValue('amount', availableBalance)}
-                                                            >
-                                                                Max
-                                                            </Button>
-                                                        </div>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    </div>
-                                    <FormField
-                                        control={form.control}
-                                        name="network"
-                                        render={({ field }) => (
-                                            <FormItem className="space-y-3">
-                                            <FormLabel>Select Network</FormLabel>
-                                            <FormControl>
-                                                <RadioGroup
-                                                    onValueChange={field.onChange}
-                                                    defaultValue={field.value}
-                                                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
-                                                >
-                                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                                    <FormControl>
-                                                        <Card className="flex-1 cursor-pointer hover:border-primary has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
-                                                            <CardHeader className="flex-row items-center justify-between space-y-0 p-4">
-                                                                <FormLabel className="font-normal cursor-pointer flex-1">
-                                                                    <p className="font-medium">BEP20</p>
-                                                                    <p className="text-xs text-muted-foreground">Binance Smart Chain</p>
-                                                                </FormLabel>
-                                                                <RadioGroupItem value="bep20" />
-                                                            </CardHeader>
-                                                        </Card>
-                                                    </FormControl>
-                                                </FormItem>
-                                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                                     <FormControl>
-                                                        <Card className="flex-1 cursor-pointer hover:border-primary has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
-                                                            <CardHeader className="flex-row items-center justify-between space-y-0 p-4">
-                                                                <FormLabel className="font-normal cursor-pointer flex-1">
-                                                                    <p className="font-medium">TRC20</p>
-                                                                    <p className="text-xs text-muted-foreground">TRON Network</p>
-                                                                </FormLabel>
-                                                                <RadioGroupItem value="trc20" />
-                                                            </CardHeader>
-                                                        </Card>
-                                                    </FormControl>
-                                                </FormItem>
-                                                </RadioGroup>
-                                            </FormControl>
-                                            <FormMessage />
-                                            </FormItem>
-                                        )}
-                                        />
-
-                                    <FormField
-                                        control={form.control}
-                                        name="address"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>USDT Wallet Address</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Enter your wallet address" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                </CardContent>
-                                <CardFooter>
-                                    <Button type="submit" disabled={isLoading}>
-                                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Submit Withdrawal Request
-                                    </Button>
-                                </CardFooter>
-                            </Card>
-                        </form>
-                    </Form>
-                     <Card>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <Card>
                         <CardHeader>
-                            <CardTitle>Recent Withdrawals</CardTitle>
+                            <CardTitle>Request Withdrawal</CardTitle>
+                            <CardDescription>Only USDT withdrawals are supported.</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                           <div className="w-full overflow-x-auto">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                    <TableHead>Amount</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Network</TableHead>
-                                    <TableHead className="text-right">Date</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {recentWithdrawals.map((w) => (
-                                    <TableRow key={w.id}>
-                                        <TableCell className="font-medium">${w.amount.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={getStatusVariant(w.status)}>{w.status}</Badge>
-                                        </TableCell>
-                                        <TableCell>{w.network.toUpperCase()}</TableCell>
-                                        <TableCell className="text-right">{w.date.toLocaleDateString()}</TableCell>
-                                    </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                            </div>
+                        <CardContent className="space-y-4">
+                            <FormField
+                                control={form.control}
+                                name="amount"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Amount (USD)</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <Input type="number" placeholder="0.00" {...field} />
+                                                <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-auto py-0.5 px-2" onClick={() => form.setValue('amount', availableBalance)}>Max</Button>
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="network"
+                                render={({ field }) => (
+                                    <FormItem className="space-y-3">
+                                        <FormLabel>Select Network</FormLabel>
+                                        <FormControl>
+                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-2">
+                                                <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                                                    <FormControl><RadioGroupItem value="bep20" id="bep20" className="sr-only"/></FormControl>
+                                                    <FormLabel htmlFor="bep20" className="font-normal cursor-pointer w-full">
+                                                        <p className="font-medium">BEP20</p>
+                                                        <p className="text-xs text-muted-foreground">Binance Smart Chain</p>
+                                                    </FormLabel>
+                                                </FormItem>
+                                                <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                                                    <FormControl><RadioGroupItem value="trc20" id="trc20" className="sr-only"/></FormControl>
+                                                    <FormLabel htmlFor="trc20" className="font-normal cursor-pointer w-full">
+                                                        <p className="font-medium">TRC20</p>
+                                                        <p className="text-xs text-muted-foreground">TRON Network</p>
+                                                    </FormLabel>
+                                                </FormItem>
+                                            </RadioGroup>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="address"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>USDT Wallet Address</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Enter your wallet address" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
                         </CardContent>
                     </Card>
-                </div>
+                    <Button type="submit" disabled={isLoading} className="w-full">
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Submit Request
+                    </Button>
+                </form>
+            </Form>
 
-                <aside className="space-y-6">
-                    <Card>
-                        <CardHeader className="flex-row items-center gap-4 space-y-0">
-                            <div className="p-3 rounded-lg bg-primary/10">
-                                <Wallet className="h-6 w-6 text-primary" />
-                            </div>
-                            <div>
-                                <CardDescription>Available to Withdraw</CardDescription>
-                                <CardTitle className="text-3xl">${availableBalance.toFixed(2)}</CardTitle>
-                            </div>
-                        </CardHeader>
-                    </Card>
-                     <Alert>
-                        <Info className="h-4 w-4" />
-                        <AlertTitle>Important Information</AlertTitle>
-                        <AlertDescription>
-                            <ul className="list-disc list-inside space-y-1 text-xs">
-                                <li>Withdrawals are processed within 24 hours.</li>
-                                <li>Ensure the wallet address and network are correct.</li>
-                                <li>Funds sent to the wrong address cannot be recovered.</li>
-                                <li>A small network fee may be deducted.</li>
-                            </ul>
-                        </AlertDescription>
-                    </Alert>
-                </aside>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Recent Withdrawals</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                   <div className="overflow-x-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Amount</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Date</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {recentWithdrawals.map((w) => (
+                            <TableRow key={w.id}>
+                                <TableCell className="font-medium">${w.amount.toFixed(2)}</TableCell>
+                                <TableCell><Badge variant={getStatusVariant(w.status)}>{w.status}</Badge></TableCell>
+                                <TableCell className="text-right">{w.date.toLocaleDateString()}</TableCell>
+                            </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                    </div>
+                </CardContent>
+            </Card>
 
-            </div>
-
-        </>
+            <Alert>
+                <Info className="h-4 w-4" />
+                <AlertTitle>Important</AlertTitle>
+                <AlertDescription>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                        <li>Withdrawals are processed within 24 hours.</li>
+                        <li>Ensure the wallet address is correct.</li>
+                        <li>Funds sent to a wrong address cannot be recovered.</li>
+                    </ul>
+                </AlertDescription>
+            </Alert>
+        </div>
     );
 }
+
+    

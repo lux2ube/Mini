@@ -16,10 +16,9 @@ import { db } from '@/lib/firebase/config';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { brokers } from '@/lib/data';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info, Loader2, ArrowRight, ExternalLink, Check, UserPlus, FileText, Link2 } from 'lucide-react';
+import { Info, Loader2, ArrowRight, ExternalLink, UserPlus, FileText, Link2 } from 'lucide-react';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 
 const formSchema = z.object({
@@ -114,12 +113,10 @@ export default function BrokerDetailPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 p-4">
-      
-      {/* Broker Preview Card */}
+    <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-6">
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+          <div className="flex flex-col items-start gap-4">
             <Image
                 src={broker.logoUrl}
                 alt={`${broker.name} logo`}
@@ -134,16 +131,16 @@ export default function BrokerDetailPage() {
             </div>
           </div>
           <Separator className="my-3" />
-          <div className="grid grid-cols-1 md:grid-cols-3 text-center gap-2 md:gap-0">
-              <div className="px-2">
+          <div className="flex flex-col space-y-2 text-left">
+              <div>
                   <p className="text-xs text-muted-foreground">Min. Deposit</p>
                   <p className="font-semibold text-sm">{broker.details.minDeposit}</p>
               </div>
-              <div className="px-2 md:border-l md:border-r">
+              <div>
                   <p className="text-xs text-muted-foreground">Max. Leverage</p>
                   <p className="font-semibold text-sm">{broker.details.leverage}</p>
               </div>
-                <div className="px-2">
+              <div>
                   <p className="text-xs text-muted-foreground">Spreads From</p>
                   <p className="font-semibold text-sm">{broker.details.spreads}</p>
               </div>
@@ -152,61 +149,44 @@ export default function BrokerDetailPage() {
       </Card>
       
       <div className="text-center">
-        <h2 className="text-2xl font-bold font-headline">Start Earning Now in 3 Easy Steps</h2>
+        <h2 className="text-xl font-bold font-headline">Start Earning Now</h2>
       </div>
 
-      {/* Horizontal Stepper */}
-      <div className="w-full px-2 sm:px-0">
-        <div className="flex items-center justify-between">
-            {STEPS.map((step, index) => (
-              <React.Fragment key={step.id}>
-                <div className="flex flex-col items-center text-center">
-                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center border-2", 
-                      currentStep > step.id ? 'bg-primary border-primary text-primary-foreground' : 
-                      currentStep === step.id ? 'bg-primary/10 border-primary text-primary' : 
-                      'bg-muted border-border text-muted-foreground'
-                    )}>
-                      {currentStep > step.id ? <Check className="w-6 h-6"/> : <step.icon className="w-5 h-5"/>}
+      {/* Stepper can be simplified or kept as is, it's fairly mobile friendly */}
+      <div className="w-full">
+          <div className="flex items-center justify-between">
+              {STEPS.map((step, index) => (
+                <React.Fragment key={step.id}>
+                  <div className="flex flex-col items-center text-center">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${currentStep >= step.id ? 'bg-primary border-primary text-primary-foreground' : 'bg-muted border-border text-muted-foreground'}`}>
+                        <step.icon className="w-4 h-4"/>
+                    </div>
+                    <p className={`mt-2 text-xs font-medium ${currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground'}`}>{step.name}</p>
                   </div>
-                  <p className={cn("mt-2 text-xs sm:text-sm font-medium", currentStep >= step.id ? 'text-foreground' : 'text-muted-foreground')}>{step.name}</p>
-                </div>
-                {index < STEPS.length - 1 && <div className={cn("flex-1 h-0.5 mx-2 sm:mx-4", currentStep > step.id ? 'bg-primary' : 'bg-border')}></div>}
-              </React.Fragment>
-            ))}
-        </div>
+                  {index < STEPS.length - 1 && <div className={`flex-1 h-0.5 mx-2 ${currentStep > step.id ? 'bg-primary' : 'bg-border'}`}></div>}
+                </React.Fragment>
+              ))}
+          </div>
       </div>
 
-      {/* Form Content in a Card */}
       <FormProvider {...form}>
-        <form onSubmit={form.handleSubmit(processForm)}>
+        <form onSubmit={form.handleSubmit(processForm)} className="space-y-4">
             <Card>
-                {currentStep === 1 && (
-                    <Step1 hasAccount={hasAccountValue} brokerName={broker.name} />
-                )}
-                {currentStep === 2 && (
-                    <Step2 hasAccount={hasAccountValue} broker={broker} />
-                )}
-                {currentStep === 3 && (
-                    <Step3 />
-                )}
+                {currentStep === 1 && <Step1 hasAccount={hasAccountValue} brokerName={broker.name} />}
+                {currentStep === 2 && <Step2 hasAccount={hasAccountValue} broker={broker} />}
+                {currentStep === 3 && <Step3 />}
             </Card>
 
-            {/* Navigation */}
-            <div className="mt-6 flex justify-between">
-                <div>
+            <div className="space-y-2">
+                <Button type="button" onClick={next} disabled={isLoading} className="w-full">
+                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {currentStep === STEPS.length ? 'Submit' : 'Next'}
+                </Button>
                 {currentStep > 1 && (
-                    <Button type="button" onClick={prev} variant="secondary">
+                    <Button type="button" onClick={prev} variant="secondary" className="w-full">
                         Previous
                     </Button>
                 )}
-                </div>
-                <div>
-                  <Button type="button" onClick={next} disabled={isLoading}>
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {currentStep === STEPS.length ? 'Submit for Approval' : 'Next Step'}
-                    <ArrowRight className="ml-2 h-4 w-4"/>
-                  </Button>
-                </div>
             </div>
         </form>
       </FormProvider>
@@ -214,10 +194,7 @@ export default function BrokerDetailPage() {
   );
 }
 
-
-// Step Components
-
-function Step1({ hasAccount, brokerName }: { hasAccount: string | undefined; brokerName: string }) {
+function Step1({ brokerName }: { brokerName: string }) {
     const { control } = useFormContext();
     return (
         <>
@@ -230,24 +207,16 @@ function Step1({ hasAccount, brokerName }: { hasAccount: string | undefined; bro
                     control={control}
                     name="hasAccount"
                     render={({ field }) => (
-                        <FormItem className="space-y-3">
+                        <FormItem>
                             <FormControl>
-                                <RadioGroup
-                                    onValueChange={field.onChange}
-                                    defaultValue={field.value}
-                                    className="flex flex-col space-y-2"
-                                >
+                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-2">
                                     <FormItem className="flex items-center space-x-3 space-y-0 p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                                        <FormControl>
-                                            <RadioGroupItem value="no" id="no" />
-                                        </FormControl>
-                                        <FormLabel htmlFor="no" className="font-normal cursor-pointer w-full">No, I need to create a new account</FormLabel>
+                                        <FormControl><RadioGroupItem value="no" id="no" /></FormControl>
+                                        <FormLabel htmlFor="no" className="font-normal cursor-pointer w-full">No, I need a new account</FormLabel>
                                     </FormItem>
                                      <FormItem className="flex items-center space-x-3 space-y-0 p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                                        <FormControl>
-                                            <RadioGroupItem value="yes" id="yes" />
-                                        </FormControl>
-                                        <FormLabel htmlFor="yes" className="font-normal cursor-pointer w-full">Yes, I already have an account</FormLabel>
+                                        <FormControl><RadioGroupItem value="yes" id="yes" /></FormControl>
+                                        <FormLabel htmlFor="yes" className="font-normal cursor-pointer w-full">Yes, I have an account</FormLabel>
                                     </FormItem>
                                 </RadioGroup>
                             </FormControl>
@@ -264,18 +233,17 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
     return (
         <>
             <CardHeader>
-                <CardTitle>Follow Instructions</CardTitle>
-                <CardDescription>Please follow the relevant instructions below before proceeding.</CardDescription>
+                <CardTitle>Instructions</CardTitle>
+                <CardDescription>Follow the relevant instructions.</CardDescription>
             </CardHeader>
             <CardContent>
                 {hasAccount === 'no' && (
                     <Alert>
                         <UserPlus className="h-4 w-4" />
-                        <AlertTitle>Create Your New Account</AlertTitle>
-                        <AlertDescription>
-                            <p className="mb-2">{broker.instructions.description}</p>
-                            <p className="mb-4">Click the button below to go to the broker's website. This will ensure your new account is correctly tracked for cashback. Once you're done, come back here and click "Next Step".</p>
-                            <Button asChild size="sm">
+                        <AlertTitle>Create New Account</AlertTitle>
+                        <AlertDescription className="space-y-4">
+                            <p>{broker.instructions.description}</p>
+                            <Button asChild size="sm" className="w-full">
                                 <a href={broker.instructions.link} target="_blank" rel="noopener noreferrer">
                                     {broker.instructions.linkText} <ExternalLink className="ml-2 h-4 w-4" />
                                 </a>
@@ -286,11 +254,9 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
                  {hasAccount === 'yes' && (
                     <Alert>
                         <Info className="h-4 w-4" />
-                        <AlertTitle>Important: Check Your Partner Link</AlertTitle>
+                        <AlertTitle>Important</AlertTitle>
                         <AlertDescription>
-                            <p>For us to track your trades for cashback, your existing account must be registered under our partner link. If it's not, you will need to create a new one.</p>
-                            <p className="mt-2">To fix this, please go back to the previous step and select "No, I need to create a new account".</p>
-                            <p className="mt-2 font-semibold">If you're sure your account is correctly linked, please proceed to the next step.</p>
+                            <p>For us to track your trades, your account must be under our partner link. If not, you must create a new one by going back and selecting "No".</p>
                         </AlertDescription>
                     </Alert>
                 )}
@@ -304,8 +270,8 @@ function Step3() {
     return (
         <>
             <CardHeader>
-                <CardTitle>Link Your Account</CardTitle>
-                <CardDescription>Enter the trading account number below to submit it for approval.</CardDescription>
+                <CardTitle>Link Account</CardTitle>
+                <CardDescription>Enter your trading account number.</CardDescription>
             </CardHeader>
             <CardContent>
                  <FormField
@@ -315,7 +281,7 @@ function Step3() {
                         <FormItem>
                         <FormLabel>Trading Account Number</FormLabel>
                         <FormControl>
-                            <Input placeholder="Enter your account number here" {...field} />
+                            <Input placeholder="Enter number" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>
@@ -325,3 +291,5 @@ function Step3() {
         </>
     )
 }
+
+    
