@@ -35,7 +35,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { AuthProvider } from "@/hooks/useAuthContext";
 
 export default function DashboardLayout({
@@ -109,6 +109,9 @@ export default function DashboardLayout({
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="left" className="flex flex-col">
+                                <SheetHeader>
+                                    <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                                </SheetHeader>
                                 <nav className="grid gap-2 text-lg font-medium">
                                     <Link
                                         href="#"
