@@ -1,9 +1,9 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useParams, notFound } from 'next/navigation';
-import { useForm, FormProvider, useFormContext } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,13 +13,15 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { brokers } from '@/lib/data';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import type { Broker } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Info, Loader2, ArrowRight, ExternalLink, UserPlus, FileText, Link2 } from 'lucide-react';
+import { Info, Loader2, UserPlus, FileText, Link2, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 const formSchema = z.object({
   hasAccount: z.enum(["yes", "no"], { required_error: "Please select an option." }),
@@ -39,11 +41,34 @@ export default function BrokerDetailPage() {
   const params = useParams();
   const { user } = useAuthContext();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
+  const [broker, setBroker] = useState<Broker | null>(null);
+  const [isBrokerLoading, setIsBrokerLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
   const brokerId = params.brokerId as string;
-  const broker = brokers.find(b => b.id === brokerId);
+
+  useEffect(() => {
+    const fetchBroker = async () => {
+      if (!brokerId) return;
+      setIsBrokerLoading(true);
+      try {
+        const brokerRef = doc(db, 'brokers', brokerId);
+        const brokerSnap = await getDoc(brokerRef);
+        if (brokerSnap.exists()) {
+          setBroker({ id: brokerSnap.id, ...brokerSnap.data() } as Broker);
+        } else {
+          notFound();
+        }
+      } catch (error) {
+        console.error("Error fetching broker", error);
+        notFound();
+      } finally {
+        setIsBrokerLoading(false);
+      }
+    };
+    fetchBroker();
+  }, [brokerId]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -55,6 +80,10 @@ export default function BrokerDetailPage() {
 
   const hasAccountValue = form.watch("hasAccount");
 
+  if (isBrokerLoading) {
+    return <BrokerPageSkeleton />
+  }
+
   if (!broker) {
     notFound();
   }
@@ -64,7 +93,7 @@ export default function BrokerDetailPage() {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add an account.' });
       return;
     }
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
       await addDoc(collection(db, 'tradingAccounts'), {
         userId: user.uid,
@@ -79,7 +108,7 @@ export default function BrokerDetailPage() {
       console.error('Error adding document: ', error);
       toast({ variant: 'destructive', title: 'Error', description: 'There was a problem submitting your account. Please try again.' });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -152,7 +181,6 @@ export default function BrokerDetailPage() {
         <h2 className="text-xl font-bold font-headline">Start Earning Now</h2>
       </div>
 
-      {/* Stepper can be simplified or kept as is, it's fairly mobile friendly */}
       <div className="w-full">
           <div className="flex items-center justify-between">
               {STEPS.map((step, index) => (
@@ -178,8 +206,8 @@ export default function BrokerDetailPage() {
             </Card>
 
             <div className="space-y-2">
-                <Button type="button" onClick={next} disabled={isLoading} className="w-full">
-                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button type="button" onClick={next} disabled={isSubmitting} className="w-full">
+                    {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {currentStep === STEPS.length ? 'Submit' : 'Next'}
                 </Button>
                 {currentStep > 1 && (
@@ -229,7 +257,7 @@ function Step1({ brokerName }: { brokerName: string }) {
     );
 }
 
-function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker: any }) {
+function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker: Broker }) {
     return (
         <>
             <CardHeader>
@@ -292,4 +320,38 @@ function Step3() {
     )
 }
 
-    
+function BrokerPageSkeleton() {
+    return (
+        <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-6 animate-pulse">
+            <Card>
+                <CardContent className="p-4">
+                    <div className="flex flex-col items-start gap-4">
+                         <Skeleton className="w-12 h-12 rounded-lg" />
+                         <div className="w-full space-y-2">
+                             <Skeleton className="h-6 w-1/2" />
+                             <Skeleton className="h-4 w-full" />
+                             <Skeleton className="h-4 w-4/5" />
+                         </div>
+                    </div>
+                    <Separator className="my-3" />
+                     <div className="flex flex-col space-y-4 text-left">
+                         <Skeleton className="h-8 w-full" />
+                         <Skeleton className="h-8 w-full" />
+                         <Skeleton className="h-8 w-full" />
+                     </div>
+                </CardContent>
+            </Card>
+            <Skeleton className="h-8 w-1/2 mx-auto" />
+            <Skeleton className="h-20 w-full" />
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                    <Skeleton className="h-24 w-full" />
+                </CardContent>
+            </Card>
+        </div>
+    )
+}

@@ -2,8 +2,68 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction } from '@/types';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc } from 'firebase/firestore';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker } from '@/types';
+
+// Broker Management
+export async function getBrokers(): Promise<Broker[]> {
+    const brokersSnapshot = await getDocs(query(collection(db, 'brokers'), orderBy('order')));
+    return brokersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Broker));
+}
+
+export async function addBroker(data: Omit<Broker, 'id'>) {
+    try {
+        // Get current max order
+        const brokersSnapshot = await getDocs(query(collection(db, 'brokers'), orderBy('order', 'desc'), where('order', '!=', null)));
+        const maxOrder = brokersSnapshot.docs.length > 0 ? brokersSnapshot.docs[0].data().order : -1;
+
+        await addDoc(collection(db, 'brokers'), {
+            ...data,
+            order: maxOrder + 1,
+        });
+        return { success: true, message: 'Broker added successfully.' };
+    } catch (error) {
+        console.error("Error adding broker:", error);
+        return { success: false, message: 'Failed to add broker.' };
+    }
+}
+
+export async function updateBroker(brokerId: string, data: Partial<Broker>) {
+    try {
+        const brokerRef = doc(db, 'brokers', brokerId);
+        await updateDoc(brokerRef, data);
+        return { success: true, message: 'Broker updated successfully.' };
+    } catch (error) {
+        console.error("Error updating broker:", error);
+        return { success: false, message: 'Failed to update broker.' };
+    }
+}
+
+export async function deleteBroker(brokerId: string) {
+    try {
+        await deleteDoc(doc(db, 'brokers', brokerId));
+        return { success: true, message: 'Broker deleted successfully.' };
+    } catch (error) {
+        console.error("Error deleting broker:", error);
+        return { success: false, message: 'Failed to delete broker.' };
+    }
+}
+
+export async function updateBrokerOrder(orderedIds: string[]) {
+    try {
+        const batch = writeBatch(db);
+        orderedIds.forEach((id, index) => {
+            const docRef = doc(db, 'brokers', id);
+            batch.update(docRef, { order: index });
+        });
+        await batch.commit();
+        return { success: true, message: 'Broker order updated.' };
+    } catch (error) {
+        console.error("Error updating broker order:", error);
+        return { success: false, message: 'Failed to update broker order.' };
+    }
+}
+
 
 // Trading Account Management
 export async function getTradingAccounts(): Promise<TradingAccount[]> {

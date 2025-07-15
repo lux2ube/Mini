@@ -1,3 +1,4 @@
+
 import type { Timestamp } from "firebase/firestore";
 
 /**
@@ -10,6 +11,28 @@ export interface UserProfile {
     role: 'user' | 'admin';
     createdAt: any;
 }
+
+/**
+ * Represents a partner broker in the 'brokers' collection.
+ */
+export interface Broker {
+    id: string;
+    order: number;
+    name: string;
+    description: string;
+    logoUrl: string;
+    details: {
+        minDeposit: string;
+        leverage: string;
+        spreads: string;
+    };
+    instructions: {
+        description: string;
+        linkText: string;
+        link: string;
+    };
+}
+
 
 /**
  * Represents a linked trading account document in the 'tradingAccounts' collection.

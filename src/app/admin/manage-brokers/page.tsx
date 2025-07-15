@@ -1,77 +1,275 @@
 
 "use client";
 
+import { useState, useEffect } from "react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { brokers } from "@/lib/data";
-import type { Broker } from "@/lib/data";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  getBrokers,
+  deleteBroker,
+  updateBrokerOrder,
+} from "../actions";
+import type { Broker } from "@/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import {
+  PlusCircle,
+  Edit,
+  Trash2,
+  Loader2,
+  GripVertical,
+} from "lucide-react";
 import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { BrokerFormDialog } from "@/components/admin/BrokerFormDialog";
+
+function SortableBrokerRow({ broker }: { broker: Broker }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: broker.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1 : 'auto',
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell className="w-10">
+        <div {...attributes} {...listeners} className="cursor-grab p-2">
+          <GripVertical className="h-5 w-5 text-muted-foreground" />
+        </div>
+      </TableCell>
+      <TableCell>
+        <Image
+          src={broker.logoUrl}
+          alt={`${broker.name} logo`}
+          width={32}
+          height={32}
+          className="rounded-md border p-0.5 bg-white"
+          data-ai-hint="logo"
+        />
+      </TableCell>
+      <TableCell className="font-medium">{broker.name}</TableCell>
+      <TableCell>{broker.details.minDeposit}</TableCell>
+      <TableCell>{broker.details.leverage}</TableCell>
+      <TableCell className="space-x-2 text-right">
+        <BrokerFormDialog
+          broker={broker}
+          onSuccess={() => {}}
+          isOpen={isFormOpen}
+          setIsOpen={setIsFormOpen}
+        >
+          <Button
+            size="icon"
+            variant="outline"
+            className="h-8 w-8"
+            onClick={() => setIsFormOpen(true)}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+        </BrokerFormDialog>
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button size="icon" variant="destructive" className="h-8 w-8">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete the
+                broker.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={async () => {
+                  const result = await deleteBroker(broker.id);
+                  if (result.success) {
+                    // Refetch handled by main component
+                  }
+                }}
+              >
+                Continue
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </TableCell>
+    </TableRow>
+  );
+}
 
 export default function ManageBrokersPage() {
-    // This is a placeholder management page. In a real app, this data would come from Firestore
-    // and the actions would perform CRUD operations on the 'brokers' collection.
-    
+  const [brokers, setBrokers] = useState<Broker[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const { toast } = useToast();
+
+  const fetchBrokers = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getBrokers();
+      setBrokers(data);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch brokers.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBrokers();
+  }, [isFormOpen]); // Refetch when form is closed
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = brokers.findIndex((b) => b.id === active.id);
+      const newIndex = brokers.findIndex((b) => b.id === over!.id);
+      const newOrderBrokers = arrayMove(brokers, oldIndex, newIndex);
+      setBrokers(newOrderBrokers);
+
+      // Update order in Firestore
+      const orderedIds = newOrderBrokers.map((b) => b.id);
+      const result = await updateBrokerOrder(orderedIds);
+      if (result.success) {
+        toast({ title: "Success", description: "Broker order updated." });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.message,
+        });
+        // Revert optimistic update
+        fetchBrokers();
+      }
+    }
+  }
+
+  if (isLoading) {
     return (
-        <div className="container mx-auto space-y-6">
-            <PageHeader title="Manage Brokers" description="Add, edit, or remove partner brokers." />
-
-            <div className="flex justify-end">
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Broker
-                </Button>
-            </div>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Current Brokers</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Logo</TableHead>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Min. Deposit</TableHead>
-                                    <TableHead>Leverage</TableHead>
-                                    <TableHead>Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {brokers.map(broker => (
-                                    <TableRow key={broker.id}>
-                                        <TableCell>
-                                            <Image 
-                                                src={broker.logoUrl} 
-                                                alt={`${broker.name} logo`} 
-                                                width={32} 
-                                                height={32}
-                                                className="rounded-md border p-0.5"
-                                                data-ai-hint="logo"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="font-medium">{broker.name}</TableCell>
-                                        <TableCell>{broker.details.minDeposit}</TableCell>
-                                        <TableCell>{broker.details.leverage}</TableCell>
-                                        <TableCell className="space-x-2">
-                                            <Button size="icon" variant="outline" className="h-8 w-8">
-                                                <Edit className="h-4 w-4" />
-                                            </Button>
-                                            <Button size="icon" variant="destructive" className="h-8 w-8">
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
+      <div className="flex justify-center items-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
+  }
+
+  return (
+    <div className="container mx-auto space-y-6">
+      <div className="flex justify-between items-center">
+        <PageHeader
+          title="Manage Brokers"
+          description="Add, edit, or remove partner brokers."
+        />
+        <BrokerFormDialog
+          onSuccess={fetchBrokers}
+          isOpen={isFormOpen}
+          setIsOpen={setIsFormOpen}
+        >
+          <Button onClick={() => setIsFormOpen(true)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Broker
+          </Button>
+        </BrokerFormDialog>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Current Brokers</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10"></TableHead>
+                  <TableHead>Logo</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Min. Deposit</TableHead>
+                  <TableHead>Leverage</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={brokers}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <TableBody>
+                    {brokers.map((broker) => (
+                      <SortableBrokerRow key={broker.id} broker={broker} />
+                    ))}
+                  </TableBody>
+                </SortableContext>
+              </DndContext>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

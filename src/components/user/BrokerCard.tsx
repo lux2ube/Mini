@@ -12,7 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import type { Broker } from "@/lib/data";
+import type { Broker } from "@/types";
+
+interface BrokerCardProps {
+  broker: Broker;
+}
 
 export function BrokerCard({ broker }: BrokerCardProps) {
   return (
@@ -43,5 +47,3 @@ export function BrokerCard({ broker }: BrokerCardProps) {
     </Card>
   )
 }
-
-    
