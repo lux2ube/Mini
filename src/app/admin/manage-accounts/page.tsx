@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { Timestamp } from 'firebase/firestore';
 
 export default function ManageAccountsPage() {
     const [accounts, setAccounts] = useState<TradingAccount[]>([]);
@@ -21,8 +22,12 @@ export default function ManageAccountsPage() {
         setIsLoading(true);
         try {
             const fetchedAccounts = await getTradingAccounts();
-            // Sort by most recent first
-            fetchedAccounts.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+            // Sort by most recent first, with safe handling for createdAt
+            fetchedAccounts.sort((a, b) => {
+                const timeA = a.createdAt && typeof a.createdAt.toMillis === 'function' ? a.createdAt.toMillis() : 0;
+                const timeB = b.createdAt && typeof b.createdAt.toMillis === 'function' ? b.createdAt.toMillis() : 0;
+                return timeB - timeA;
+            });
             setAccounts(fetchedAccounts);
         } catch (error) {
             console.error("Failed to fetch accounts:", error);
