@@ -245,22 +245,22 @@ export default function ManageBrokersPage() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10"></TableHead>
-                  <TableHead>Logo</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Min. Deposit</TableHead>
-                  <TableHead>Leverage</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10"></TableHead>
+                    <TableHead>Logo</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Min. Deposit</TableHead>
+                    <TableHead>Leverage</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
                 <SortableContext
                   items={brokers}
                   strategy={verticalListSortingStrategy}
@@ -271,8 +271,8 @@ export default function ManageBrokersPage() {
                     ))}
                   </TableBody>
                 </SortableContext>
-              </DndContext>
-            </Table>
+              </Table>
+            </DndContext>
           </div>
         </CardContent>
       </Card>
