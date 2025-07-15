@@ -5,13 +5,14 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, PlusCircle, Landmark } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, getCountFromServer, Timestamp } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import type { CashbackTransaction, Withdrawal } from "@/types";
+import Image from "next/image";
 
 interface DashboardStats {
     availableBalance: number;
@@ -20,6 +21,38 @@ interface DashboardStats {
     pendingWithdrawals: number;
     completedWithdrawals: number;
 }
+
+function PromoBanner() {
+    return (
+        <Card className="overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
+            <div className="flex flex-col md:flex-row">
+                <div className="p-6 flex flex-col justify-center space-y-3 flex-1">
+                    <h3 className="text-xl font-bold font-headline">Special Offer!</h3>
+                    <p className="text-muted-foreground text-sm">
+                        Get an extra 10% cashback on all trades with Exness this month.
+                    </p>
+                    <div className="pt-2">
+                        <Button asChild size="sm">
+                            <Link href="/dashboard/brokers">
+                                Link Exness Account <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </div>
+                </div>
+                 <div className="relative h-40 md:h-auto md:w-56 flex-shrink-0">
+                    <Image
+                        src="https://placehold.co/600x400.png"
+                        alt="Promotional banner"
+                        fill
+                        className="object-cover"
+                        data-ai-hint="promotion abstract"
+                    />
+                </div>
+            </div>
+        </Card>
+    )
+}
+
 
 export default function UserDashboardPage() {
   const { user } = useAuthContext();
@@ -104,6 +137,8 @@ export default function UserDashboardPage() {
         description="Your cashback overview."
       />
       
+      <PromoBanner />
+
       <Card>
           <CardHeader>
               <CardDescription>Available Balance</CardDescription>
