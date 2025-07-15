@@ -12,6 +12,7 @@ import {
     GalleryHorizontal,
     LogOut,
     Menu,
+    Gift,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -23,7 +24,8 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 
 const navLinks = [
     { href: "/admin/dashboard", icon: LayoutGrid, label: "Dashboard" },
-    { href: "/admin/manage-accounts", icon: Users, label: "Manage Accounts" },
+    { href: "/admin/users", icon: Users, label: "Manage Users" },
+    { href: "/admin/manage-accounts", icon: Briefcase, label: "Manage Accounts" },
     { href: "/admin/manage-cashback", icon: PlusCircle, label: "Manage Cashback" },
     { href: "/admin/manage-withdrawals", icon: ArrowDownUp, label: "Manage Withdrawals" },
     { href: "/admin/manage-brokers", icon: Briefcase, label: "Manage Brokers" },

@@ -2,8 +2,8 @@
 "use client";
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -14,8 +14,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db } from '@/lib/firebase/config';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from "firebase/firestore"; 
+import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timestamp } from "firebase/firestore"; 
 import { Loader2 } from 'lucide-react';
+import { generateReferralCode } from '@/lib/referral';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -24,7 +25,10 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+
+  const referralCodeFromUrl = searchParams.get('ref');
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,14 +38,60 @@ export default function RegisterPage() {
     }
     setIsLoading(true);
     try {
+      // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      await setDoc(doc(db, "users", user.uid), { name: name, email: email, role: "user" });
+      const newReferralCode = generateReferralCode(name);
+
+      // 2. Handle referral logic within a transaction
+      await runTransaction(db, async (transaction) => {
+        let referrerProfile: { uid: string, data: any } | null = null;
+        
+        // Find the referrer if a code is provided
+        if (referralCodeFromUrl) {
+          const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCodeFromUrl));
+          const referrerSnapshot = await getDocs(referrerQuery);
+          if (!referrerSnapshot.empty) {
+            const doc = referrerSnapshot.docs[0];
+            referrerProfile = { uid: doc.id, data: doc.data() };
+          } else {
+            console.warn("Referral code not found:", referralCodeFromUrl);
+          }
+        }
+        
+        // 3. Create the new user document
+        const newUserDocRef = doc(db, "users", user.uid);
+        const newUserProfile = { 
+            name, 
+            email, 
+            role: "user",
+            createdAt: Timestamp.now(),
+            referralCode: newReferralCode,
+            referredBy: referrerProfile ? referrerProfile.uid : null,
+            referrals: [],
+            points: 0,
+            tier: 'Bronze',
+        };
+        transaction.set(newUserDocRef, newUserProfile);
+
+        // 4. Update the referrer's document if they exist
+        if (referrerProfile) {
+          const referrerDocRef = doc(db, "users", referrerProfile.uid);
+          const currentReferrals = referrerProfile.data.referrals || [];
+          const currentPoints = referrerProfile.data.points || 0;
+
+          transaction.update(referrerDocRef, {
+            referrals: [...currentReferrals, user.uid],
+            points: currentPoints + 10, // Award 10 points for a successful referral
+          });
+        }
+      });
 
       toast({ title: "Success", description: "Account created successfully." });
       router.push('/dashboard');
     } catch (error: any) {
+      console.error("Registration Error: ", error);
       toast({ variant: "destructive", title: "Error", description: error.message });
     } finally {
       setIsLoading(false);
@@ -90,5 +140,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-
-    

@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
@@ -14,6 +14,7 @@ import { Loader2 } from "lucide-react";
 import type { CashbackTransaction, Withdrawal, BannerSettings } from "@/types";
 import Image from "next/image";
 import { getBannerSettings } from "../admin/actions";
+import { useToast } from "@/hooks/use-toast";
 
 
 interface DashboardStats {
@@ -22,6 +23,8 @@ interface DashboardStats {
     linkedAccounts: number;
     pendingWithdrawals: number;
     completedWithdrawals: number;
+    totalReferrals: number;
+    referralPoints: number;
 }
 
 function PromoBanner() {
@@ -77,14 +80,24 @@ function PromoBanner() {
 
 export default function UserDashboardPage() {
   const { user } = useAuthContext();
+  const { toast } = useToast();
   const [stats, setStats] = useState<DashboardStats>({
     availableBalance: 0,
     totalEarned: 0,
     linkedAccounts: 0,
     pendingWithdrawals: 0,
     completedWithdrawals: 0,
+    totalReferrals: 0,
+    referralPoints: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  const referralLink = `${window.location.origin}/register?ref=${user?.profile?.referralCode}`;
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(referralLink);
+    toast({ title: 'Copied!', description: 'Referral link copied to clipboard.' });
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -128,6 +141,8 @@ export default function UserDashboardPage() {
             linkedAccounts,
             pendingWithdrawals,
             completedWithdrawals,
+            totalReferrals: user.profile?.referrals?.length || 0,
+            referralPoints: user.profile?.points || 0,
           });
 
         } catch (error) {
@@ -154,7 +169,7 @@ export default function UserDashboardPage() {
   return (
     <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
       <PageHeader
-        title={`Welcome, ${user?.displayName || 'User'}!`}
+        title={`Welcome, ${user?.profile?.name || 'User'}!`}
         description="Your cashback overview."
       />
       
@@ -174,6 +189,44 @@ export default function UserDashboardPage() {
               </Button>
               <Button asChild variant="secondary" className="w-full">
                   <Link href="/dashboard/brokers">Earn Now</Link>
+              </Button>
+          </CardContent>
+      </Card>
+
+      <Card>
+          <CardHeader>
+               <div className="flex items-start gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                      <Gift className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                      <CardTitle>Referral Program</CardTitle>
+                      <CardDescription>Invite friends and earn rewards.</CardDescription>
+                  </div>
+               </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg bg-muted text-center">
+                    <p className="text-sm font-medium">Invited</p>
+                    <p className="text-2xl font-bold text-primary">{stats.totalReferrals}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted text-center">
+                    <p className="text-sm font-medium">Points</p>
+                    <p className="text-2xl font-bold text-primary">{stats.referralPoints}</p>
+                </div>
+              </div>
+              <div className="relative">
+                <Input value={referralLink} readOnly className="pr-10" />
+                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={copyToClipboard}>
+                    <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+               <Button asChild className="w-full">
+                  <Link href="/dashboard/referrals">
+                      View Details
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
               </Button>
           </CardContent>
       </Card>

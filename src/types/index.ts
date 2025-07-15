@@ -18,6 +18,12 @@ export interface UserProfile {
     name: string;
     role: 'user' | 'admin';
     createdAt: any;
+    // Referral fields
+    referralCode: string;
+    referredBy?: string; // UID of the user who referred this person
+    referrals: string[]; // Array of UIDs of users this person has referred
+    points: number;
+    tier: 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
 }
 
 /**
@@ -67,6 +73,9 @@ export interface CashbackTransaction {
     date: any;
     tradeDetails: string; // e.g., "Trade 1.5 lots EURUSD"
     cashbackAmount: number;
+    // Optional referral fields
+    referralBonusTo?: string;
+    referralBonusAmount?: number;
 }
 
 

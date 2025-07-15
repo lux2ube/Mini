@@ -10,7 +10,8 @@ import {
     Landmark,
     ReceiptText,
     LogOut,
-    Users
+    Users,
+    Gift
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,7 @@ export default function DashboardLayout({
         { href: "/dashboard/my-accounts", icon: Users, label: "My Accounts" },
         { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
         { href: "/dashboard/transactions", icon: ReceiptText, label: "Transactions" },
+        { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
         { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
         { href: "/dashboard/settings", icon: Settings, label: "Settings" },
     ];
