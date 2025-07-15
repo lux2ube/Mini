@@ -76,7 +76,7 @@ export function BrokerFormDialog({
           logoUrl: broker.logoUrl,
           details: broker.details,
           instructions: broker.instructions,
-          existingAccountInstructions: broker.existingAccountInstructions,
+          existingAccountInstructions: broker.existingAccountInstructions || "",
         }
       : {
           name: "",
