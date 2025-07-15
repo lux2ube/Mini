@@ -9,10 +9,12 @@ import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight } from "lucide-
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, getCountFromServer, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, getCountFromServer, Timestamp, doc, getDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
-import type { CashbackTransaction, Withdrawal } from "@/types";
+import type { CashbackTransaction, Withdrawal, BannerSettings } from "@/types";
 import Image from "next/image";
+import { getBannerSettings } from "../admin/actions";
+
 
 interface DashboardStats {
     availableBalance: number;
@@ -23,32 +25,53 @@ interface DashboardStats {
 }
 
 function PromoBanner() {
-    const bannerRef = useRef<HTMLDivElement>(null);
-    const scriptId = "81c6356dad968be966c5c92eb10b5602c7df53bf7781e3817f3b82397349502d";
+    const bannerContainerRef = useRef<HTMLDivElement>(null);
+    const [settings, setSettings] = useState<BannerSettings | null>(null);
 
     useEffect(() => {
-        const container = bannerRef.current;
-        if (!container || document.getElementById(scriptId)) {
+        getBannerSettings().then(setSettings);
+    }, []);
+    
+    useEffect(() => {
+        const container = bannerContainerRef.current;
+        if (!container || !settings?.isEnabled || !settings.scriptCode) {
             return;
         }
 
-        const script = document.createElement('script');
-        script.src = `https://fbs.partners/banner/${scriptId}/4564/script.js?ibp=32646625`;
-        script.id = scriptId;
-        script.async = true;
+        container.innerHTML = ''; // Clear previous content
+        
+        const template = document.createElement('template');
+        template.innerHTML = settings.scriptCode.trim();
+        
+        const scriptNode = template.content.firstChild;
 
-        container.appendChild(script);
+        if (scriptNode instanceof HTMLScriptElement) {
+             const script = document.createElement('script');
+             script.src = scriptNode.src;
+             script.id = scriptNode.id;
+             script.async = scriptNode.async;
+             
+             // Handle any other attributes on the original script
+             for(let i = 0; i < scriptNode.attributes.length; i++) {
+                 const attr = scriptNode.attributes[i];
+                 if(attr.name !== 'src' && attr.name !== 'id' && attr.name !== 'async') {
+                    script.setAttribute(attr.name, attr.value);
+                 }
+             }
+             
+             container.appendChild(script);
+        } else {
+             // If it's not a script (e.g. an iframe or div), just append it
+             container.appendChild(template.content.cloneNode(true));
+        }
 
-        return () => {
-            // Cleanup the script when the component unmounts
-            const existingScript = document.getElementById(scriptId);
-            if (existingScript) {
-                existingScript.remove();
-            }
-        };
-    }, []);
+    }, [settings]);
 
-    return <div ref={bannerRef} className="my-4 w-full flex justify-center"></div>;
+    if (!settings?.isEnabled || !settings.scriptCode) {
+        return null;
+    }
+
+    return <div ref={bannerContainerRef} className="my-4 w-full flex justify-center"></div>;
 }
 
 

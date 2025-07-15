@@ -2,8 +2,31 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker } from '@/types';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings } from '@/types';
+
+// Banner Management
+export async function getBannerSettings(): Promise<BannerSettings> {
+    const docRef = doc(db, 'settings', 'banner');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as BannerSettings;
+    }
+    // Return default settings if not found
+    return { scriptCode: '', isEnabled: false };
+}
+
+export async function updateBannerSettings(settings: BannerSettings) {
+    try {
+        const docRef = doc(db, 'settings', 'banner');
+        await setDoc(docRef, settings, { merge: true });
+        return { success: true, message: 'Banner settings updated successfully.' };
+    } catch (error) {
+        console.error("Error updating banner settings:", error);
+        return { success: false, message: 'Failed to update banner settings.' };
+    }
+}
+
 
 // Broker Management
 export async function getBrokers(): Promise<Broker[]> {

@@ -2,6 +2,14 @@
 import type { Timestamp } from "firebase/firestore";
 
 /**
+ * Represents the settings for the promotional banner.
+ */
+export interface BannerSettings {
+    scriptCode: string;
+    isEnabled: boolean;
+}
+
+/**
  * Represents a user document in the 'users' collection.
  */
 export interface UserProfile {
