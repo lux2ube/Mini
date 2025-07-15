@@ -44,6 +44,7 @@ const formSchema = z.object({
     linkText: z.string().min(1, "Required"),
     link: z.string().url("Must be a valid URL"),
   }),
+  existingAccountInstructions: z.string().min(10, "Instructions are too short."),
 });
 
 type BrokerFormValues = z.infer<typeof formSchema>;
@@ -75,6 +76,7 @@ export function BrokerFormDialog({
           logoUrl: broker.logoUrl,
           details: broker.details,
           instructions: broker.instructions,
+          existingAccountInstructions: broker.existingAccountInstructions,
         }
       : {
           name: "",
@@ -82,6 +84,7 @@ export function BrokerFormDialog({
           logoUrl: "",
           details: { minDeposit: "", leverage: "", spreads: "" },
           instructions: { description: "", linkText: "", link: "" },
+          existingAccountInstructions: "",
         },
   });
 
@@ -203,14 +206,14 @@ export function BrokerFormDialog({
             </div>
 
             <div className="space-y-4 p-4 border rounded-md">
-                <h3 className="font-semibold text-lg">Instructions</h3>
+                <h3 className="font-semibold text-lg">New Account Instructions</h3>
                 <FormField
                     control={form.control}
                     name="instructions.description"
                     render={({ field }) => (
                         <FormItem>
                         <FormLabel>Instruction Text</FormLabel>
-                        <FormControl><Textarea placeholder="Instructions for users..." {...field} /></FormControl>
+                        <FormControl><Textarea placeholder="Instructions for users opening a new account..." {...field} /></FormControl>
                         <FormMessage />
                         </FormItem>
                     )}
@@ -239,6 +242,21 @@ export function BrokerFormDialog({
                     )}
                 />
                 </div>
+            </div>
+
+            <div className="space-y-4 p-4 border rounded-md">
+                <h3 className="font-semibold text-lg">Existing Account Instructions</h3>
+                 <FormField
+                    control={form.control}
+                    name="existingAccountInstructions"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Instruction Text</FormLabel>
+                        <FormControl><Textarea placeholder="Instructions for users with an existing account..." {...field} /></FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                 />
             </div>
             
             <DialogFooter>

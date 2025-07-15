@@ -31,6 +31,7 @@ export interface Broker {
         linkText: string;
         link: string;
     };
+    existingAccountInstructions: string;
 }
 
 

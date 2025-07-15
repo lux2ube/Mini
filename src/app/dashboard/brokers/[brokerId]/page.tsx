@@ -282,9 +282,9 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
                  {hasAccount === 'yes' && (
                     <Alert>
                         <Info className="h-4 w-4" />
-                        <AlertTitle>Important</AlertTitle>
+                        <AlertTitle>Important: Link Existing Account</AlertTitle>
                         <AlertDescription>
-                            <p>For us to track your trades, your account must be under our partner link. If not, you must create a new one by going back and selecting "No".</p>
+                            <p>{broker.existingAccountInstructions}</p>
                         </AlertDescription>
                     </Alert>
                 )}
