@@ -22,6 +22,8 @@ import {
   getBrokers,
   deleteBroker,
   updateBrokerOrder,
+  addBroker,
+  updateBroker
 } from "../actions";
 import type { Broker } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,7 +58,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { BrokerFormDialog } from "@/components/admin/BrokerFormDialog";
 
-function SortableBrokerRow({ broker }: { broker: Broker }) {
+function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: () => void }) {
   const {
     attributes,
     listeners,
@@ -65,6 +67,7 @@ function SortableBrokerRow({ broker }: { broker: Broker }) {
     transition,
     isDragging,
   } = useSortable({ id: broker.id });
+  const { toast } = useToast();
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -74,11 +77,21 @@ function SortableBrokerRow({ broker }: { broker: Broker }) {
   };
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  
+  const handleDelete = async () => {
+      const result = await deleteBroker(broker.id);
+      if (result.success) {
+        toast({ title: 'Success', description: 'Broker deleted.'})
+        onSuccess();
+      } else {
+        toast({ variant: 'destructive', title: 'Error', description: result.message})
+      }
+  }
 
   return (
-    <TableRow ref={setNodeRef} style={style}>
+    <TableRow ref={setNodeRef} style={style} {...attributes}>
       <TableCell className="w-10">
-        <div {...attributes} {...listeners} className="cursor-grab p-2">
+        <div {...listeners} className="cursor-grab p-2">
           <GripVertical className="h-5 w-5 text-muted-foreground" />
         </div>
       </TableCell>
@@ -98,7 +111,7 @@ function SortableBrokerRow({ broker }: { broker: Broker }) {
       <TableCell className="space-x-2 text-right">
         <BrokerFormDialog
           broker={broker}
-          onSuccess={() => {}}
+          onSuccess={onSuccess}
           isOpen={isFormOpen}
           setIsOpen={setIsFormOpen}
         >
@@ -128,14 +141,7 @@ function SortableBrokerRow({ broker }: { broker: Broker }) {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={async () => {
-                  const result = await deleteBroker(broker.id);
-                  if (result.success) {
-                    // Refetch handled by main component
-                  }
-                }}
-              >
+              <AlertDialogAction onClick={handleDelete}>
                 Continue
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -153,7 +159,7 @@ export default function ManageBrokersPage() {
   const { toast } = useToast();
 
   const fetchBrokers = async () => {
-    setIsLoading(true);
+    // No need to set loading true here if we want a silent refetch
     try {
       const data = await getBrokers();
       setBrokers(data);
@@ -170,7 +176,7 @@ export default function ManageBrokersPage() {
 
   useEffect(() => {
     fetchBrokers();
-  }, [isFormOpen]); // Refetch when form is closed
+  }, []); 
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -261,7 +267,7 @@ export default function ManageBrokersPage() {
                 >
                   <TableBody>
                     {brokers.map((broker) => (
-                      <SortableBrokerRow key={broker.id} broker={broker} />
+                      <SortableBrokerRow key={broker.id} broker={broker} onSuccess={fetchBrokers} />
                     ))}
                   </TableBody>
                 </SortableContext>
