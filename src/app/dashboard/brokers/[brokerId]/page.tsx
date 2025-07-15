@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import type { Broker } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info, Loader2, UserPlus, FileText, Link2, ExternalLink } from 'lucide-react';
@@ -95,6 +95,24 @@ export default function BrokerDetailPage() {
     }
     setIsSubmitting(true);
     try {
+      // Check for duplicate account
+      const q = query(
+        collection(db, 'tradingAccounts'),
+        where('broker', '==', broker.name),
+        where('accountNumber', '==', data.accountNumber)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        toast({
+          variant: 'destructive',
+          title: 'Account Exists',
+          description: 'This trading account number is already linked for this broker.',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       await addDoc(collection(db, 'tradingAccounts'), {
         userId: user.uid,
         broker: broker.name,
@@ -200,7 +218,7 @@ export default function BrokerDetailPage() {
       <FormProvider {...form}>
         <form onSubmit={form.handleSubmit(processForm)} className="space-y-4">
             <Card>
-                {currentStep === 1 && <Step1 hasAccount={hasAccountValue} brokerName={broker.name} />}
+                {currentStep === 1 && <Step1 brokerName={broker.name} />}
                 {currentStep === 2 && <Step2 hasAccount={hasAccountValue} broker={broker} />}
                 {currentStep === 3 && <Step3 />}
             </Card>
@@ -355,3 +373,5 @@ function BrokerPageSkeleton() {
         </div>
     )
 }
+
+    
