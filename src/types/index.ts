@@ -74,4 +74,5 @@ export interface Withdrawal {
     walletAddress: string;
     requestedAt: any;
     completedAt?: any;
+    txId?: string; // Transaction ID from the blockchain
 }

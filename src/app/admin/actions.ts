@@ -11,11 +11,11 @@ export async function getBrokers(): Promise<Broker[]> {
     return brokersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Broker));
 }
 
-export async function addBroker(data: Omit<Broker, 'id'>) {
+export async function addBroker(data: Omit<Broker, 'id' | 'order'>) {
     try {
         // Get current max order
-        const brokersSnapshot = await getDocs(query(collection(db, 'brokers'), orderBy('order', 'desc'), where('order', '!=', null)));
-        const maxOrder = brokersSnapshot.docs.length > 0 ? brokersSnapshot.docs[0].data().order : -1;
+        const brokersSnapshot = await getDocs(query(collection(db, 'brokers'), orderBy('order', 'desc')));
+        const maxOrder = brokersSnapshot.docs.length > 0 && brokersSnapshot.docs[0].data().order != null ? brokersSnapshot.docs[0].data().order : -1;
 
         await addDoc(collection(db, 'brokers'), {
             ...data,
@@ -28,7 +28,7 @@ export async function addBroker(data: Omit<Broker, 'id'>) {
     }
 }
 
-export async function updateBroker(brokerId: string, data: Partial<Broker>) {
+export async function updateBroker(brokerId: string, data: Partial<Omit<Broker, 'id'>>) {
     try {
         const brokerRef = doc(db, 'brokers', brokerId);
         await updateDoc(brokerRef, data);
@@ -127,17 +127,28 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
     return withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
 }
 
-export async function updateWithdrawalStatus(withdrawalId: string, status: 'Completed' | 'Failed') {
+export async function approveWithdrawal(withdrawalId: string, txId: string) {
+    try {
+        const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
+        await updateDoc(withdrawalRef, {
+            status: 'Completed',
+            completedAt: serverTimestamp(),
+            txId: txId,
+        });
+        return { success: true, message: 'Withdrawal approved successfully with TXID.' };
+    } catch (error) {
+        console.error("Error approving withdrawal:", error);
+        return { success: false, message: 'Failed to approve withdrawal.' };
+    }
+}
+
+export async function rejectWithdrawal(withdrawalId: string) {
      try {
         const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
-        const updateData: { status: 'Completed' | 'Failed', completedAt?: any } = { status };
-        if (status === 'Completed') {
-            updateData.completedAt = serverTimestamp();
-        }
-        await updateDoc(withdrawalRef, updateData);
-        return { success: true, message: `Withdrawal status updated to ${status}.` };
+        await updateDoc(withdrawalRef, { status: 'Failed' });
+        return { success: true, message: `Withdrawal status updated to Failed.` };
     } catch (error) {
-        console.error("Error updating withdrawal status:", error);
-        return { success: false, message: 'Failed to update withdrawal status.' };
+        console.error("Error rejecting withdrawal:", error);
+        return { success: false, message: 'Failed to reject withdrawal.' };
     }
 }

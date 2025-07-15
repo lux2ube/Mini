@@ -3,52 +3,116 @@
 
 import { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getWithdrawals, updateWithdrawalStatus } from '../actions';
+import { approveWithdrawal, getWithdrawals, rejectWithdrawal } from '../actions';
 import type { Withdrawal } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+function ApproveWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: string, onSuccess: () => void }) {
+    const [txId, setTxId] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const handleSubmit = async () => {
+        if (!txId.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Transaction ID cannot be empty.' });
+            return;
+        }
+        setIsSubmitting(true);
+        const result = await approveWithdrawal(withdrawalId, txId);
+        if (result.success) {
+            toast({ title: 'Success', description: result.message });
+            onSuccess();
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+        setIsSubmitting(false);
+    }
+
+    return (
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Approve Withdrawal</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Enter the blockchain transaction ID (TXID) to confirm this withdrawal has been sent.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+                <Label htmlFor="txid">Transaction ID (TXID)</Label>
+                <Input 
+                    id="txid" 
+                    value={txId} 
+                    onChange={(e) => setTxId(e.target.value)}
+                    placeholder="0x..."
+                />
+            </div>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Approve
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    )
+}
 
 export default function ManageWithdrawalsPage() {
     const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
-    useEffect(() => {
-        const fetchWithdrawals = async () => {
-            setIsLoading(true);
-            try {
-                const data = await getWithdrawals();
-                setWithdrawals(data);
-            } catch (error) {
-                console.error("Failed to fetch withdrawals:", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch withdrawals.' });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchWithdrawals();
-    }, [toast]);
-
-    const handleStatusUpdate = async (withdrawalId: string, status: 'Completed' | 'Failed') => {
-        const originalWithdrawals = [...withdrawals];
-        // Optimistic update
-        setWithdrawals(withdrawals.map(w => w.id === withdrawalId ? { ...w, status } : w));
-
-        const result = await updateWithdrawalStatus(withdrawalId, status);
-        if (!result.success) {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
-            setWithdrawals(originalWithdrawals); // Revert on failure
-        } else {
-            toast({ title: 'Success', description: result.message });
+    const fetchWithdrawals = async () => {
+        setIsLoading(true);
+        try {
+            const data = await getWithdrawals();
+            setWithdrawals(data);
+        } catch (error) {
+            console.error("Failed to fetch withdrawals:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch withdrawals.' });
+        } finally {
+            setIsLoading(false);
         }
     };
 
-     const getStatusVariant = (status: string) => {
+    useEffect(() => {
+        fetchWithdrawals();
+    }, []);
+
+    const handleReject = async (withdrawalId: string) => {
+        const result = await rejectWithdrawal(withdrawalId);
+        if (result.success) {
+            toast({ title: 'Success', description: result.message });
+            fetchWithdrawals();
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+    };
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({ title: 'Copied!', description: 'Wallet address copied to clipboard.' });
+    };
+
+    const getStatusVariant = (status: string) => {
         switch (status) {
             case 'Completed': return 'default';
             case 'Processing': return 'secondary';
@@ -78,7 +142,7 @@ export default function ManageWithdrawalsPage() {
                                         <TableHead>Network</TableHead>
                                         <TableHead>Address</TableHead>
                                         <TableHead>Status</TableHead>
-                                        <TableHead>Actions</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -88,17 +152,43 @@ export default function ManageWithdrawalsPage() {
                                             <TableCell className="text-xs text-muted-foreground truncate" style={{ maxWidth: '100px' }}>{w.userId}</TableCell>
                                             <TableCell className="font-medium">${w.amount.toFixed(2)}</TableCell>
                                             <TableCell><Badge variant="outline">{w.network.toUpperCase()}</Badge></TableCell>
-                                            <TableCell className="text-xs text-muted-foreground truncate" style={{ maxWidth: '150px' }}>{w.walletAddress}</TableCell>
+                                            <TableCell className="text-xs text-muted-foreground truncate" style={{ maxWidth: '150px' }}>
+                                                <div className="flex items-center gap-2">
+                                                    <span>{w.walletAddress}</span>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(w.walletAddress)}>
+                                                        <Copy className="h-3 w-3" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
                                             <TableCell><Badge variant={getStatusVariant(w.status)}>{w.status}</Badge></TableCell>
-                                            <TableCell className="space-x-2">
+                                            <TableCell className="text-right space-x-2">
                                                 {w.status === 'Processing' && (
                                                     <>
-                                                    <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 hover:text-green-600" onClick={() => handleStatusUpdate(w.id, 'Completed')}>
-                                                        <CheckCircle className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 hover:text-red-600" onClick={() => handleStatusUpdate(w.id, 'Failed')}>
-                                                        <XCircle className="h-4 w-4" />
-                                                    </Button>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                            <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 hover:text-green-600">
+                                                                <CheckCircle className="h-4 w-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <ApproveWithdrawalDialog withdrawalId={w.id} onSuccess={fetchWithdrawals} />
+                                                    </AlertDialog>
+                                                    <AlertDialog>
+                                                        <AlertDialogTrigger asChild>
+                                                             <Button size="icon" variant="destructive" className="h-8 w-8">
+                                                                <XCircle className="h-4 w-4" />
+                                                            </Button>
+                                                        </AlertDialogTrigger>
+                                                        <AlertDialogContent>
+                                                            <AlertDialogHeader>
+                                                                <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                                <AlertDialogDescription>This will mark the withdrawal as failed. This action cannot be undone.</AlertDialogDescription>
+                                                            </AlertDialogHeader>
+                                                            <AlertDialogFooter>
+                                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                                <AlertDialogAction onClick={() => handleReject(w.id)}>Confirm Reject</AlertDialogAction>
+                                                            </AlertDialogFooter>
+                                                        </AlertDialogContent>
+                                                    </AlertDialog>
                                                     </>
                                                 )}
                                             </TableCell>

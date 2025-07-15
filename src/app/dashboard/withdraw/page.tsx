@@ -27,12 +27,19 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2 } from "lucide-react";
+import { Info, Loader2, Copy } from "lucide-react";
 import type { Withdrawal } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp, orderBy } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
@@ -48,44 +55,45 @@ export default function WithdrawPage() {
     const [availableBalance, setAvailableBalance] = useState(0);
     const [recentWithdrawals, setRecentWithdrawals] = useState<Withdrawal[]>([]);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            if (user) {
-                setIsFetching(true);
-                try {
-                    // Fetch transactions to calculate total earned
-                    const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid));
-                    const transactionsSnapshot = await getDocs(transactionsQuery);
-                    const totalEarned = transactionsSnapshot.docs.reduce((acc, doc) => acc + doc.data().cashbackAmount, 0);
+    const fetchData = async () => {
+        if (user) {
+            setIsFetching(true);
+            try {
+                // Fetch transactions to calculate total earned
+                const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid));
+                const transactionsSnapshot = await getDocs(transactionsQuery);
+                const totalEarned = transactionsSnapshot.docs.reduce((acc, doc) => acc + doc.data().cashbackAmount, 0);
 
-                    // Fetch withdrawals
-                    const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
-                    const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-                    
-                    let totalWithdrawn = 0;
-                    const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
-                        const data = doc.data() as Omit<Withdrawal, 'id' | 'requestedAt'> & { requestedAt: Timestamp };
-                        if (data.status === 'Completed' || data.status === 'Processing') {
-                            totalWithdrawn += data.amount;
-                        }
-                        return { 
-                            id: doc.id,
-                            ...data,
-                            requestedAt: data.requestedAt.toDate()
-                        } as Withdrawal;
-                    });
-                    
-                    setAvailableBalance(totalEarned - totalWithdrawn);
-                    setRecentWithdrawals(withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime()));
-                } catch (error) {
-                    console.error("Error fetching withdrawal data:", error);
-                    toast({ variant: 'destructive', title: "Error", description: "Failed to load page data."});
-                } finally {
-                    setIsFetching(false);
-                }
+                // Fetch withdrawals
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("requestedAt", "desc"));
+                const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+                
+                let totalWithdrawn = 0;
+                const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
+                    const data = doc.data() as Omit<Withdrawal, 'id' | 'requestedAt'> & { requestedAt: Timestamp, completedAt?: Timestamp };
+                    if (data.status === 'Completed' || data.status === 'Processing') {
+                        totalWithdrawn += data.amount;
+                    }
+                    return { 
+                        id: doc.id,
+                        ...data,
+                        requestedAt: data.requestedAt.toDate(),
+                        completedAt: data.completedAt ? data.completedAt.toDate() : undefined,
+                    } as Withdrawal;
+                });
+                
+                setAvailableBalance(totalEarned - totalWithdrawn);
+                setRecentWithdrawals(withdrawals);
+            } catch (error) {
+                console.error("Error fetching withdrawal data:", error);
+                toast({ variant: 'destructive', title: "Error", description: "Failed to load page data."});
+            } finally {
+                setIsFetching(false);
             }
-        };
+        }
+    };
 
+    useEffect(() => {
         if (user) {
             fetchData();
         }
@@ -123,9 +131,7 @@ export default function WithdrawPage() {
             });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
             form.reset();
-            // Refetch data after submission
-            const event = new CustomEvent('refetchWithdrawals');
-            window.dispatchEvent(event);
+            fetchData(); // Refetch data
         } catch (error) {
             console.error('Error submitting withdrawal: ', error);
             toast({ variant: 'destructive', title: 'Error', description: 'There was a problem submitting your request.' });
@@ -133,6 +139,11 @@ export default function WithdrawPage() {
             setIsLoading(false);
         }
     }
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast({ title: 'Copied!', description: 'TXID copied to clipboard.' });
+    };
 
     const getStatusVariant = (status: string) => {
         switch (status) {
@@ -248,18 +259,40 @@ export default function WithdrawPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead>Date</TableHead>
                                 <TableHead>Amount</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Date</TableHead>
+                                <TableHead>Status / TXID</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                              {recentWithdrawals.length > 0 ? (
                                 recentWithdrawals.map((w) => (
                                 <TableRow key={w.id}>
+                                    <TableCell className="text-muted-foreground">{format(new Date(w.requestedAt), "PP")}</TableCell>
                                     <TableCell className="font-medium">${w.amount.toFixed(2)}</TableCell>
-                                    <TableCell><Badge variant={getStatusVariant(w.status)}>{w.status}</Badge></TableCell>
-                                    <TableCell className="text-right">{w.requestedAt.toLocaleDateString()}</TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col items-start gap-1">
+                                            <Badge variant={getStatusVariant(w.status)}>{w.status}</Badge>
+                                            {w.txId && (
+                                                <TooltipProvider>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <button 
+                                                                onClick={() => copyToClipboard(w.txId!)}
+                                                                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                                                            >
+                                                                <span className="truncate max-w-[100px]">{w.txId}</span>
+                                                                <Copy className="h-3 w-3" />
+                                                            </button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            <p>Copy TXID</p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            )}
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                                 ))
                              ) : (
