@@ -2,13 +2,21 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp } from 'firebase/firestore';
 import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction } from '@/types';
 
 // Trading Account Management
 export async function getTradingAccounts(): Promise<TradingAccount[]> {
   const accountsSnapshot = await getDocs(collection(db, 'tradingAccounts'));
-  return accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TradingAccount));
+  return accountsSnapshot.docs.map(doc => {
+    const data = doc.data();
+    return { 
+      id: doc.id, 
+      ...data,
+      // Safely convert timestamp to Date
+      createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+    } as TradingAccount
+  });
 }
 
 export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected') {
@@ -51,7 +59,9 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
         return {
             id: doc.id,
             ...data,
-            requestedAt: data.requestedAt?.toDate() ?? new Date(),
+            // Convert Timestamp to a serializable Date object
+            requestedAt: data.requestedAt instanceof Timestamp ? data.requestedAt.toDate() : new Date(),
+            completedAt: data.completedAt instanceof Timestamp ? data.completedAt.toDate() : undefined,
         } as Withdrawal
     });
     return withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
