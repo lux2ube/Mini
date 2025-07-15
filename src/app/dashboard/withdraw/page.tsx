@@ -31,7 +31,7 @@ import { Info, Loader2, Copy } from "lucide-react";
 import type { Withdrawal } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -65,7 +65,7 @@ export default function WithdrawPage() {
                 const totalEarned = transactionsSnapshot.docs.reduce((acc, doc) => acc + doc.data().cashbackAmount, 0);
 
                 // Fetch withdrawals
-                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid), orderBy("requestedAt", "desc"));
+                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
                 const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
                 
                 let totalWithdrawn = 0;
@@ -82,6 +82,9 @@ export default function WithdrawPage() {
                     } as Withdrawal;
                 });
                 
+                // Sort in-memory instead of in the query
+                withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+
                 setAvailableBalance(totalEarned - totalWithdrawn);
                 setRecentWithdrawals(withdrawals);
             } catch (error) {
