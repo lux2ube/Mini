@@ -6,6 +6,53 @@ import { ArrowRight, CheckCircle, HandCoins, LinkIcon as LucideLinkIcon, LogIn }
 import Link from 'next/link';
 import Image from 'next/image';
 
+function Footer() {
+    return (
+        <footer className="w-full border-t bg-gradient-to-br from-primary/10 via-background to-background text-foreground">
+             <div className="max-w-5xl mx-auto px-4 py-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center md:text-left">
+                  <div className="col-span-2 md:col-span-1">
+                      <Link href="/" className="flex items-center justify-center md:justify-start gap-2 font-semibold">
+                          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-6 h-6 text-primary-foreground"><path fill="currentColor" d="M213.38 181.38a8 8 0 0 1-10.76 1.35A103.92 103.92 0 0 0 128 160a103.92 103.92 0 0 0-74.62 22.73a8 8 0 1 1-9.41-12.7A119.92 119.92 0 0 1 128 144a119.92 119.92 0 0 1 83.94 25.32a8 8 0 0 1 1.44 12.06M240 128a112 112 0 1 1-112-112a112 112 0 0 1 112 112m-24 0a88 88 0 1 0-88 88a88.1 88.1 0 0 0 88-88"/></svg>
+                          </div>
+                          <span className="font-headline text-lg">Cashback Companion</span>
+                      </Link>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Earn cashback every time you trade.
+                      </p>
+                  </div>
+                  <div>
+                      <h3 className="font-semibold mb-2 font-headline">Quick Links</h3>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                          <li><Link href="/about" className="hover:text-primary">About Us</Link></li>
+                          <li><Link href="/contact" className="hover:text-primary">Contact Us</Link></li>
+                      </ul>
+                  </div>
+                  <div>
+                      <h3 className="font-semibold mb-2 font-headline">Account</h3>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                          <li><Link href="/login" className="hover:text-primary">Login</Link></li>
+                          <li><Link href="/register" className="hover:text-primary">Sign Up</Link></li>
+                          <li><Link href="/dashboard" className="hover:text-primary">Dashboard</Link></li>
+                      </ul>
+                  </div>
+                   <div>
+                      <h3 className="font-semibold mb-2 font-headline">Legal</h3>
+                       <ul className="space-y-1 text-sm text-muted-foreground">
+                          <li><Link href="#" className="hover:text-primary">Privacy Policy</Link></li>
+                          <li><Link href="#" className="hover:text-primary">Terms of Service</Link></li>
+                      </ul>
+                  </div>
+              </div>
+              <div className="text-center text-xs text-muted-foreground pt-8 mt-8 border-t">
+                  © {new Date().getFullYear()} Cashback Companion. All rights reserved.
+              </div>
+          </div>
+        </footer>
+    );
+}
+
 export default function Home() {
   const howItWorksSteps = [
     { title: "Sign Up for Free", description: "Create your account in seconds." },
@@ -21,115 +68,129 @@ export default function Home() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <div className="flex-grow max-w-[400px] mx-auto w-full px-4 py-4 space-y-8">
-        <header className="flex flex-col items-center text-center space-y-4">
-          <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-10 h-10 text-primary-foreground"><path fill="currentColor" d="M213.38 181.38a8 8 0 0 1-10.76 1.35A103.92 103.92 0 0 0 128 160a103.92 103.92 0 0 0-74.62 22.73a8 8 0 1 1-9.41-12.7A119.92 119.92 0 0 1 128 144a119.92 119.92 0 0 1 83.94 25.32a8 8 0 0 1 1.44 12.06M240 128a112 112 0 1 1-112-112a112 112 0 0 1 112 112m-24 0a88 88 0 1 0-88 88a88.1 88.1 0 0 0 88-88"/></svg>
-          </div>
-          <h1 className="text-3xl font-extrabold font-headline text-primary">
-            Earn Cashback Every Time You Trade
-          </h1>
-          <p className="text-muted-foreground">
-            Zero risk, zero fees, just pure cashback. We pay you for the trades you're already making.
-          </p>
-          <div className="w-full space-y-2">
-              <Button asChild className="w-full">
-                  <Link href="/register">Get Started</Link>
-              </Button>
-              <Button asChild variant="secondary" className="w-full">
-                <Link href="/login">Login</Link>
-              </Button>
-          </div>
-        </header>
+    <div className="flex flex-col min-h-screen bg-background">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="max-w-5xl mx-auto px-4">
+                <div className="flex h-14 items-center justify-between">
+                     <Link href="/" className="flex items-center gap-2 font-semibold">
+                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-6 h-6 text-primary-foreground"><path fill="currentColor" d="M213.38 181.38a8 8 0 0 1-10.76 1.35A103.92 103.92 0 0 0 128 160a103.92 103.92 0 0 0-74.62 22.73a8 8 0 1 1-9.41-12.7A119.92 119.92 0 0 1 128 144a119.92 119.92 0 0 1 83.94 25.32a8 8 0 0 1 1.44 12.06M240 128a112 112 0 1 1-112-112a112 112 0 0 1 112 112m-24 0a88 88 0 1 0-88 88a88.1 88.1 0 0 0 88-88"/></svg>
+                        </div>
+                        <span className="font-headline text-lg hidden sm:inline-block">Cashback Companion</span>
+                    </Link>
+                    <nav className="flex items-center gap-4">
+                        <Button variant="ghost" asChild><Link href="/about">About</Link></Button>
+                        <Button variant="ghost" asChild><Link href="/contact">Contact</Link></Button>
+                        <Button asChild><Link href="/login">Login</Link></Button>
+                    </nav>
+                </div>
+            </div>
+      </header>
+      
+      <main className="flex-grow">
+        <section className="py-16 md:py-24">
+            <div className="max-w-5xl mx-auto px-4 text-center">
+                <h1 className="text-4xl md:text-6xl font-extrabold font-headline text-primary">
+                    Earn Cashback Every Time You Trade
+                </h1>
+                <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
+                    Zero risk, zero fees, just pure cashback. We pay you for the trades you're already making.
+                </p>
+                <div className="mt-8 flex justify-center gap-4">
+                    <Button asChild size="lg">
+                        <Link href="/register">Get Started Free</Link>
+                    </Button>
+                    <Button asChild variant="secondary" size="lg">
+                        <Link href="/dashboard/brokers">View Brokers</Link>
+                    </Button>
+                </div>
+            </div>
+        </section>
+        
+        <section id="how-it-works" className="py-16 md:py-24 bg-muted/50">
+           <div className="max-w-5xl mx-auto px-4">
+                <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold font-headline">How It Works</h2>
+                <p className="text-muted-foreground mt-2">A simple, three-step process to boost your earnings.</p>
+                </div>
+                <div className="grid md:grid-cols-3 gap-8">
+                {howItWorksSteps.map((step, index) => (
+                    <Card key={index}>
+                    <CardHeader>
+                        <p className="text-sm font-semibold text-primary">STEP {index + 1}</p>
+                        <CardTitle>{step.title}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">{step.description}</p>
+                    </CardContent>
+                    </Card>
+                ))}
+                </div>
+            </div>
+        </section>
+        
+        <section id="benefits" className="py-16 md:py-24">
+            <div className="max-w-5xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+                <div className="space-y-6">
+                    <h2 className="text-3xl font-bold font-headline">Unmatched Benefits</h2>
+                    <p className="text-muted-foreground">We are focused on providing the best possible cashback experience for traders.</p>
+                    <div className="space-y-4">
+                        <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/40">
+                            <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                            <div>
+                                <h3 className="font-semibold">Highest Rates</h3>
+                                <p className="text-sm text-muted-foreground">Up to $12 per lot traded with our premium partner brokers.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/40">
+                            <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                             <div>
+                                <h3 className="font-semibold">Instant Tracking</h3>
+                                <p className="text-sm text-muted-foreground">Your cashback is tracked and displayed on your dashboard in real-time.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/40">
+                            <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                            <div>
+                                <h3 className="font-semibold">Flexible Withdrawals</h3>
+                                <p className="text-sm text-muted-foreground">Quick and easy withdrawals in USDT on multiple networks (BEP20, TRC20).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div>
+                    <Image 
+                        src="https://placehold.co/600x600.png"
+                        alt="Dashboard preview"
+                        width={600}
+                        height={600}
+                        className="rounded-lg shadow-xl"
+                        data-ai-hint="financial dashboard"
+                    />
+                </div>
+            </div>
+        </section>
 
-        <main className="space-y-8">
-          <section id="how-it-works">
-            <div className="text-center mb-4">
-              <h2 className="text-2xl font-bold font-headline">How It Works</h2>
+        <section id="faq" className="py-16 md:py-24 bg-muted/50">
+            <div className="max-w-3xl mx-auto px-4">
+                <div className="text-center mb-12">
+                    <h2 className="text-3xl font-bold font-headline">Frequently Asked Questions</h2>
+                </div>
+                <Accordion type="single" collapsible className="w-full">
+                {faqs.map((faq, index) => (
+                    <AccordionItem key={index} value={`item-${index}`}>
+                    <AccordionTrigger className="text-left font-semibold">{faq.question}</AccordionTrigger>
+                    <AccordionContent className="text-muted-foreground">
+                        {faq.answer}
+                    </AccordionContent>
+                    </AccordionItem>
+                ))}
+                </Accordion>
             </div>
-            <div className="flex flex-col space-y-4">
-              {howItWorksSteps.map((step, index) => (
-                <Card key={index}>
-                  <CardHeader>
-                      <p className="text-sm font-semibold text-primary">STEP {index + 1}</p>
-                      <CardTitle>{step.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                      <p className="text-muted-foreground">{step.description}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </section>
-          
-          <section id="benefits">
-            <div className="text-center mb-4">
-              <h2 className="text-2xl font-bold font-headline">Our Benefits</h2>
-            </div>
-            <div className="space-y-2">
-                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/40">
-                      <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                      <p className="text-sm text-muted-foreground">Up to $12 per lot traded</p>
-                  </div>
-                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/40">
-                      <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                      <p className="text-sm text-muted-foreground">Instant Cashback Tracking</p>
-                  </div>
-                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/40">
-                      <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                      <p className="text-sm text-muted-foreground">Flexible Withdrawals in USDT</p>
-                  </div>
-                  <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/40">
-                      <CheckCircle className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                      <p className="text-sm text-muted-foreground">AI-Powered Rule Insights</p>
-                  </div>
-            </div>
-          </section>
-
-          <section id="faq">
-            <div className="text-center mb-4">
-              <h2 className="text-2xl font-bold font-headline">FAQ</h2>
-            </div>
-            <Accordion type="single" collapsible className="w-full">
-              {faqs.map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`}>
-                  <AccordionTrigger className="text-left">{faq.question}</AccordionTrigger>
-
-                  <AccordionContent className="text-muted-foreground">
-                    {faq.answer}
-                  </AccordionContent>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </section>
-        </main>
-      </div>
-      <footer className="w-full border-t bg-background">
-          <div className="max-w-[400px] mx-auto px-4 py-8">
-              <div className="grid grid-cols-2 gap-4 text-center">
-                  <div>
-                      <h3 className="font-semibold mb-2 font-headline">Quick Links</h3>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li><Link href="/about" className="hover:text-primary">About Us</Link></li>
-                          <li><Link href="/contact" className="hover:text-primary">Contact Us</Link></li>
-                          <li><Link href="/login" className="hover:text-primary">Login</Link></li>
-                          <li><Link href="/register" className="hover:text-primary">Sign Up</Link></li>
-                      </ul>
-                  </div>
-                  <div>
-                      <h3 className="font-semibold mb-2 font-headline">Legal</h3>
-                       <ul className="space-y-1 text-sm text-muted-foreground">
-                          <li><Link href="#" className="hover:text-primary">Privacy Policy</Link></li>
-                          <li><Link href="#" className="hover:text-primary">Terms of Service</Link></li>
-                      </ul>
-                  </div>
-              </div>
-              <div className="text-center text-xs text-muted-foreground pt-8 mt-8 border-t">
-                  © {new Date().getFullYear()} Cashback Companion. All rights reserved.
-              </div>
-          </div>
-      </footer>
+        </section>
+      </main>
+      
+      <Footer />
     </div>
   );
 }
