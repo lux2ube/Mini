@@ -80,7 +80,7 @@ export default function TransactionsPage() {
         return transactions.filter(tx => {
             const searchLower = filters.search.toLowerCase();
             const matchesSearch = filters.search === '' ||
-                tx.merchant.toLowerCase().includes(searchLower) ||
+                tx.tradeDetails.toLowerCase().includes(searchLower) ||
                 tx.accountNumber.toLowerCase().includes(searchLower) ||
                 tx.id.toLowerCase().includes(searchLower);
             
@@ -219,5 +219,3 @@ export default function TransactionsPage() {
         </div>
     );
 }
-
-    
