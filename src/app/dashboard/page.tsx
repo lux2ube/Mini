@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, getCountFromServer, Timestamp } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
@@ -23,34 +23,32 @@ interface DashboardStats {
 }
 
 function PromoBanner() {
-    return (
-        <Card className="overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5">
-            <div className="flex flex-col md:flex-row">
-                <div className="p-6 flex flex-col justify-center space-y-3 flex-1">
-                    <h3 className="text-xl font-bold font-headline">Special Offer!</h3>
-                    <p className="text-muted-foreground text-sm">
-                        Get an extra 10% cashback on all trades with Exness this month.
-                    </p>
-                    <div className="pt-2">
-                        <Button asChild size="sm">
-                            <Link href="/dashboard/brokers">
-                                Link Exness Account <ArrowRight className="ml-2 h-4 w-4" />
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-                 <div className="relative h-40 md:h-auto md:w-56 flex-shrink-0">
-                    <Image
-                        src="https://placehold.co/600x400.png"
-                        alt="Promotional banner"
-                        fill
-                        className="object-cover"
-                        data-ai-hint="promotion abstract"
-                    />
-                </div>
-            </div>
-        </Card>
-    )
+    const bannerRef = useRef<HTMLDivElement>(null);
+    const scriptId = "81c6356dad968be966c5c92eb10b5602c7df53bf7781e3817f3b82397349502d";
+
+    useEffect(() => {
+        const container = bannerRef.current;
+        if (!container || document.getElementById(scriptId)) {
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = `https://fbs.partners/banner/${scriptId}/4564/script.js?ibp=32646625`;
+        script.id = scriptId;
+        script.async = true;
+
+        container.appendChild(script);
+
+        return () => {
+            // Cleanup the script when the component unmounts
+            const existingScript = document.getElementById(scriptId);
+            if (existingScript) {
+                existingScript.remove();
+            }
+        };
+    }, []);
+
+    return <div ref={bannerRef} className="my-4 w-full flex justify-center"></div>;
 }
 
 
