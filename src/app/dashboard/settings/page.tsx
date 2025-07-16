@@ -34,6 +34,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPaymentMethods, addUserPaymentMethod, deleteUserPaymentMethod } from "@/app/admin/actions";
 import type { PaymentMethod, UserPaymentMethod } from "@/types";
+import { Separator } from "@/components/ui/separator";
 
 const addMethodSchema = z.object({
   paymentMethodId: z.string().min(1, "Please select a method type."),
@@ -184,6 +185,15 @@ function PaymentMethodsList({ methods, onMethodDeleted }: { methods: UserPayment
     )
 }
 
+function ProfileInfoItem({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div>
+            <Label className="text-xs text-muted-foreground">{label}</Label>
+            <div className="text-sm font-medium">{children}</div>
+        </div>
+    )
+}
+
 export default function SettingsPage() {
   const { user, isLoading, refetchUserData } = useAuthContext();
   const [adminMethods, setAdminMethods] = useState<PaymentMethod[]>([]);
@@ -205,7 +215,7 @@ export default function SettingsPage() {
   const { profile, paymentMethods } = user;
 
   return (
-    <div className="max-w-xl mx-auto w-full px-4 py-6 space-y-6">
+    <div className="max-w-md mx-auto w-full px-4 py-6 space-y-6">
         <PageHeader title="My Profile" description="Manage your account details and settings." />
         
         <Card>
@@ -213,25 +223,24 @@ export default function SettingsPage() {
                 <CardTitle>Profile Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 items-center">
-                    <Label className="text-muted-foreground">Name</Label>
-                    <p className="col-span-2">{profile.name}</p>
-                </div>
-                 <div className="grid grid-cols-3 items-center">
-                    <Label className="text-muted-foreground">Email</Label>
-                    <div className="col-span-2 flex items-center gap-2">
-                        <p>{profile.email}</p>
+                <ProfileInfoItem label="Name">
+                   {profile.name}
+                </ProfileInfoItem>
+                <Separator/>
+                <ProfileInfoItem label="Email">
+                    <div className="flex items-center gap-2">
+                        <span>{profile.email}</span>
                         {user.emailVerified ? (
                             <Badge variant="default" className="bg-green-600 hover:bg-green-700"><Verified className="mr-1 h-3 w-3" /> Verified</Badge>
                         ) : (
                              <Badge variant="destructive"><ShieldAlert className="mr-1 h-3 w-3" /> Not Verified</Badge>
                         )}
                     </div>
-                </div>
-                 <div className="grid grid-cols-3 items-center">
-                    <Label className="text-muted-foreground">Phone</Label>
-                    <div className="col-span-2 flex items-center gap-2">
-                         <p>{profile.phoneNumber || "Not set"}</p>
+                </ProfileInfoItem>
+                <Separator/>
+                <ProfileInfoItem label="Phone">
+                    <div className="flex items-center gap-2">
+                         <span>{profile.phoneNumber || "Not set"}</span>
                          {profile.phoneNumber && (
                              profile.phoneNumberVerified ? (
                                 <Badge variant="default" className="bg-green-600 hover:bg-green-700"><Verified className="mr-1 h-3 w-3" /> Verified</Badge>
@@ -240,13 +249,11 @@ export default function SettingsPage() {
                             )
                          )}
                     </div>
-                </div>
-                 <div className="grid grid-cols-3 items-center">
-                    <Label className="text-muted-foreground">Level</Label>
-                    <p className="col-span-2">
-                        <Badge variant="secondary" className="text-base">{profile.tier}</Badge>
-                    </p>
-                </div>
+                </ProfileInfoItem>
+                <Separator/>
+                <ProfileInfoItem label="Level">
+                    <Badge variant="secondary" className="text-sm">{profile.tier}</Badge>
+                </ProfileInfoItem>
             </CardContent>
         </Card>
         
