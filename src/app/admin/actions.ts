@@ -369,17 +369,21 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
         const orderRef = doc(db, 'orders', orderId);
         
         await runTransaction(db, async (transaction) => {
+            // --- ALL READS MUST HAPPEN FIRST ---
+            const orderSnap = await transaction.get(orderRef);
+            if (!orderSnap.exists()) {
+                throw new Error("Order not found.");
+            }
+            const orderData = orderSnap.data() as Order;
+
+            // --- ALL WRITES HAPPEN LAST ---
+            // 1. Update the order status
             transaction.update(orderRef, { status });
 
-            // Optional: Notify user
-            const orderSnap = await transaction.get(orderRef);
-            if (orderSnap.exists()) {
-                const orderData = orderSnap.data() as Order;
-                const message = `The status of your order for "${orderData.productName}" has been updated to ${status}.`;
-                await createNotification(transaction, orderData.userId, message, 'store', '/dashboard/store/orders');
-            }
+            // 2. Create a notification for the user
+            const message = `The status of your order for "${orderData.productName}" has been updated to ${status}.`;
+            await createNotification(transaction, orderData.userId, message, 'store', '/dashboard/store/orders');
         });
-
 
         return { success: true, message: 'Order status updated.' };
     } catch (error) {
