@@ -167,7 +167,7 @@ export default function ManageWithdrawalsPage() {
                                             </TableCell>
                                             <TableCell>
                                                 <div className="space-y-1">
-                                                {Object.entries(w.withdrawalDetails).map(([key, value]) => (
+                                                {w.withdrawalDetails && Object.entries(w.withdrawalDetails).map(([key, value]) => (
                                                     <WithdrawalDetail key={key} label={key} value={value} />
                                                 ))}
                                                 {w.walletAddress && <WithdrawalDetail label="Wallet Address (Old)" value={w.walletAddress} />}
