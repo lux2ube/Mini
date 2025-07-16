@@ -40,6 +40,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { getUserBalance } from "@/app/admin/actions";
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
@@ -59,21 +60,19 @@ export default function WithdrawPage() {
         if (user) {
             setIsFetching(true);
             try {
-                // Fetch transactions to calculate total earned
-                const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid));
-                const transactionsSnapshot = await getDocs(transactionsQuery);
-                const totalEarned = transactionsSnapshot.docs.reduce((acc, doc) => acc + doc.data().cashbackAmount, 0);
+                // Fetch balance using the centralized function
+                const balanceData = await getUserBalance(user.uid);
+                setAvailableBalance(balanceData.availableBalance);
 
-                // Fetch withdrawals
-                const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
+                // Fetch recent withdrawals for history display
+                const withdrawalsQuery = query(
+                    collection(db, "withdrawals"), 
+                    where("userId", "==", user.uid),
+                    orderBy("requestedAt", "desc")
+                );
                 const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-                
-                let totalWithdrawn = 0;
                 const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
                     const data = doc.data();
-                    if (data.status === 'Completed' || data.status === 'Processing') {
-                        totalWithdrawn += data.amount;
-                    }
                     return { 
                         id: doc.id,
                         ...data,
@@ -82,17 +81,6 @@ export default function WithdrawPage() {
                     } as Withdrawal;
                 });
                 
-                // Fetch orders to factor into balance
-                const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid));
-                const ordersSnapshot = await getDocs(ordersQuery);
-                const totalSpentOnOrders = ordersSnapshot.docs
-                    .filter(doc => doc.data().status !== 'Cancelled')
-                    .reduce((sum, doc) => sum + doc.data().price, 0);
-
-                // Sort in-memory instead of in the query
-                withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
-
-                setAvailableBalance(totalEarned - totalWithdrawn - totalSpentOnOrders);
                 setRecentWithdrawals(withdrawals);
             } catch (error) {
                 console.error("Error fetching withdrawal data:", error);

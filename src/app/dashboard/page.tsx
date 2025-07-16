@@ -9,11 +9,10 @@ import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, C
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, getCountFromServer, Timestamp, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getCountFromServer } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
-import type { CashbackTransaction, Withdrawal, BannerSettings, Order } from "@/types";
-import Image from "next/image";
-import { getBannerSettings } from "../admin/actions";
+import type { BannerSettings } from "@/types";
+import { getBannerSettings, getUserBalance } from "../admin/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 
@@ -65,7 +64,7 @@ function PromoBanner() {
              
              container.appendChild(script);
         } else {
-             // If it's not a script (e.g. an iframe or div), just append it
+             // If it's not a script (e.g., an iframe or div), just append it
              container.appendChild(template.content.cloneNode(true));
         }
 
@@ -106,7 +105,10 @@ export default function UserDashboardPage() {
       if (user) {
         setIsLoading(true);
         try {
-          // Fetch approved accounts count
+          // Fetch balance using the centralized function
+          const balanceData = await getUserBalance(user.uid);
+
+          // Fetch other stats
           const accountsQuery = query(
             collection(db, "tradingAccounts"), 
             where("userId", "==", user.uid),
@@ -114,43 +116,10 @@ export default function UserDashboardPage() {
           );
           const accountsSnapshot = await getCountFromServer(accountsQuery);
           const linkedAccounts = accountsSnapshot.data().count;
-
-          // Fetch transactions to calculate earnings
-          const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid));
-          const transactionsSnapshot = await getDocs(transactionsQuery);
-          const totalEarned = transactionsSnapshot.docs.reduce((acc, doc) => acc + doc.data().cashbackAmount, 0);
-
-          // Fetch withdrawals to calculate balance and withdrawal stats
-          const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", user.uid));
-          const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
-          
-          let pendingWithdrawals = 0;
-          let completedWithdrawals = 0;
-          withdrawalsSnapshot.docs.forEach(doc => {
-              const withdrawal = doc.data() as Withdrawal;
-              if(withdrawal.status === 'Processing') {
-                  pendingWithdrawals += withdrawal.amount;
-              } else if (withdrawal.status === 'Completed') {
-                  completedWithdrawals += withdrawal.amount;
-              }
-          });
-
-          // Fetch orders to factor into balance
-            const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid));
-            const ordersSnapshot = await getDocs(ordersQuery);
-            const totalSpentOnOrders = ordersSnapshot.docs
-                .filter(doc => doc.data().status !== 'Cancelled')
-                .reduce((sum, doc) => sum + doc.data().price, 0);
-
-
-          const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals - totalSpentOnOrders;
           
           setStats({
-            availableBalance,
-            totalEarned,
+            ...balanceData,
             linkedAccounts,
-            pendingWithdrawals,
-            completedWithdrawals,
             totalReferrals: user.profile?.referrals?.length || 0,
             referralPoints: user.profile?.points || 0,
           });

@@ -27,6 +27,47 @@ async function createNotification(
 }
 
 
+// Balance Calculation
+export async function getUserBalance(userId: string) {
+    const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
+    const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', userId));
+    const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
+
+    const [transactionsSnap, withdrawalsSnap, ordersSnap] = await Promise.all([
+        getDocs(transactionsQuery),
+        getDocs(withdrawalsQuery),
+        getDocs(ordersQuery)
+    ]);
+
+    const totalEarned = transactionsSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
+    
+    let pendingWithdrawals = 0;
+    let completedWithdrawals = 0;
+    withdrawalsSnap.docs.forEach(doc => {
+        const withdrawal = doc.data() as Withdrawal;
+        if (withdrawal.status === 'Processing') {
+            pendingWithdrawals += withdrawal.amount;
+        } else if (withdrawal.status === 'Completed') {
+            completedWithdrawals += withdrawal.amount;
+        }
+    });
+
+    const totalSpentOnOrders = ordersSnap.docs
+        .filter(doc => doc.data().status !== 'Cancelled')
+        .reduce((sum, doc) => sum + doc.data().price, 0);
+    
+    const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals - totalSpentOnOrders;
+
+    return {
+        availableBalance: Number(availableBalance.toFixed(2)),
+        totalEarned: Number(totalEarned.toFixed(2)),
+        pendingWithdrawals: Number(pendingWithdrawals.toFixed(2)),
+        completedWithdrawals: Number(completedWithdrawals.toFixed(2)),
+        totalSpentOnOrders: Number(totalSpentOnOrders.toFixed(2)),
+    };
+}
+
+
 // Banner Management
 export async function getBannerSettings(): Promise<BannerSettings> {
     const docRef = doc(db, 'settings', 'banner');
@@ -366,10 +407,9 @@ export async function getOrders(): Promise<Order[]> {
 
 export async function updateOrderStatus(orderId: string, status: Order['status']) {
     try {
-        const orderRef = doc(db, 'orders', orderId);
-        
         await runTransaction(db, async (transaction) => {
             // --- ALL READS MUST HAPPEN FIRST ---
+            const orderRef = doc(db, 'orders', orderId);
             const orderSnap = await transaction.get(orderRef);
             if (!orderSnap.exists()) {
                 throw new Error("Order not found.");
@@ -399,23 +439,11 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             const productRef = doc(db, 'products', productId);
             const userRef = doc(db, 'users', userId);
             
-            const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
-            const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', userId));
-            const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
-
             // Execute all reads
-            const [
-                productSnap, 
-                userSnap,
-                transactionsSnap,
-                withdrawalsSnap,
-                ordersSnap,
-            ] = await Promise.all([
+            const [productSnap, userSnap, balanceData] = await Promise.all([
                 transaction.get(productRef),
                 transaction.get(userRef),
-                getDocs(transactionsQuery), // Cannot use transaction.get() on queries
-                getDocs(withdrawalsQuery),
-                getDocs(ordersQuery)
+                getUserBalance(userId) // Use the centralized balance function
             ]);
             
             // --- VALIDATION AND LOGIC ---
@@ -434,17 +462,7 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             }
 
             const price = product.price;
-
-            // Calculate balance based on non-transactional reads
-            const totalEarned = transactionsSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
-            const totalWithdrawn = withdrawalsSnap.docs
-                .filter(doc => doc.data().status === 'Completed' || doc.data().status === 'Processing')
-                .reduce((sum, doc) => sum + doc.data().amount, 0);
-            const totalSpent = ordersSnap.docs
-                .filter(doc => doc.data().status !== 'Cancelled')
-                .reduce((sum, doc) => sum + doc.data().price, 0);
-
-            const balance = totalEarned - totalWithdrawn - totalSpent;
+            const balance = balanceData.availableBalance;
             
             if (balance < price) {
                 return { success: false, message: 'Insufficient balance to purchase this item.' };
