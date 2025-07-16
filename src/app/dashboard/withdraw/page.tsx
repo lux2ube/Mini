@@ -2,7 +2,7 @@
 "use client";
 
 import { z } from "zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -27,7 +27,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2, Copy, Wallet, Repeat, Briefcase } from "lucide-react";
+import { Info, Loader2, Copy, Wallet, Repeat, Briefcase, Banknote } from "lucide-react";
 import type { Withdrawal, PaymentMethod, TradingAccount } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
@@ -41,16 +41,16 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { getUserBalance, getPaymentMethods } from "@/app/admin/actions";
-import { Separator } from "@/components/ui/separator";
 
-// Define a more flexible schema to handle dynamic details
 const withdrawalSchema = z.object({
     amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
     paymentMethodId: z.string({ required_error: "You must select a payment method." }),
-    details: z.record(z.string(), z.any()).optional(), // Allow any string keys for details
+    tradingAccountId: z.string().optional(),
+    details: z.record(z.string(), z.any()).optional(),
 });
 
 type FormValues = z.infer<typeof withdrawalSchema>;
+type Category = 'crypto' | 'internal_transfer' | 'trading_account';
 
 export default function WithdrawPage() {
     const { user } = useAuthContext();
@@ -62,41 +62,32 @@ export default function WithdrawPage() {
     const [recentWithdrawals, setRecentWithdrawals] = useState<Withdrawal[]>([]);
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
     const [userAccounts, setUserAccounts] = useState<TradingAccount[]>([]);
-    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+    
+    const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
 
     const form = useForm<FormValues>({
         resolver: zodResolver(withdrawalSchema),
         defaultValues: {
             amount: 0,
             paymentMethodId: '',
-            details: {}, // Ensure details is initialized as an object
+            tradingAccountId: '',
+            details: {},
         }
     });
 
-    useEffect(() => {
-        // When a new method is selected, reset form fields but keep the method ID
-        const paymentMethodId = form.getValues('paymentMethodId');
-        const newSelectedMethod = paymentMethods.find(p => p.id === paymentMethodId) || null;
-        setSelectedMethod(newSelectedMethod);
-        
-        const defaultDetails: Record<string, string> = {};
-        if (newSelectedMethod) {
-            newSelectedMethod.fields.forEach(field => {
-                defaultDetails[field.name] = '';
-            });
-             if (newSelectedMethod.type === 'trading_account') {
-                defaultDetails['tradingAccountId'] = '';
-            }
-        }
-        
+    const resetFormState = () => {
         form.reset({
             amount: 0,
-            paymentMethodId: paymentMethodId,
-            details: defaultDetails,
+            paymentMethodId: '',
+            tradingAccountId: '',
+            details: {},
         });
+    };
 
-    }, [form.watch('paymentMethodId'), paymentMethods]);
-
+    const handleCategoryChange = (category: Category | null) => {
+        setSelectedCategory(category);
+        resetFormState();
+    }
 
     const fetchData = async () => {
         if (user) {
@@ -110,10 +101,7 @@ export default function WithdrawPage() {
                 ]);
 
                 setAvailableBalance(balanceData.availableBalance);
-                
-                const enabledMethods = methodsData.filter(method => method.isEnabled);
-                setPaymentMethods(enabledMethods);
-
+                setPaymentMethods(methodsData.filter(m => m.isEnabled));
                 setUserAccounts(accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TradingAccount)));
 
                 const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
@@ -148,56 +136,59 @@ export default function WithdrawPage() {
         return {
             crypto: paymentMethods.filter(p => p.type === 'crypto'),
             internal_transfer: paymentMethods.filter(p => p.type === 'internal_transfer'),
-            trading_account: paymentMethods.filter(p => p.type === 'trading_account'),
         }
     }, [paymentMethods]);
 
+    const selectedMethod = useMemo(() => {
+        const selectedId = form.watch('paymentMethodId');
+        return paymentMethods.find(p => p.id === selectedId) || null;
+    }, [form.watch('paymentMethodId'), paymentMethods]);
+
     async function onSubmit(values: FormValues) {
-        if (!user || !selectedMethod) {
-            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in and select a method.' });
-            return;
-        }
+        if (!user || !selectedCategory) return;
         if (values.amount > availableBalance) {
             form.setError("amount", { type: "manual", message: "Withdrawal amount cannot exceed available balance."});
             return;
         }
 
-        // Manual validation for dynamic fields
-        let isValid = true;
-        const submissionDetails = values.details || {};
-        for (const field of selectedMethod.fields) {
-            const value = submissionDetails[field.name];
-            if (field.validation.required && !value) {
-                form.setError(`details.${field.name}`, { type: 'manual', message: `${field.label} is required.` });
-                isValid = false;
-            }
-        }
-        if (!isValid) return;
-
-
         setIsLoading(true);
 
-        const finalDetails = { ...submissionDetails };
-        if (selectedMethod.type === 'trading_account' && finalDetails.tradingAccountId) {
-            const account = userAccounts.find(a => a.id === finalDetails.tradingAccountId);
-            if (account) {
-                 finalDetails.accountNumber = account.accountNumber;
-                 finalDetails.broker = account.broker;
+        let payload: Omit<Withdrawal, 'id' | 'requestedAt'> = {
+            userId: user.uid,
+            amount: values.amount,
+            status: 'Processing',
+            paymentMethod: '',
+            withdrawalDetails: {},
+        };
+
+        if (selectedCategory === 'trading_account') {
+            const account = userAccounts.find(a => a.id === values.tradingAccountId);
+            if (!account) {
+                 toast({ variant: 'destructive', title: 'Error', description: 'Invalid trading account selected.' });
+                 setIsLoading(false);
+                 return;
             }
+            payload.paymentMethod = `Trading Account Transfer`;
+            payload.withdrawalDetails = {
+                broker: account.broker,
+                accountNumber: account.accountNumber,
+            };
+        } else if (selectedMethod) {
+            payload.paymentMethod = selectedMethod.name;
+            payload.withdrawalDetails = values.details || {};
+        } else {
+             toast({ variant: 'destructive', title: 'Error', description: 'Invalid payment method selected.' });
+             setIsLoading(false);
+             return;
         }
 
         try {
             await addDoc(collection(db, "withdrawals"), {
-                userId: user.uid,
-                amount: values.amount,
-                status: 'Processing',
+                ...payload,
                 requestedAt: serverTimestamp(),
-                paymentMethod: selectedMethod.name,
-                withdrawalDetails: finalDetails,
             });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
-            form.reset();
-            setSelectedMethod(null);
+            handleCategoryChange(null);
             fetchData();
         } catch (error) {
             console.error('Error submitting withdrawal: ', error);
@@ -228,35 +219,127 @@ export default function WithdrawPage() {
             </div>
         );
     }
+
+    const renderCategorySelector = () => (
+        <RadioGroup onValueChange={(value: Category) => handleCategoryChange(value)} className="space-y-3">
+             <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                <FormControl><RadioGroupItem value="crypto" id="cat-crypto" className="sr-only"/></FormControl>
+                <FormLabel htmlFor="cat-crypto" className="font-normal cursor-pointer w-full flex items-center gap-3">
+                    <Wallet className="h-5 w-5 text-muted-foreground"/>
+                    <span>Withdraw using Crypto</span>
+                </FormLabel>
+            </FormItem>
+            <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                <FormControl><RadioGroupItem value="internal_transfer" id="cat-internal" className="sr-only"/></FormControl>
+                <FormLabel htmlFor="cat-internal" className="font-normal cursor-pointer w-full flex items-center gap-3">
+                    <Repeat className="h-5 w-5 text-muted-foreground"/>
+                    <span>Internal Transfer</span>
+                </FormLabel>
+            </FormItem>
+             <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                <FormControl><RadioGroupItem value="trading_account" id="cat-trading" className="sr-only"/></FormControl>
+                <FormLabel htmlFor="cat-trading" className="font-normal cursor-pointer w-full flex items-center gap-3">
+                    <Briefcase className="h-5 w-5 text-muted-foreground"/>
+                    <span>Transfer to Trading Account</span>
+                </FormLabel>
+            </FormItem>
+        </RadioGroup>
+    );
+
+    const renderPaymentMethodSelector = (methods: PaymentMethod[]) => (
+         <FormField
+            control={form.control}
+            name="paymentMethodId"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="text-base font-semibold">2. Select Method</FormLabel>
+                    <FormControl>
+                        <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3">
+                        {methods.map(method => (
+                            <FormItem key={method.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                                <FormControl><RadioGroupItem value={method.id} id={method.id} className="sr-only"/></FormControl>
+                                <FormLabel htmlFor={method.id} className="font-normal cursor-pointer w-full">
+                                    <p className="font-medium">{method.name}</p>
+                                    <p className="text-xs text-muted-foreground">{method.description}</p>
+                                </FormLabel>
+                            </FormItem>
+                        ))}
+                        </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    );
     
-    const renderMethodGroup = (title: string, icon: React.ReactNode, methods: PaymentMethod[]) => {
-        if (methods.length === 0) return null;
-        return (
-             <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    {icon}
-                    <h3 className="font-semibold">{title}</h3>
-                </div>
-                <RadioGroup 
-                    onValueChange={(value) => {
-                        form.setValue('paymentMethodId', value);
-                    }} 
-                    value={form.watch('paymentMethodId')} 
-                    className="flex flex-col space-y-2"
-                >
-                    {methods.map(method => (
-                        <FormItem key={method.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                            <FormControl><RadioGroupItem value={method.id} id={method.id} className="sr-only"/></FormControl>
-                            <FormLabel htmlFor={method.id} className="font-normal cursor-pointer w-full">
-                                <p className="font-medium">{method.name}</p>
-                                <p className="text-xs text-muted-foreground">{method.description}</p>
-                            </FormLabel>
+    const renderTradingAccountSelector = () => (
+         <FormField
+            control={form.control}
+            name="tradingAccountId"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="text-base font-semibold">2. Select Account</FormLabel>
+                     <FormControl>
+                        <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3">
+                        {userAccounts.map(account => (
+                            <FormItem key={account.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                                <FormControl><RadioGroupItem value={account.id} id={account.id} className="sr-only"/></FormControl>
+                                <FormLabel htmlFor={account.id} className="font-normal cursor-pointer w-full">
+                                    <p className="font-medium">{account.broker}</p>
+                                    <p className="text-xs text-muted-foreground">{account.accountNumber}</p>
+                                </FormLabel>
+                            </FormItem>
+                        ))}
+                        </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+    );
+
+    const renderDetailsForm = () => (
+        <div className="space-y-4">
+             <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Amount (USD)</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                                <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                                <Input type="number" placeholder="0.00" {...field} className="pl-10" />
+                                <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-auto py-0.5 px-2" onClick={() => form.setValue('amount', availableBalance)}>Max</Button>
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            {selectedMethod?.fields.map((customField) => (
+                <FormField
+                    key={customField.name}
+                    control={form.control}
+                    name={`details.${customField.name}`}
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>{customField.label}</FormLabel>
+                            <FormControl>
+                                <Input 
+                                    type={customField.type} 
+                                    placeholder={customField.placeholder} 
+                                    {...field}
+                                    value={field.value || ''}
+                                />
+                            </FormControl>
+                            <FormMessage />
                         </FormItem>
-                    ))}
-                </RadioGroup>
-            </div>
-        )
-    }
+                    )}
+                />
+            ))}
+        </div>
+    );
 
     return (
         <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
@@ -276,104 +359,39 @@ export default function WithdrawPage() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Request Withdrawal</CardTitle>
+                            <CardTitle>1. Select Category</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                             <FormField
-                                control={form.control}
-                                name="paymentMethodId"
-                                render={({ field }) => (
-                                    <FormItem className="space-y-6">
-                                        <FormLabel className="text-base font-semibold">1. Select Payment Method</FormLabel>
-                                         <FormControl>
-                                            <div className="space-y-6">
-                                                {renderMethodGroup("Crypto", <Wallet className="h-5 w-5 text-muted-foreground" />, categorizedMethods.crypto)}
-                                                {renderMethodGroup("Internal Transfer", <Repeat className="h-5 w-5 text-muted-foreground" />, categorizedMethods.internal_transfer)}
-                                                {renderMethodGroup("To Approved Trading Account", <Briefcase className="h-5 w-5 text-muted-foreground" />, categorizedMethods.trading_account)}
-                                            </div>
-                                         </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-
-                            {selectedMethod && (
-                                <div className="space-y-4 pt-4 border-t">
-                                     <h3 className="text-base font-semibold">2. Enter Details</h3>
-                                     <FormField
-                                        control={form.control}
-                                        name="amount"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Amount (USD)</FormLabel>
-                                                <FormControl>
-                                                    <div className="relative">
-                                                        <Input type="number" placeholder="0.00" {...field} />
-                                                        <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-auto py-0.5 px-2" onClick={() => form.setValue('amount', availableBalance)}>Max</Button>
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    {selectedMethod.type === 'trading_account' && (
-                                        <FormField
-                                            control={form.control}
-                                            name="details.tradingAccountId"
-                                            render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Select Account</FormLabel>
-                                                <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-2">
-                                                    {userAccounts.map(acc => (
-                                                        <FormItem key={acc.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                                                            <FormControl>
-                                                                <RadioGroupItem value={acc.id} id={`acc-${acc.id}`} className="sr-only"/>
-                                                            </FormControl>
-                                                            <FormLabel htmlFor={`acc-${acc.id}`} className="font-normal cursor-pointer w-full">
-                                                                <p className="font-medium">{acc.broker}</p>
-                                                                <p className="text-xs text-muted-foreground">{acc.accountNumber}</p>
-                                                            </FormLabel>
-                                                        </FormItem>
-                                                    ))}
-                                                </RadioGroup>
-                                                <FormMessage />
-                                            </FormItem>
-                                            )}
-                                        />
-                                    )}
-
-                                    {selectedMethod.fields.map((customField) => {
-                                        const fieldName = `details.${customField.name}` as const;
-                                        return (
-                                            <FormField
-                                                key={customField.name}
-                                                control={form.control}
-                                                name={fieldName}
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel>{customField.label}</FormLabel>
-                                                        <FormControl>
-                                                            <Input 
-                                                                type={customField.type} 
-                                                                placeholder={customField.placeholder} 
-                                                                {...field}
-                                                                value={form.watch(fieldName) || ''} // THE FIX
-                                                            />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        )
-                                    })}
-                                </div>
-                            )}
+                        <CardContent>
+                            {renderCategorySelector()}
                         </CardContent>
                     </Card>
-                    <Button type="submit" disabled={isLoading || !selectedMethod} className="w-full">
+
+                    {selectedCategory && (
+                         <Card>
+                            <CardContent className="pt-6 space-y-4">
+                                {selectedCategory === 'crypto' && renderPaymentMethodSelector(categorizedMethods.crypto)}
+                                {selectedCategory === 'internal_transfer' && renderPaymentMethodSelector(categorizedMethods.internal_transfer)}
+                                {selectedCategory === 'trading_account' && renderTradingAccountSelector()}
+
+                                {((selectedCategory !== 'trading_account' && selectedMethod) || (selectedCategory === 'trading_account' && form.watch('tradingAccountId'))) && (
+                                    <>
+                                        <h3 className="text-base font-semibold pt-4 border-t">3. Enter Amount</h3>
+                                        {renderDetailsForm()}
+                                    </>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
+                    
+                    <Button type="submit" disabled={isLoading || !selectedCategory} className="w-full">
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Submit Request
                     </Button>
+                     {selectedCategory && (
+                        <Button type="button" variant="ghost" onClick={() => handleCategoryChange(null)} className="w-full">
+                            Back to Categories
+                        </Button>
+                    )}
                 </form>
             </Form>
 
@@ -439,8 +457,8 @@ export default function WithdrawPage() {
                 <AlertDescription>
                     <ul className="list-disc list-inside space-y-1 text-xs">
                         <li>Withdrawals are processed within 24 hours.</li>
-                        <li>Ensure the wallet address is correct.</li>
-                        <li>Funds sent to a wrong address cannot be recovered.</li>
+                        <li>Ensure the information provided is correct.</li>
+                        <li>Funds sent to a wrong destination cannot be recovered.</li>
                     </ul>
                 </AlertDescription>
             </Alert>

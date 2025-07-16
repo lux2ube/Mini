@@ -104,7 +104,7 @@ export interface PaymentMethod {
     description: string;
     isEnabled: boolean;
     fields: PaymentMethodField[];
-    type: 'crypto' | 'internal_transfer' | 'trading_account';
+    type: 'crypto' | 'internal_transfer'; // Removed 'trading_account' as it's a separate category now
 }
 
 
@@ -116,13 +116,8 @@ export interface Withdrawal {
     userId: string;
     amount: number;
     status: 'Processing' | 'Completed' | 'Failed';
-    // Deprecated fields
-    network?: 'bep20' | 'trc20';
-    walletAddress?: string;
-    // New fields
-    paymentMethod: string; // Name of the payment method, e.g., "USDT (TRC20)"
-    withdrawalDetails: Record<string, any>; // Stores field values, e.g., { walletAddress: '0x123...' }
-    // Timestamps
+    paymentMethod: string; // Name of the payment method, e.g., "USDT (TRC20)" or "Trading Account Transfer"
+    withdrawalDetails: Record<string, any>; // Stores field values, e.g., { walletAddress: '0x123...' } or { broker: 'Exness', accountNumber: '12345' }
     requestedAt: Date;
     completedAt?: Date;
     txId?: string; // Transaction ID from the blockchain or internal reference

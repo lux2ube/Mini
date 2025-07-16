@@ -440,33 +440,49 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             const productRef = doc(db, 'products', productId);
             const userRef = doc(db, 'users', userId);
             
-            // Execute all reads
-            const [productSnap, userSnap] = await Promise.all([
-                transaction.get(productRef),
-                transaction.get(userRef),
-            ]);
+            const productSnap = await transaction.get(productRef);
+            const userSnap = await transaction.get(userRef);
 
-            const balanceData = await getUserBalance(userId); // Centralized balance function is not transaction-aware, so call it outside transaction for reads.
+            if (!productSnap.exists()) throw new Error("Product not found.");
+            if (!userSnap.exists()) throw new Error("User not found.");
             
-            // --- VALIDATION AND LOGIC ---
-            if (!productSnap.exists()) {
-                throw new Error("Product not found.");
-            }
-            if (!userSnap.exists()) {
-                throw new Error("User not found.");
-            }
-
             const product = productSnap.data() as Product;
             const userData = userSnap.data();
 
+            // Perform balance check within transaction for consistency
+            const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
+            const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', userId));
+            const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
+
+            const [transactionsSnap, withdrawalsSnap, ordersSnap] = await Promise.all([
+                transaction.get(transactionsQuery),
+                transaction.get(withdrawalsQuery),
+                transaction.get(ordersQuery)
+            ]);
+
+            const totalEarned = transactionsSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
+            let pendingWithdrawals = 0;
+            let completedWithdrawals = 0;
+            withdrawalsSnap.docs.forEach(doc => {
+                const withdrawal = doc.data() as Withdrawal;
+                if (withdrawal.status === 'Processing') {
+                    pendingWithdrawals += withdrawal.amount;
+                } else if (withdrawal.status === 'Completed') {
+                    completedWithdrawals += withdrawal.amount;
+                }
+            });
+            const totalSpentOnOrders = ordersSnap.docs
+                .filter(doc => doc.data().status !== 'Cancelled')
+                .reduce((sum, doc) => sum + doc.data().price, 0);
+            
+            const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals - totalSpentOnOrders;
+
+
+            // --- VALIDATION AND LOGIC ---
             if (product.stock <= 0) {
                 return { success: false, message: 'This item is out of stock.' };
             }
-
-            const price = product.price;
-            const balance = balanceData.availableBalance;
-            
-            if (balance < price) {
+            if (availableBalance < product.price) {
                 return { success: false, message: 'Insufficient balance to purchase this item.' };
             }
 
@@ -481,7 +497,7 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
                 productId,
                 productName: product.name,
                 productImage: product.imageUrl,
-                price,
+                price: product.price,
                 deliveryPhoneNumber: phoneNumber,
                 status: 'Pending',
                 createdAt: serverTimestamp(),
