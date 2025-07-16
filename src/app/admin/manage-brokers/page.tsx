@@ -88,6 +88,12 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
       }
   }
 
+  // Safely access broker name and risk level for both old and new data structures
+  const brokerName = broker.basicInfo?.broker_name || broker.name;
+  const riskLevel = broker.regulation?.risk_level;
+  const wikifxScore = broker.reputation?.wikifx_score;
+
+
   return (
     <TableRow ref={setNodeRef} style={style} {...attributes}>
       <TableCell className="w-10">
@@ -98,17 +104,19 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
       <TableCell>
         <Image
           src={broker.logoUrl}
-          alt={`${broker.basicInfo.broker_name} logo`}
+          alt={`${brokerName} logo`}
           width={32}
           height={32}
           className="rounded-md border p-0.5 bg-white"
           data-ai-hint="logo"
         />
       </TableCell>
-      <TableCell className="font-medium">{broker.basicInfo.broker_name}</TableCell>
-      <TableCell><Badge variant="outline" className="capitalize">{broker.regulation.risk_level}</Badge></TableCell>
+      <TableCell className="font-medium">{brokerName}</TableCell>
+      <TableCell>
+        {riskLevel ? <Badge variant="outline" className="capitalize">{riskLevel}</Badge> : 'N/A'}
+      </TableCell>
       <TableCell className="flex items-center gap-1">
-          {broker.reputation.wikifx_score} <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+          {wikifxScore ?? 'N/A'} <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
       </TableCell>
       <TableCell className="space-x-2 text-right">
         <BrokerFormDialog

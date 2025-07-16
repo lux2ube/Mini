@@ -13,6 +13,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -35,85 +36,85 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "../ui/separator";
 
 const formSchema = z.object({
-  logoUrl: z.string().url("Must be a valid URL."),
+  logoUrl: z.string().url("Must be a valid URL.").optional().default("https://placehold.co/100x100.png"),
   
   basicInfo: z.object({
     broker_name: z.string().min(2, "Broker name is required."),
-    group_entity: z.string().min(2, "Group entity is required."),
-    founded_year: z.coerce.number().min(1900, "Invalid year.").max(new Date().getFullYear()),
-    headquarters: z.string().min(2, "Headquarters is required."),
-    CEO: z.string().min(2, "CEO name is required."),
+    group_entity: z.string().optional().default(""),
+    founded_year: z.coerce.number().optional().default(new Date().getFullYear()),
+    headquarters: z.string().optional().default(""),
+    CEO: z.string().optional().default(""),
   }),
   regulation: z.object({
     regulated_in: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
     regulator_name: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
-    license_type: z.string().min(2, "License type is required."),
-    regulation_status: z.enum(['Active', 'Revoked', 'Expired', 'Unregulated']),
-    offshore_regulation: z.boolean().default(false),
-    risk_level: z.enum(['Low', 'Medium', 'High', 'Suspicious', 'Unregulated']),
+    license_type: z.string().optional().default(""),
+    regulation_status: z.enum(['Active', 'Revoked', 'Expired', 'Unregulated']).optional().default('Unregulated'),
+    offshore_regulation: z.boolean().optional().default(false),
+    risk_level: z.enum(['Low', 'Medium', 'High', 'Suspicious', 'Unregulated']).optional().default('Unregulated'),
   }),
   tradingConditions: z.object({
-      broker_type: z.enum(['Market Maker', 'ECN', 'STP', 'Hybrid']),
+      broker_type: z.enum(['Market Maker', 'ECN', 'STP', 'Hybrid']).optional().default('Hybrid'),
       account_types: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
-      swap_free: z.boolean().default(false),
-      max_leverage: z.string().min(2, "Max leverage required."),
-      min_deposit: z.coerce.number().min(0),
-      spread_type: z.enum(['Fixed', 'Variable']),
-      min_spread: z.coerce.number().min(0),
-      commission_per_lot: z.coerce.number().min(0),
-      execution_speed: z.string().min(1),
+      swap_free: z.boolean().optional().default(false),
+      max_leverage: z.string().optional().default(""),
+      min_deposit: z.coerce.number().optional().default(0),
+      spread_type: z.enum(['Fixed', 'Variable']).optional().default('Variable'),
+      min_spread: z.coerce.number().optional().default(0),
+      commission_per_lot: z.coerce.number().optional().default(0),
+      execution_speed: z.string().optional().default(""),
   }),
   platforms: z.object({
       platforms_supported: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
-      mt4_license_type: z.enum(['Full License', 'White Label', 'None']),
-      mt5_license_type: z.enum(['Full License', 'White Label', 'None']),
-      custom_platform: z.boolean().default(false),
+      mt4_license_type: z.enum(['Full License', 'White Label', 'None']).optional().default('None'),
+      mt5_license_type: z.enum(['Full License', 'White Label', 'None']).optional().default('None'),
+      custom_platform: z.boolean().optional().default(false),
   }),
   instruments: z.object({
-      forex_pairs: z.string().min(1),
-      crypto_trading: z.boolean().default(false),
-      stocks: z.boolean().default(false),
-      commodities: z.boolean().default(false),
-      indices: z.boolean().default(false),
+      forex_pairs: z.string().optional().default(""),
+      crypto_trading: z.boolean().optional().default(false),
+      stocks: z.boolean().optional().default(false),
+      commodities: z.boolean().optional().default(false),
+      indices: z.boolean().optional().default(false),
   }),
   depositsWithdrawals: z.object({
       payment_methods: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
-      min_withdrawal: z.coerce.number().min(0),
-      withdrawal_speed: z.string().min(1),
-      deposit_fees: z.boolean().default(false),
-      withdrawal_fees: z.boolean().default(false),
+      min_withdrawal: z.coerce.number().optional().default(0),
+      withdrawal_speed: z.string().optional().default(""),
+      deposit_fees: z.boolean().optional().default(false),
+      withdrawal_fees: z.boolean().optional().default(false),
   }),
   cashback: z.object({
-      cashback_per_lot: z.coerce.number().min(0),
+      cashback_per_lot: z.coerce.number().optional().default(0),
       cashback_account_type: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
-      cashback_frequency: z.enum(['Daily', 'Weekly', 'Monthly']),
+      cashback_frequency: z.enum(['Daily', 'Weekly', 'Monthly']).optional().default('Daily'),
       rebate_method: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
-      affiliate_program_link: z.string().url("Must be a valid URL."),
+      affiliate_program_link: z.string().url("Must be a valid URL.").optional().default("https://example.com"),
   }),
   globalReach: z.object({
       business_region: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
-      global_presence: z.string().min(1),
+      global_presence: z.string().optional().default(""),
       languages_supported: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
       customer_support_channels: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([]),
   }),
   reputation: z.object({
-      wikifx_score: z.coerce.number().min(0).max(10),
-      trustpilot_rating: z.coerce.number().min(0).max(5),
-      reviews_count: z.coerce.number().min(0),
-      verified_users: z.coerce.number().min(0),
+      wikifx_score: z.coerce.number().optional().default(0),
+      trustpilot_rating: z.coerce.number().optional().default(0),
+      reviews_count: z.coerce.number().optional().default(0),
+      verified_users: z.coerce.number().optional().default(0),
   }),
   additionalFeatures: z.object({
-      education_center: z.boolean().default(false),
-      copy_trading: z.boolean().default(false),
-      demo_account: z.boolean().default(false),
-      trading_contests: z.boolean().default(false),
-      regulatory_alerts: z.string().optional(),
+      education_center: z.boolean().optional().default(false),
+      copy_trading: z.boolean().optional().default(false),
+      demo_account: z.boolean().optional().default(false),
+      trading_contests: z.boolean().optional().default(false),
+      regulatory_alerts: z.string().optional().default(""),
   }),
-  // Legacy fields
-  name: z.string(),
-  description: z.string(),
-  category: z.enum(['forex', 'crypto', 'other']),
-  rating: z.coerce.number(),
+  // Legacy fields - for data migration and compatibility
+  name: z.string().optional(),
+  description: z.string().optional(),
+  category: z.enum(['forex', 'crypto', 'other']).optional().default('forex'),
+  rating: z.coerce.number().optional(),
 });
 
 type BrokerFormValues = z.infer<typeof formSchema>;
@@ -126,8 +127,69 @@ interface BrokerFormDialogProps {
   setIsOpen: (open: boolean) => void;
 }
 
-// Helper to convert array back to comma-separated string for editing
 const arrayToString = (arr: string[] | undefined) => arr?.join(', ') || '';
+
+// Function to safely get default values for the form, handling old and new data structures
+const getSafeDefaultValues = (broker?: Broker | null): Partial<BrokerFormValues> => {
+    if (!broker) {
+        // Return default values for a new broker
+        return {
+          logoUrl: "https://placehold.co/100x100.png",
+          basicInfo: { broker_name: "", group_entity: "", founded_year: new Date().getFullYear(), headquarters: "", CEO: "" },
+          regulation: { regulated_in: [] as any, regulator_name: [] as any, license_type: "", regulation_status: 'Unregulated', offshore_regulation: false, risk_level: 'Unregulated' },
+          tradingConditions: { broker_type: 'Hybrid', account_types: [] as any, swap_free: false, max_leverage: "1:500", min_deposit: 10, spread_type: 'Variable', min_spread: 0, commission_per_lot: 0, execution_speed: "" },
+          platforms: { platforms_supported: [] as any, mt4_license_type: 'None', mt5_license_type: 'None', custom_platform: false },
+          instruments: { forex_pairs: "", crypto_trading: false, stocks: false, commodities: false, indices: false },
+          depositsWithdrawals: { payment_methods: [] as any, min_withdrawal: 0, withdrawal_speed: "", deposit_fees: false, withdrawal_fees: false },
+          cashback: { cashback_per_lot: 0, cashback_account_type: [] as any, cashback_frequency: 'Daily', rebate_method: [] as any, affiliate_program_link: "https://example.com" },
+          globalReach: { business_region: [] as any, global_presence: "", languages_supported: [] as any, customer_support_channels: [] as any },
+          reputation: { wikifx_score: 0, trustpilot_rating: 0, reviews_count: 0, verified_users: 0 },
+          additionalFeatures: { education_center: false, copy_trading: false, demo_account: false, trading_contests: false, regulatory_alerts: "" },
+          category: 'forex',
+        };
+    }
+
+    // If it's the new structure, format array fields and return
+    if (broker.basicInfo) {
+        return {
+            ...broker,
+            regulation: { ...broker.regulation, regulated_in: arrayToString(broker.regulation.regulated_in) as any, regulator_name: arrayToString(broker.regulation.regulator_name) as any },
+            tradingConditions: { ...broker.tradingConditions, account_types: arrayToString(broker.tradingConditions.account_types) as any },
+            platforms: { ...broker.platforms, platforms_supported: arrayToString(broker.platforms.platforms_supported) as any },
+            depositsWithdrawals: { ...broker.depositsWithdrawals, payment_methods: arrayToString(broker.depositsWithdrawals.payment_methods) as any },
+            cashback: { ...broker.cashback, cashback_account_type: arrayToString(broker.cashback.cashback_account_type) as any, rebate_method: arrayToString(broker.cashback.rebate_method) as any },
+            globalReach: { ...broker.globalReach, business_region: arrayToString(broker.globalReach.business_region) as any, languages_supported: arrayToString(broker.globalReach.languages_supported) as any, customer_support_channels: arrayToString(broker.globalReach.customer_support_channels) as any },
+        };
+    }
+
+    // Fallback for old data structure: map old fields to new structure
+    return {
+        logoUrl: broker.logoUrl,
+        basicInfo: {
+            broker_name: broker.name,
+            group_entity: "",
+            founded_year: new Date().getFullYear(),
+            headquarters: "",
+            CEO: "",
+        },
+        reputation: {
+            wikifx_score: (broker.rating ?? 0) * 2,
+            trustpilot_rating: 0,
+            reviews_count: 0,
+            verified_users: 0,
+        },
+        category: broker.category,
+        // Set other fields to default empty values
+        regulation: { regulated_in: [] as any, regulator_name: [] as any, license_type: "", regulation_status: 'Unregulated', offshore_regulation: false, risk_level: 'Unregulated' },
+        tradingConditions: { broker_type: 'Hybrid', account_types: [] as any, swap_free: false, max_leverage: "1:500", min_deposit: 10, spread_type: 'Variable', min_spread: 0, commission_per_lot: 0, execution_speed: "" },
+        platforms: { platforms_supported: [] as any, mt4_license_type: 'None', mt5_license_type: 'None', custom_platform: false },
+        instruments: { forex_pairs: "", crypto_trading: false, stocks: false, commodities: false, indices: false },
+        depositsWithdrawals: { payment_methods: [] as any, min_withdrawal: 0, withdrawal_speed: "", deposit_fees: false, withdrawal_fees: false },
+        cashback: { cashback_per_lot: 0, cashback_account_type: [] as any, cashback_frequency: 'Daily', rebate_method: [] as any, affiliate_program_link: "https://example.com" },
+        globalReach: { business_region: [] as any, global_presence: "", languages_supported: [] as any, customer_support_channels: [] as any },
+        additionalFeatures: { education_center: false, copy_trading: false, demo_account: false, trading_contests: false, regulatory_alerts: "" },
+    };
+};
 
 export function BrokerFormDialog({
   broker,
@@ -141,39 +203,17 @@ export function BrokerFormDialog({
 
   const form = useForm<BrokerFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: broker
-      ? {
-        ...broker,
-        regulation: { ...broker.regulation, regulated_in: arrayToString(broker.regulation.regulated_in) as any, regulator_name: arrayToString(broker.regulation.regulator_name) as any },
-        tradingConditions: { ...broker.tradingConditions, account_types: arrayToString(broker.tradingConditions.account_types) as any },
-        platforms: { ...broker.platforms, platforms_supported: arrayToString(broker.platforms.platforms_supported) as any },
-        depositsWithdrawals: { ...broker.depositsWithdrawals, payment_methods: arrayToString(broker.depositsWithdrawals.payment_methods) as any },
-        cashback: { ...broker.cashback, cashback_account_type: arrayToString(broker.cashback.cashback_account_type) as any, rebate_method: arrayToString(broker.cashback.rebate_method) as any },
-        globalReach: { ...broker.globalReach, business_region: arrayToString(broker.globalReach.business_region) as any, languages_supported: arrayToString(broker.globalReach.languages_supported) as any, customer_support_channels: arrayToString(broker.globalReach.customer_support_channels) as any },
-      }
-      : {
-          basicInfo: { broker_name: "", group_entity: "", founded_year: new Date().getFullYear(), headquarters: "", CEO: "" },
-          regulation: { regulated_in: [] as any, regulator_name: [] as any, license_type: "", regulation_status: 'Unregulated', offshore_regulation: false, risk_level: 'Unregulated' },
-          tradingConditions: { broker_type: 'Hybrid', account_types: [] as any, swap_free: false, max_leverage: "1:500", min_deposit: 10, spread_type: 'Variable', min_spread: 0, commission_per_lot: 0, execution_speed: "" },
-          platforms: { platforms_supported: [] as any, mt4_license_type: 'None', mt5_license_type: 'None', custom_platform: false },
-          instruments: { forex_pairs: "", crypto_trading: false, stocks: false, commodities: false, indices: false },
-          depositsWithdrawals: { payment_methods: [] as any, min_withdrawal: 0, withdrawal_speed: "", deposit_fees: false, withdrawal_fees: false },
-          cashback: { cashback_per_lot: 0, cashback_account_type: [] as any, cashback_frequency: 'Daily', rebate_method: [] as any, affiliate_program_link: "" },
-          globalReach: { business_region: [] as any, global_presence: "", languages_supported: [] as any, customer_support_channels: [] as any },
-          reputation: { wikifx_score: 0, trustpilot_rating: 0, reviews_count: 0, verified_users: 0 },
-          additionalFeatures: { education_center: false, copy_trading: false, demo_account: false, trading_contests: false, regulatory_alerts: "" },
-        },
+    defaultValues: getSafeDefaultValues(broker)
   });
 
   const onSubmit = async (values: BrokerFormValues) => {
     setIsSubmitting(true);
-    // Populate legacy fields for compatibility
-    const finalValues = {
+    // Populate legacy fields for compatibility during transition
+    const finalValues: any = {
         ...values,
         name: values.basicInfo.broker_name,
         description: `Founded in ${values.basicInfo.founded_year}, headquartered in ${values.basicInfo.headquarters}.`,
-        category: 'forex' as const, // temp
-        rating: Math.round(values.reputation.wikifx_score / 2),
+        rating: Math.round((values.reputation?.wikifx_score ?? 0) / 2),
     };
 
     try {
@@ -222,6 +262,7 @@ export function BrokerFormDialog({
                 <AccordionTrigger>Section 1: Basic Broker Information</AccordionTrigger>
                 <AccordionContent className="space-y-4">
                   <FormField control={form.control} name="logoUrl" render={({ field }) => (<FormItem><FormLabel>Logo URL</FormLabel><FormControl><Input placeholder="https://placehold.co/100x100.png" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={form.control} name="category" render={({ field }) => (<FormItem><FormLabel>Category</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="forex">Forex</SelectItem><SelectItem value="crypto">Crypto</SelectItem><SelectItem value="other">Other</SelectItem></SelectContent></Select><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="basicInfo.broker_name" render={({ field }) => (<FormItem><FormLabel>Broker Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="basicInfo.group_entity" render={({ field }) => (<FormItem><FormLabel>Parent Company</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="basicInfo.founded_year" render={({ field }) => (<FormItem><FormLabel>Year Founded</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>

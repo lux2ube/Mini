@@ -111,7 +111,7 @@ export default function BrokerDetailPage() {
       // Check for duplicate account
       const q = query(
         collection(db, 'tradingAccounts'),
-        where('broker', '==', broker.name),
+        where('broker', '==', broker.basicInfo.broker_name),
         where('accountNumber', '==', data.accountNumber)
       );
       const querySnapshot = await getDocs(q);
@@ -128,7 +128,7 @@ export default function BrokerDetailPage() {
 
       await addDoc(collection(db, 'tradingAccounts'), {
         userId: user.uid,
-        broker: broker.name,
+        broker: broker.basicInfo.broker_name,
         accountNumber: data.accountNumber,
         status: 'Pending',
         createdAt: serverTimestamp(),
@@ -179,15 +179,15 @@ export default function BrokerDetailPage() {
           <div className="flex flex-col items-start gap-4">
             <Image
                 src={broker.logoUrl}
-                alt={`${broker.name} logo`}
+                alt={`${broker.basicInfo.broker_name} logo`}
                 width={48}
                 height={48}
                 className="w-12 h-12 object-contain rounded-lg border p-1 bg-background flex-shrink-0"
                 data-ai-hint="logo"
               />
             <div className="flex-1">
-              <h1 className="text-lg font-bold font-headline">{broker.name}</h1>
-              <p className="text-xs text-muted-foreground">{broker.description}</p>
+              <h1 className="text-lg font-bold font-headline">{broker.basicInfo.broker_name}</h1>
+              <p className="text-xs text-muted-foreground">{`Founded in ${broker.basicInfo.founded_year}, based in ${broker.basicInfo.headquarters}`}</p>
             </div>
           </div>
         </CardContent>
@@ -216,7 +216,7 @@ export default function BrokerDetailPage() {
       <FormProvider {...form}>
         <form onSubmit={form.handleSubmit(processForm)} className="space-y-4">
             <Card>
-                {currentStep === 1 && <Step1 brokerName={broker.name} />}
+                {currentStep === 1 && <Step1 brokerName={broker.basicInfo.broker_name} />}
                 {currentStep === 2 && <Step2 hasAccount={hasAccountValue} broker={broker} />}
                 {currentStep === 3 && <Step3 />}
             </Card>
@@ -274,6 +274,12 @@ function Step1({ brokerName }: { brokerName: string }) {
 }
 
 function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker: Broker }) {
+    // Fallback to legacy instructions if new structure doesn't exist.
+    const description = broker.instructions?.description || "Follow the link to open a new account.";
+    const link = broker.instructions?.link || broker.cashback.affiliate_program_link;
+    const linkText = broker.instructions?.linkText || `Open an account with ${broker.basicInfo.broker_name}`;
+    const existingAccountInstructions = broker.existingAccountInstructions || "Please contact support to link your existing account under our partner network.";
+
     return (
         <>
             <CardHeader>
@@ -286,10 +292,10 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
                         <UserPlus className="h-4 w-4" />
                         <AlertTitle>Create New Account</AlertTitle>
                         <AlertDescription className="space-y-4">
-                            <p className="text-xs">{broker.instructions.description}</p>
+                            <p className="text-xs">{description}</p>
                             <Button asChild size="sm" className="w-full">
-                                <a href={broker.instructions.link} target="_blank" rel="noopener noreferrer">
-                                    {broker.instructions.linkText} <ExternalLink className="ml-2 h-4 w-4" />
+                                <a href={link} target="_blank" rel="noopener noreferrer">
+                                    {linkText} <ExternalLink className="ml-2 h-4 w-4" />
                                 </a>
                             </Button>
                         </AlertDescription>
@@ -300,7 +306,7 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
                         <Info className="h-4 w-4" />
                         <AlertTitle>Important: Link Existing Account</AlertTitle>
                         <AlertDescription>
-                            <p className="text-xs">{broker.existingAccountInstructions}</p>
+                            <p className="text-xs">{existingAccountInstructions}</p>
                         </AlertDescription>
                     </Alert>
                 )}
