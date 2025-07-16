@@ -31,7 +31,7 @@ import { Info, Loader2, Copy } from "lucide-react";
 import type { Withdrawal } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp, orderBy } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -70,15 +70,15 @@ export default function WithdrawPage() {
                 
                 let totalWithdrawn = 0;
                 const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
-                    const data = doc.data() as Omit<Withdrawal, 'id' | 'requestedAt'> & { requestedAt: Timestamp, completedAt?: Timestamp };
+                    const data = doc.data();
                     if (data.status === 'Completed' || data.status === 'Processing') {
                         totalWithdrawn += data.amount;
                     }
                     return { 
                         id: doc.id,
                         ...data,
-                        requestedAt: data.requestedAt.toDate(),
-                        completedAt: data.completedAt ? data.completedAt.toDate() : undefined,
+                        requestedAt: (data.requestedAt as Timestamp).toDate(),
+                        completedAt: data.completedAt ? (data.completedAt as Timestamp).toDate() : undefined,
                     } as Withdrawal;
                 });
                 

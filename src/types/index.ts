@@ -17,7 +17,7 @@ export interface UserProfile {
     email: string;
     name: string;
     role: 'user' | 'admin';
-    createdAt: any;
+    createdAt: Date;
     // Referral fields
     referralCode: string;
     referredBy?: string; // UID of the user who referred this person
@@ -58,7 +58,7 @@ export interface TradingAccount {
     broker: string;
     accountNumber: string;
     status: 'Pending' | 'Approved' | 'Rejected';
-    createdAt: any;
+    createdAt: Date;
 }
 
 /**
@@ -70,7 +70,7 @@ export interface CashbackTransaction {
     accountId: string; // Reference to the TradingAccount document ID
     accountNumber: string;
     broker: string;
-    date: any;
+    date: Date;
     tradeDetails: string; // e.g., "Trade 1.5 lots EURUSD"
     cashbackAmount: number;
     // Optional referral fields
@@ -89,7 +89,7 @@ export interface Withdrawal {
     status: 'Processing' | 'Completed' | 'Failed';
     network: 'bep20' | 'trc20';
     walletAddress: string;
-    requestedAt: any;
-    completedAt?: any;
+    requestedAt: Date;
+    completedAt?: Date;
     txId?: string; // Transaction ID from the blockchain
 }

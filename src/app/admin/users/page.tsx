@@ -36,12 +36,7 @@ export default function ManageUsersPage() {
                     };
                 });
 
-                enriched.sort((a, b) => {
-                    // Handle both Timestamp and Date objects
-                    const timeA = a.createdAt && typeof a.createdAt.toMillis === 'function' ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
-                    const timeB = b.createdAt && typeof b.createdAt.toMillis === 'function' ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
-                    return timeB - timeA;
-                });
+                enriched.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
                 setUsers(enriched);
             } catch (error) {
                 console.error("Failed to fetch users:", error);
@@ -64,15 +59,12 @@ export default function ManageUsersPage() {
         );
     }, [searchQuery, users]);
 
-    const getSafeDate = (timestamp: any) => {
-        if (!timestamp) return '-';
-        if (typeof timestamp.toDate === 'function') {
-            return format(timestamp.toDate(), 'PP');
+    const getSafeDate = (date: Date) => {
+        try {
+            return format(date, 'PP');
+        } catch {
+            return '-';
         }
-        if (timestamp instanceof Date) {
-            return format(timestamp, 'PP');
-        }
-        return '-';
     }
 
 

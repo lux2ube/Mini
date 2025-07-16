@@ -30,15 +30,10 @@ export default function MyAccountsPage() {
         const querySnapshot = await getDocs(q);
         const fetchedAccounts = querySnapshot.docs.map(doc => {
           const data = doc.data();
-          // Ensure createdAt is a Date object
-          const createdAt = data.createdAt && typeof data.createdAt.toDate === 'function' 
-            ? data.createdAt.toDate() 
-            : new Date();
-          
           return {
             id: doc.id,
             ...data,
-            createdAt,
+            createdAt: (data.createdAt as Timestamp).toDate(),
           } as TradingAccount;
         });
 
@@ -53,7 +48,9 @@ export default function MyAccountsPage() {
       }
     };
 
-    fetchAccounts();
+    if (user) {
+        fetchAccounts();
+    }
   }, [user]);
 
   if (isLoading) {

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { db } from "@/lib/firebase/config";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, Timestamp } from "firebase/firestore";
 import type { UserProfile } from "@/types";
 import { format } from 'date-fns';
 
@@ -24,7 +24,7 @@ export default function ReferralsPage() {
     const [referrals, setReferrals] = useState<ReferralInfo[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const referralLink = user ? `${window.location.origin}/register?ref=${user.profile?.referralCode}` : '';
+    const referralLink = user && typeof window !== 'undefined' ? `${window.location.origin}/register?ref=${user.profile?.referralCode}` : '';
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -49,7 +49,7 @@ export default function ReferralsPage() {
                         return {
                             uid: data.uid,
                             name: data.name,
-                            createdAt: data.createdAt,
+                            createdAt: (data.createdAt as Timestamp).toDate(),
                         };
                     });
                 
@@ -61,8 +61,9 @@ export default function ReferralsPage() {
                 setIsLoading(false);
             }
         };
-
-        fetchReferralDetails();
+        if (user) {
+            fetchReferralDetails();
+        }
     }, [user, toast]);
     
     return (
@@ -111,7 +112,7 @@ export default function ReferralsPage() {
                                     referrals.map(ref => (
                                         <TableRow key={ref.uid}>
                                             <TableCell className="font-medium">{ref.name}</TableCell>
-                                            <TableCell>{ref.createdAt ? format(ref.createdAt.toDate(), 'PP') : '-'}</TableCell>
+                                            <TableCell>{ref.createdAt ? format(ref.createdAt, 'PP') : '-'}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (

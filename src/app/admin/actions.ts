@@ -93,8 +93,8 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
   const accountsSnapshot = await getDocs(collection(db, 'tradingAccounts'));
   return accountsSnapshot.docs.map(doc => {
     const data = doc.data();
-    return { 
-      id: doc.id, 
+    return {
+      id: doc.id,
       ...data,
       // Safely convert timestamp to Date
       createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
@@ -116,7 +116,14 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
 // User Management
 export async function getUsers(): Promise<UserProfile[]> {
   const usersSnapshot = await getDocs(collection(db, 'users'));
-  return usersSnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
+  return usersSnapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+        uid: doc.id,
+        ...data,
+        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+    } as UserProfile;
+  });
 }
 
 // Cashback Management
@@ -136,7 +143,7 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 
 // Withdrawal Management
 export async function getWithdrawals(): Promise<Withdrawal[]> {
-    const withdrawalsSnapshot = await getDocs(collection(db, 'withdrawals'));
+    const withdrawalsSnapshot = await getDocs(query(collection(db, 'withdrawals'), orderBy('requestedAt', 'desc')));
     const withdrawals = withdrawalsSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -147,7 +154,7 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
             completedAt: data.completedAt instanceof Timestamp ? data.completedAt.toDate() : undefined,
         } as Withdrawal
     });
-    return withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+    return withdrawals;
 }
 
 export async function approveWithdrawal(withdrawalId: string, txId: string) {
