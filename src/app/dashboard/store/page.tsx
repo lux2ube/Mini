@@ -16,26 +16,23 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 function ProductCard({ product }: { product: Product }) {
     return (
-        <Card className="flex flex-col">
-            <CardHeader className="p-0">
-                <div className="aspect-square relative w-full overflow-hidden rounded-t-lg">
-                    <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        data-ai-hint="product image"
-                    />
-                </div>
-            </CardHeader>
-            <CardContent className="p-4 flex-grow space-y-2">
-                <h3 className="font-semibold text-base line-clamp-2">{product.name}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-3">{product.description}</p>
-            </CardContent>
-            <CardFooter className="p-4 pt-0 flex-col items-start space-y-2">
-                <p className="font-bold text-lg text-primary">${product.price.toFixed(2)}</p>
-                <Button asChild className="w-full">
-                    <Link href={`/dashboard/store/${product.id}`}>View Details</Link>
+        <Card className="flex flex-col overflow-hidden">
+            <div className="aspect-square relative w-full">
+                <Image
+                    src={product.imageUrl}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                    data-ai-hint="product image"
+                />
+            </div>
+            <div className="p-2 flex-grow flex flex-col">
+                <h3 className="font-semibold text-xs leading-tight line-clamp-2 flex-grow">{product.name}</h3>
+                <p className="font-bold text-sm text-primary mt-1">${product.price.toFixed(2)}</p>
+            </div>
+            <CardFooter className="p-2 pt-0">
+                <Button asChild size="sm" className="w-full text-xs">
+                    <Link href={`/dashboard/store/${product.id}`}>View</Link>
                 </Button>
             </CardFooter>
         </Card>
@@ -46,13 +43,12 @@ function StoreSkeleton() {
     return (
         <div className="space-y-4">
             <Skeleton className="h-10 w-full" />
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {[...Array(8)].map((_, i) => (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 md:gap-4">
+                {[...Array(12)].map((_, i) => (
                     <div key={i} className="space-y-2">
-                        <Skeleton className="h-40 w-full" />
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="aspect-square w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-8 w-full" />
                     </div>
                 ))}
             </div>
@@ -99,6 +95,18 @@ export default function StorePage() {
         )
     }
 
+    const renderGrid = (items: Product[]) => (
+         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 md:gap-4">
+             {items.length > 0 ? (
+                items.map(product => (
+                    <ProductCard key={product.id} product={product} />
+                ))
+             ) : (
+                <p className="col-span-full text-center text-muted-foreground py-10">No products in this category yet.</p>
+             )}
+        </div>
+    );
+
     return (
         <div className="container mx-auto px-4 py-6 space-y-6">
             <PageHeader title="Store" description="Spend your cashback on awesome products." />
@@ -111,23 +119,11 @@ export default function StorePage() {
                     ))}
                 </TabsList>
                 <TabsContent value="all" className="mt-6">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {products.map(product => (
-                            <ProductCard key={product.id} product={product} />
-                        ))}
-                    </div>
+                    {renderGrid(products)}
                 </TabsContent>
                 {productsByCategory.map(category => (
                     <TabsContent key={category.id} value={category.id} className="mt-6">
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                             {category.products.length > 0 ? (
-                                category.products.map(product => (
-                                    <ProductCard key={product.id} product={product} />
-                                ))
-                             ) : (
-                                <p className="col-span-full text-center text-muted-foreground py-10">No products in this category yet.</p>
-                             )}
-                        </div>
+                       {renderGrid(category.products)}
                     </TabsContent>
                 ))}
             </Tabs>
