@@ -102,8 +102,45 @@ export interface Notification {
     id: string;
     userId: string;
     message: string;
-    type: 'account' | 'cashback' | 'withdrawal' | 'general';
+    type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store';
     isRead: boolean;
     createdAt: Date;
     link?: string;
+}
+
+/**
+ * Represents a product category in the 'productCategories' collection.
+ */
+export interface ProductCategory {
+    id: string;
+    name: string;
+    description: string;
+}
+
+/**
+ * Represents a product in the 'products' collection.
+ */
+export interface Product {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    imageUrl: string;
+    categoryId: string;
+    categoryName: string;
+    stock: number;
+}
+
+/**
+ * Represents a user's order from the store.
+ */
+export interface Order {
+    id: string;
+    userId: string;
+    productId: string;
+    productName: string;
+    price: number;
+    deliveryPhoneNumber: string;
+    status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
+    createdAt: Date;
 }

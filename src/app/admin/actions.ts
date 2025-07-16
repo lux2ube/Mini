@@ -3,10 +3,10 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification } from '@/types';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product } from '@/types';
 
 // Generic function to create a notification
-async function createNotification(userId: string, message: string, type: 'account' | 'cashback' | 'withdrawal' | 'general', link?: string) {
+async function createNotification(userId: string, message: string, type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store', link?: string) {
     try {
         await addDoc(collection(db, 'notifications'), {
             userId,
@@ -260,4 +260,78 @@ export async function markNotificationsAsRead(notificationIds: string[]) {
         batch.update(docRef, { isRead: true });
     });
     await batch.commit();
+}
+
+
+// Store Management - Categories
+export async function getCategories(): Promise<ProductCategory[]> {
+    const snapshot = await getDocs(query(collection(db, 'productCategories'), orderBy('name')));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ProductCategory));
+}
+
+export async function addCategory(data: Omit<ProductCategory, 'id'>) {
+    try {
+        await addDoc(collection(db, 'productCategories'), data);
+        return { success: true, message: 'Category added successfully.' };
+    } catch (error) {
+        console.error("Error adding category:", error);
+        return { success: false, message: 'Failed to add category.' };
+    }
+}
+
+export async function updateCategory(id: string, data: Partial<ProductCategory>) {
+    try {
+        await updateDoc(doc(db, 'productCategories', id), data);
+        return { success: true, message: 'Category updated successfully.' };
+    } catch (error) {
+        console.error("Error updating category:", error);
+        return { success: false, message: 'Failed to update category.' };
+    }
+}
+
+export async function deleteCategory(id: string) {
+    try {
+        // TODO: Check if any products use this category before deleting.
+        await deleteDoc(doc(db, 'productCategories', id));
+        return { success: true, message: 'Category deleted successfully.' };
+    } catch (error) {
+        console.error("Error deleting category:", error);
+        return { success: false, message: 'Failed to delete category.' };
+    }
+}
+
+// Store Management - Products
+export async function getProducts(): Promise<Product[]> {
+    const snapshot = await getDocs(query(collection(db, 'products'), orderBy('name')));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
+}
+
+export async function addProduct(data: Omit<Product, 'id'>) {
+    try {
+        await addDoc(collection(db, 'products'), data);
+        return { success: true, message: 'Product added successfully.' };
+    } catch (error) {
+        console.error("Error adding product:", error);
+        return { success: false, message: 'Failed to add product.' };
+    }
+}
+
+export async function updateProduct(id: string, data: Partial<Product>) {
+    try {
+        await updateDoc(doc(db, 'products', id), data);
+        return { success: true, message: 'Product updated successfully.' };
+    } catch (error) {
+        console.error("Error updating product:", error);
+        return { success: false, message: 'Failed to update product.' };
+    }
+}
+
+export async function deleteProduct(id: string) {
+    try {
+        await deleteDoc(doc(db, 'products', id));
+        return { success: true, message: 'Product deleted successfully.' };
+    } catch (error) {
+        console.error("Error deleting product:", error);
+        return { success: false, message: 'Failed to delete product.' };
+    }
 }

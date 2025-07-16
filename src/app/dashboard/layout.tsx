@@ -15,7 +15,8 @@ import {
     Users,
     Gift,
     Bell,
-    Check
+    Check,
+    Store,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,7 @@ const navLinks = [
     { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
     { href: "/dashboard/transactions", icon: ReceiptText, label: "Transactions" },
     { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
+    { href: "/dashboard/store", icon: Store, label: "Store" },
     { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
     { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];

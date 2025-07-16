@@ -13,6 +13,9 @@ import {
     LogOut,
     Menu,
     Gift,
+    Store,
+    List,
+    Package,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -32,15 +35,34 @@ const navLinks = [
     { href: "/admin/manage-banner", icon: GalleryHorizontal, label: "Manage Banner" },
 ];
 
+const storeLinks = [
+    { href: "/admin/manage-categories", icon: List, label: "Manage Categories" },
+    { href: "/admin/manage-products", icon: Package, label: "Manage Products" },
+];
+
 function NavLinks({ currentPathname }: { currentPathname: string }) {
     return (
-        <nav className="flex flex-col gap-1 p-2 flex-1">
+        <nav className="flex flex-col gap-1 p-2 flex-1 overflow-y-auto">
+            <p className="px-3 py-2 text-xs font-semibold text-muted-foreground">Main</p>
             {navLinks.map(link => (
                 <Link
                     key={link.href}
                     href={link.href}
                     className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary", {
                         "bg-primary/10 text-primary": currentPathname === link.href,
+                    })}
+                >
+                    <link.icon className="h-4 w-4" />
+                    {link.label}
+                </Link>
+            ))}
+            <p className="px-3 py-2 mt-4 text-xs font-semibold text-muted-foreground">Store</p>
+            {storeLinks.map(link => (
+                <Link
+                    key={link.href}
+                    href={link.href}
+                    className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary", {
+                        "bg-primary/10 text-primary": currentPathname.startsWith(link.href),
                     })}
                 >
                     <link.icon className="h-4 w-4" />
