@@ -2,7 +2,7 @@
 "use client";
 
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -28,7 +28,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
 import { Info, Loader2, Copy } from "lucide-react";
-import type { Withdrawal } from "@/types";
+import type { Withdrawal, PaymentMethod } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp, orderBy } from "firebase/firestore";
@@ -40,36 +40,87 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getUserBalance } from "@/app/admin/actions";
+import { getUserBalance, getPaymentMethods } from "@/app/admin/actions";
 
-const formSchema = z.object({
-  amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
-  network: z.enum(["bep20", "trc20"], { required_error: "You must select a network." }),
-  address: z.string().min(26, { message: "Wallet address seems too short." }),
-});
 
 export default function WithdrawPage() {
     const { user } = useAuthContext();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
+    
     const [availableBalance, setAvailableBalance] = useState(0);
     const [recentWithdrawals, setRecentWithdrawals] = useState<Withdrawal[]>([]);
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+    const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+
+    // Dynamic schema based on selected payment method
+    const [formSchema, setFormSchema] = useState(z.object({
+        amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
+        paymentMethodId: z.string({ required_error: "You must select a payment method." }),
+        details: z.object({}).passthrough(),
+    }));
+
+    const form = useForm<z.infer<typeof formSchema>>({
+        resolver: zodResolver(formSchema),
+    });
+
+    // Update schema when a method is selected
+    useEffect(() => {
+        if (selectedMethod) {
+            const detailsSchema = selectedMethod.fields.reduce((schema, field) => {
+                let validator: z.ZodTypeAny = z.string();
+
+                if (field.validation.required) {
+                    validator = validator.min(1, `${field.label} is required.`);
+                }
+                if (field.validation.minLength) {
+                    validator = validator.min(field.validation.minLength, `${field.label} must be at least ${field.validation.minLength} characters.`);
+                }
+                 if (field.validation.maxLength) {
+                    validator = validator.max(field.validation.maxLength, `${field.label} must be at most ${field.validation.maxLength} characters.`);
+                }
+                if (field.validation.regex) {
+                    try {
+                        const regex = new RegExp(field.validation.regex);
+                        validator = validator.regex(regex, field.validation.regexErrorMessage || `Invalid ${field.label} format.`);
+                    } catch (e) {
+                        console.error("Invalid regex in payment method config:", field.validation.regex);
+                    }
+                }
+                
+                return schema.extend({ [field.name]: validator });
+            }, z.object({}));
+
+            setFormSchema(z.object({
+                amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
+                paymentMethodId: z.string(),
+                details: detailsSchema,
+            }));
+        }
+    }, [selectedMethod]);
+    
+    useEffect(() => {
+        form.reset();
+    }, [formSchema, form]);
+
 
     const fetchData = async () => {
         if (user) {
             setIsFetching(true);
             try {
-                // Fetch balance using the centralized function
-                const balanceData = await getUserBalance(user.uid);
-                setAvailableBalance(balanceData.availableBalance);
+                const [balanceData, methodsData, withdrawalsSnapshot] = await Promise.all([
+                    getUserBalance(user.uid),
+                    getPaymentMethods(),
+                    getDocs(query(collection(db, "withdrawals"), where("userId", "==", user.uid)))
+                ]);
 
-                // Fetch recent withdrawals for history display
-                const withdrawalsQuery = query(
-                    collection(db, "withdrawals"), 
-                    where("userId", "==", user.uid)
-                );
-                const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
+                setAvailableBalance(balanceData.availableBalance);
+                
+                // Filter for enabled methods
+                const enabledMethods = methodsData.filter(method => method.isEnabled);
+                setPaymentMethods(enabledMethods);
+
                 const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
                     const data = doc.data();
                     return { 
@@ -80,8 +131,7 @@ export default function WithdrawPage() {
                     } as Withdrawal;
                 });
                 
-                // Sort in-memory after fetching
-                withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+                withdrawals.sort((a, b) => b.requestedAt.getTime() - a.createdAt.getTime());
 
                 setRecentWithdrawals(withdrawals);
             } catch (error) {
@@ -99,19 +149,9 @@ export default function WithdrawPage() {
         }
     }, [user]);
 
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            amount: '' as any,
-            network: undefined,
-            address: "",
-        },
-    });
-
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (!user) {
-            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in.' });
+        if (!user || !selectedMethod) {
+            toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in and select a method.' });
             return;
         }
         if (values.amount > availableBalance) {
@@ -124,13 +164,14 @@ export default function WithdrawPage() {
             await addDoc(collection(db, "withdrawals"), {
                 userId: user.uid,
                 amount: values.amount,
-                network: values.network,
-                walletAddress: values.address,
                 status: 'Processing',
                 requestedAt: serverTimestamp(),
+                paymentMethod: selectedMethod.name,
+                withdrawalDetails: values.details,
             });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
             form.reset();
+            setSelectedMethod(null);
             fetchData(); // Refetch data
         } catch (error) {
             console.error('Error submitting withdrawal: ', error);
@@ -181,69 +222,82 @@ export default function WithdrawPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Request Withdrawal</CardTitle>
-                            <CardDescription>Only USDT withdrawals are supported.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <FormField
                                 control={form.control}
-                                name="amount"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Amount (USD)</FormLabel>
-                                        <FormControl>
-                                            <div className="relative">
-                                                <Input type="number" placeholder="0.00" {...field} />
-                                                <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-auto py-0.5 px-2" onClick={() => form.setValue('amount', availableBalance)}>Max</Button>
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="network"
+                                name="paymentMethodId"
                                 render={({ field }) => (
                                     <FormItem className="space-y-3">
-                                        <FormLabel>Select Network</FormLabel>
+                                        <FormLabel>Select Payment Method</FormLabel>
                                         <FormControl>
-                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-2">
-                                                <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                                                    <FormControl><RadioGroupItem value="bep20" id="bep20" className="sr-only"/></FormControl>
-                                                    <FormLabel htmlFor="bep20" className="font-normal cursor-pointer w-full">
-                                                        <p className="font-medium">BEP20</p>
-                                                        <p className="text-xs text-muted-foreground">Binance Smart Chain</p>
-                                                    </FormLabel>
-                                                </FormItem>
-                                                <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                                                    <FormControl><RadioGroupItem value="trc20" id="trc20" className="sr-only"/></FormControl>
-                                                    <FormLabel htmlFor="trc20" className="font-normal cursor-pointer w-full">
-                                                        <p className="font-medium">TRC20</p>
-                                                        <p className="text-xs text-muted-foreground">TRON Network</p>
-                                                    </FormLabel>
-                                                </FormItem>
+                                            <RadioGroup 
+                                                onValueChange={(value) => {
+                                                    field.onChange(value);
+                                                    setSelectedMethod(paymentMethods.find(p => p.id === value) || null);
+                                                }} 
+                                                value={field.value} 
+                                                className="flex flex-col space-y-2"
+                                            >
+                                                {paymentMethods.map(method => (
+                                                    <FormItem key={method.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                                                        <FormControl><RadioGroupItem value={method.id} id={method.id} className="sr-only"/></FormControl>
+                                                        <FormLabel htmlFor={method.id} className="font-normal cursor-pointer w-full">
+                                                            <p className="font-medium">{method.name}</p>
+                                                            <p className="text-xs text-muted-foreground">{method.description}</p>
+                                                        </FormLabel>
+                                                    </FormItem>
+                                                ))}
                                             </RadioGroup>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
                             />
-                            <FormField
-                                control={form.control}
-                                name="address"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>USDT Wallet Address</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="Enter your wallet address" {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+
+                            {selectedMethod && (
+                                <div className="space-y-4 pt-4 border-t">
+                                     <FormField
+                                        control={form.control}
+                                        name="amount"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Amount (USD)</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <Input type="number" placeholder="0.00" {...field} />
+                                                        <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-auto py-0.5 px-2" onClick={() => form.setValue('amount', availableBalance)}>Max</Button>
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    {selectedMethod.fields.map((customField) => (
+                                        <FormField
+                                            key={customField.name}
+                                            control={form.control}
+                                            name={`details.${customField.name}`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel>{customField.label}</FormLabel>
+                                                    <FormControl>
+                                                        <Input 
+                                                            type={customField.type} 
+                                                            placeholder={customField.placeholder} 
+                                                            {...field}
+                                                        />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
-                    <Button type="submit" disabled={isLoading} className="w-full">
+                    <Button type="submit" disabled={isLoading || !selectedMethod} className="w-full">
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Submit Request
                     </Button>
