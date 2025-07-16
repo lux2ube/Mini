@@ -214,9 +214,9 @@ export default function UserDashboardPage() {
                         </Button>
                     </div>
 
-                    <div>
+                    <div className="space-y-4">
                         <h2 className="text-xl font-semibold mt-4">List Brokers</h2>
-                        <Card className="mt-2">
+                        <Card>
                           <CardContent className="p-0">
                             <Table>
                                <TableHeader>
@@ -253,6 +253,39 @@ export default function UserDashboardPage() {
                         </Card>
                     </div>
 
+                    <div className="space-y-4">
+                         <h2 className="text-xl font-semibold mt-4">Referrals</h2>
+                         <Card>
+                            <CardContent className="p-4 space-y-4">
+                                <div className="grid grid-cols-2 gap-4 text-center">
+                                    <div>
+                                        <p className="text-2xl font-bold">{stats.totalReferrals}</p>
+                                        <p className="text-xs text-muted-foreground">Total Referrals</p>
+                                    </div>
+                                     <div>
+                                        <p className="text-2xl font-bold">{stats.referralPoints}</p>
+                                        <p className="text-xs text-muted-foreground">Referral Points</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                     <p className="text-sm font-medium">Your Invite Link</p>
+                                     <div className="flex items-center gap-2">
+                                        <Input readOnly value={referralLink} className="text-xs" />
+                                        <Button size="icon" variant="outline" onClick={copyToClipboard}>
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                             <CardHeader className="p-2 border-t">
+                                <Button asChild variant="ghost" size="sm" className="w-full justify-center">
+                                    <Link href="/dashboard/referrals">View Referrals Details <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                                </Button>
+                             </CardHeader>
+                         </Card>
+                    </div>
+
+
                 </TabsContent>
                 <TabsContent value="rebate">
                     <Card className="mt-4">
@@ -270,4 +303,5 @@ export default function UserDashboardPage() {
         </div>
     </div>
   );
-}
+
+    
