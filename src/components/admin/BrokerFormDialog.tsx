@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -33,7 +32,7 @@ import type { Broker } from "@/types";
 import { addBroker, updateBroker } from "@/app/admin/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Separator } from "../ui/separator";
+import { DialogTrigger } from "@radix-ui/react-dialog";
 
 const formSchema = z.object({
   logoUrl: z.string().url("Must be a valid URL.").optional().default("https://placehold.co/100x100.png"),
@@ -44,7 +43,7 @@ const formSchema = z.object({
     founded_year: z.coerce.number().optional().default(new Date().getFullYear()),
     headquarters: z.string().optional().default(""),
     CEO: z.string().optional().default(""),
-  }),
+  }).optional(),
   regulation: z.object({
     regulated_in: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([] as any),
     regulator_name: z.string().transform(v => v.split(',').map(s => s.trim())).optional().default([] as any),
@@ -212,8 +211,8 @@ export function BrokerFormDialog({
     // Populate legacy fields for compatibility during transition
     const finalValues: any = {
         ...values,
-        name: values.basicInfo.broker_name,
-        description: `Founded in ${values.basicInfo.founded_year}, headquartered in ${values.basicInfo.headquarters}.`,
+        name: values.basicInfo?.broker_name,
+        description: `Founded in ${values.basicInfo?.founded_year}, headquartered in ${values.basicInfo?.headquarters}.`,
         rating: Math.round((values.reputation?.wikifx_score ?? 0) / 2),
     };
 
