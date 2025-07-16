@@ -98,17 +98,17 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
       <TableCell>
         <Image
           src={broker.logoUrl}
-          alt={`${broker.name} logo`}
+          alt={`${broker.basicInfo.broker_name} logo`}
           width={32}
           height={32}
           className="rounded-md border p-0.5 bg-white"
           data-ai-hint="logo"
         />
       </TableCell>
-      <TableCell className="font-medium">{broker.name}</TableCell>
-      <TableCell><Badge variant="outline" className="capitalize">{broker.category}</Badge></TableCell>
+      <TableCell className="font-medium">{broker.basicInfo.broker_name}</TableCell>
+      <TableCell><Badge variant="outline" className="capitalize">{broker.regulation.risk_level}</Badge></TableCell>
       <TableCell className="flex items-center gap-1">
-          {broker.rating} <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+          {broker.reputation.wikifx_score} <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
       </TableCell>
       <TableCell className="space-x-2 text-right">
         <BrokerFormDialog
@@ -258,8 +258,8 @@ export default function ManageBrokersPage() {
                     <TableHead className="w-10"></TableHead>
                     <TableHead>Logo</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Rating</TableHead>
+                    <TableHead>Risk Level</TableHead>
+                    <TableHead>WikiFX Score</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

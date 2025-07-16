@@ -30,14 +30,87 @@ export interface UserProfile {
 }
 
 /**
- * Represents a partner broker in the 'brokers' collection.
+ * Represents a partner broker with a highly detailed structure.
  */
 export interface Broker {
     id: string;
     order: number;
+    logoUrl: string; // From original design
+    basicInfo: {
+        broker_name: string;
+        group_entity: string;
+        founded_year: number;
+        headquarters: string;
+        CEO: string;
+    };
+    regulation: {
+        regulated_in: string[];
+        regulator_name: string[];
+        license_type: string;
+        regulation_status: 'Active' | 'Revoked' | 'Expired' | 'Unregulated';
+        offshore_regulation: boolean;
+        risk_level: 'Low' | 'Medium' | 'High' | 'Suspicious' | 'Unregulated';
+    };
+    tradingConditions: {
+        broker_type: 'Market Maker' | 'ECN' | 'STP' | 'Hybrid';
+        account_types: string[];
+        swap_free: boolean;
+        max_leverage: string;
+        min_deposit: number;
+        spread_type: 'Fixed' | 'Variable';
+        min_spread: number;
+        commission_per_lot: number;
+        execution_speed: string;
+    };
+    platforms: {
+        platforms_supported: string[];
+        mt4_license_type: 'Full License' | 'White Label' | 'None';
+        mt5_license_type: 'Full License' | 'White Label' | 'None';
+        custom_platform: boolean;
+    };
+    instruments: {
+        forex_pairs: string;
+        crypto_trading: boolean;
+        stocks: boolean;
+        commodities: boolean;
+        indices: boolean;
+    };
+    depositsWithdrawals: {
+        payment_methods: string[];
+        min_withdrawal: number;
+        withdrawal_speed: string;
+        deposit_fees: boolean;
+        withdrawal_fees: boolean;
+    };
+    cashback: {
+        cashback_per_lot: number;
+        cashback_account_type: string[];
+        cashback_frequency: 'Daily' | 'Weekly' | 'Monthly';
+        rebate_method: string[];
+        affiliate_program_link: string;
+    };
+    globalReach: {
+        business_region: string[];
+        global_presence: string;
+        languages_supported: string[];
+        customer_support_channels: string[];
+    };
+    reputation: {
+        wikifx_score: number;
+        trustpilot_rating: number;
+        reviews_count: number;
+        verified_users: number;
+    };
+    additionalFeatures: {
+        education_center: boolean;
+        copy_trading: boolean;
+        demo_account: boolean;
+        trading_contests: boolean;
+        regulatory_alerts: string;
+    };
+    // Legacy fields for compatibility until UI is updated
     name: string;
     description: string;
-    logoUrl: string;
     category: 'forex' | 'crypto' | 'other';
     rating: number; // A number from 1 to 5
     details: {

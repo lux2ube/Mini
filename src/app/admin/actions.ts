@@ -225,7 +225,7 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 
 // Withdrawal Management
 export async function getWithdrawals(): Promise<Withdrawal[]> {
-    const withdrawalsSnapshot = await getDocs(query(collection(db, 'withdrawals'), orderBy('requestedAt', 'desc')));
+    const withdrawalsSnapshot = await getDocs(query(collection(db, 'withdrawals')));
     const withdrawals = withdrawalsSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -235,6 +235,7 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
             completedAt: data.completedAt instanceof Timestamp ? data.completedAt.toDate() : undefined,
         } as Withdrawal
     });
+    withdrawals.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime());
     return withdrawals;
 }
 
