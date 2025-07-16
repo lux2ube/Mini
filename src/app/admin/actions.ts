@@ -2,8 +2,8 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product } from '@/types';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order } from '@/types';
 
 // Generic function to create a notification
 async function createNotification(userId: string, message: string, type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store', link?: string) {
@@ -113,7 +113,6 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
     return {
       id: doc.id,
       ...data,
-      // Safely convert timestamp to Date
       createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
     } as TradingAccount
   });
@@ -178,7 +177,6 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
         return {
             id: doc.id,
             ...data,
-            // Convert Timestamp to a serializable Date object
             requestedAt: data.requestedAt instanceof Timestamp ? data.requestedAt.toDate() : new Date(),
             completedAt: data.completedAt instanceof Timestamp ? data.completedAt.toDate() : undefined,
         } as Withdrawal
@@ -230,14 +228,12 @@ export async function rejectWithdrawal(withdrawalId: string) {
 
 // Notification Actions
 export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
-    // Query only by userId to avoid needing a composite index
     const q = query(
         collection(db, 'notifications'),
         where('userId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
 
-    // Map to the correct type
     const notifications = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -247,7 +243,6 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
         } as Notification;
     });
 
-    // Sort the notifications in-memory by date, descending
     notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     
     return notifications;
@@ -333,5 +328,109 @@ export async function deleteProduct(id: string) {
     } catch (error) {
         console.error("Error deleting product:", error);
         return { success: false, message: 'Failed to delete product.' };
+    }
+}
+
+
+// Store Management - Orders
+export async function getOrders(): Promise<Order[]> {
+    const snapshot = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp).toDate(),
+        } as Order;
+    });
+}
+
+export async function updateOrderStatus(orderId: string, status: Order['status']) {
+    try {
+        const orderRef = doc(db, 'orders', orderId);
+        await updateDoc(orderRef, { status });
+
+        // Optional: Notify user
+        const orderSnap = await getDoc(orderRef);
+        if (orderSnap.exists()) {
+            const orderData = orderSnap.data() as Order;
+            const message = `The status of your order for "${orderData.productName}" has been updated to ${status}.`;
+            await createNotification(orderData.userId, message, 'store', '/dashboard/store/orders');
+        }
+
+        return { success: true, message: 'Order status updated.' };
+    } catch (error) {
+        console.error("Error updating order status:", error);
+        return { success: false, message: 'Failed to update order status.' };
+    }
+}
+
+export async function placeOrder(userId: string, productId: string, phoneNumber: string) {
+    try {
+        return await runTransaction(db, async (transaction) => {
+            const productRef = doc(db, 'products', productId);
+            const productSnap = await transaction.get(productRef);
+
+            if (!productSnap.exists()) {
+                throw new Error("Product not found.");
+            }
+
+            const product = productSnap.data() as Product;
+            const price = product.price;
+
+            if (product.stock <= 0) {
+                return { success: false, message: 'This item is out of stock.' };
+            }
+
+            // Calculate current balance
+            const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
+            const transactionsSnap = await getDocs(transactionsQuery);
+            const totalEarned = transactionsSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
+
+            const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', userId));
+            const withdrawalsSnap = await getDocs(withdrawalsQuery);
+            const totalWithdrawn = withdrawalsSnap.docs
+                .filter(doc => doc.data().status === 'Completed' || doc.data().status === 'Processing')
+                .reduce((sum, doc) => sum + doc.data().amount, 0);
+            
+            const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), where('status', '!=', 'Cancelled'));
+            const ordersSnap = await getDocs(ordersQuery);
+            const totalSpent = ordersSnap.docs.reduce((sum, doc) => sum + doc.data().price, 0);
+
+            const balance = totalEarned - totalWithdrawn - totalSpent;
+            
+            if (balance < price) {
+                return { success: false, message: 'Insufficient balance to purchase this item.' };
+            }
+
+            // Decrement stock and create order
+            transaction.update(productRef, { stock: product.stock - 1 });
+
+            const userRef = doc(db, 'users', userId);
+            const userSnap = await transaction.get(userRef);
+            const userData = userSnap.data();
+
+            const orderRef = doc(collection(db, 'orders'));
+            transaction.set(orderRef, {
+                userId,
+                productId,
+                productName: product.name,
+                productImage: product.imageUrl,
+                price,
+                deliveryPhoneNumber: phoneNumber,
+                status: 'Pending',
+                createdAt: serverTimestamp(),
+                userName: userData?.name || 'N/A',
+                userEmail: userData?.email || 'N/A',
+            });
+
+            await createNotification(userId, `Your order for ${product.name} has been placed.`, 'store', '/dashboard/store/orders');
+            
+            return { success: true, message: 'Order placed successfully!' };
+        });
+    } catch (error) {
+        console.error('Error placing order:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+        return { success: false, message: errorMessage };
     }
 }

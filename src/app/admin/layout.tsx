@@ -16,6 +16,7 @@ import {
     Store,
     List,
     Package,
+    ShoppingBag,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -38,6 +39,7 @@ const navLinks = [
 const storeLinks = [
     { href: "/admin/manage-categories", icon: List, label: "Manage Categories" },
     { href: "/admin/manage-products", icon: Package, label: "Manage Products" },
+    { href: "/admin/manage-orders", icon: ShoppingBag, label: "Manage Orders" },
 ];
 
 function NavLinks({ currentPathname }: { currentPathname: string }) {

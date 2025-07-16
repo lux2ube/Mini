@@ -1,4 +1,3 @@
-
 import type { Timestamp } from "firebase/firestore";
 
 /**
@@ -139,8 +138,11 @@ export interface Order {
     userId: string;
     productId: string;
     productName: string;
+    productImage: string;
     price: number;
     deliveryPhoneNumber: string;
     status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
     createdAt: Date;
+    userEmail?: string;
+    userName?: string;
 }

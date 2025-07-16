@@ -11,7 +11,7 @@ import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, getCountFromServer, Timestamp, doc, getDoc } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
-import type { CashbackTransaction, Withdrawal, BannerSettings } from "@/types";
+import type { CashbackTransaction, Withdrawal, BannerSettings, Order } from "@/types";
 import Image from "next/image";
 import { getBannerSettings } from "../admin/actions";
 import { useToast } from "@/hooks/use-toast";
@@ -135,7 +135,13 @@ export default function UserDashboardPage() {
               }
           });
 
-          const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals;
+          // Fetch orders to factor into balance
+            const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid), where("status", "!=", "Cancelled"));
+            const ordersSnapshot = await getDocs(ordersQuery);
+            const totalSpentOnOrders = ordersSnapshot.docs.reduce((sum, doc) => sum + doc.data().price, 0);
+
+
+          const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals - totalSpentOnOrders;
           
           setStats({
             availableBalance,
