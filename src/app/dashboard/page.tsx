@@ -59,9 +59,14 @@ function PromoBanner() {
 
         if (scriptNode instanceof HTMLScriptElement) {
              const script = document.createElement('script');
-             script.src = scriptNode.src;
-             script.id = scriptNode.id;
+             if (scriptNode.src) {
+                script.src = scriptNode.src;
+             }
+             if (scriptNode.id) {
+                script.id = scriptNode.id;
+             }
              script.async = scriptNode.async;
+             script.innerHTML = scriptNode.innerHTML;
              
              // Handle any other attributes on the original script
              for(let i = 0; i < scriptNode.attributes.length; i++) {
@@ -158,7 +163,9 @@ export default function UserDashboardPage() {
   return (
     <div className="flex-1 bg-muted/30">
         <div className="container mx-auto px-4 py-4 space-y-4 max-w-2xl">
-        
+            
+            <PromoBanner />
+
             <Tabs defaultValue="wallet" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="wallet">UTSPAY WALLET</TabsTrigger>
@@ -199,10 +206,10 @@ export default function UserDashboardPage() {
                     </Card>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <Button asChild variant="secondary" className="bg-white text-black hover:bg-gray-200">
+                        <Button asChild>
                             <Link href="/dashboard/brokers">Get Cashback</Link>
                         </Button>
-                        <Button asChild variant="secondary" className="bg-white text-black hover:bg-gray-200">
+                        <Button asChild>
                             <Link href="/dashboard/withdraw">Withdraw</Link>
                         </Button>
                     </div>
@@ -264,3 +271,5 @@ export default function UserDashboardPage() {
     </div>
   );
 }
+
+    
