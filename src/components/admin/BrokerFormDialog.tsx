@@ -115,7 +115,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   category: z.enum(['forex', 'crypto', 'other']).optional().default('forex'),
   rating: z.coerce.number().optional(),
-});
+}).passthrough(); // Allow extra fields from old structure
 
 type BrokerFormValues = z.infer<typeof formSchema>;
 
@@ -127,7 +127,7 @@ interface BrokerFormDialogProps {
   setIsOpen: (open: boolean) => void;
 }
 
-const arrayToString = (arr: string[] | undefined) => arr?.join(', ') || '';
+const arrayToString = (arr: any) => Array.isArray(arr) ? arr.join(', ') : (typeof arr === 'string' ? arr : '');
 
 // Function to safely get default values for the form, handling old and new data structures
 const getSafeDefaultValues = (broker?: Broker | null): Partial<BrokerFormValues> => {
@@ -153,12 +153,12 @@ const getSafeDefaultValues = (broker?: Broker | null): Partial<BrokerFormValues>
     if (broker.basicInfo) {
         return {
             ...broker,
-            regulation: { ...broker.regulation, regulated_in: arrayToString(broker.regulation.regulated_in) as any, regulator_name: arrayToString(broker.regulation.regulator_name) as any },
-            tradingConditions: { ...broker.tradingConditions, account_types: arrayToString(broker.tradingConditions.account_types) as any },
-            platforms: { ...broker.platforms, platforms_supported: arrayToString(broker.platforms.platforms_supported) as any },
-            depositsWithdrawals: { ...broker.depositsWithdrawals, payment_methods: arrayToString(broker.depositsWithdrawals.payment_methods) as any },
-            cashback: { ...broker.cashback, cashback_account_type: arrayToString(broker.cashback.cashback_account_type) as any, rebate_method: arrayToString(broker.cashback.rebate_method) as any },
-            globalReach: { ...broker.globalReach, business_region: arrayToString(broker.globalReach.business_region) as any, languages_supported: arrayToString(broker.globalReach.languages_supported) as any, customer_support_channels: arrayToString(broker.globalReach.customer_support_channels) as any },
+            regulation: { ...broker.regulation, regulated_in: arrayToString(broker.regulation.regulated_in), regulator_name: arrayToString(broker.regulation.regulator_name) },
+            tradingConditions: { ...broker.tradingConditions, account_types: arrayToString(broker.tradingConditions.account_types) },
+            platforms: { ...broker.platforms, platforms_supported: arrayToString(broker.platforms.platforms_supported) },
+            depositsWithdrawals: { ...broker.depositsWithdrawals, payment_methods: arrayToString(broker.depositsWithdrawals.payment_methods) },
+            cashback: { ...broker.cashback, cashback_account_type: arrayToString(broker.cashback.cashback_account_type), rebate_method: arrayToString(broker.cashback.rebate_method) },
+            globalReach: { ...broker.globalReach, business_region: arrayToString(broker.globalReach.business_region), languages_supported: arrayToString(broker.globalReach.languages_supported), customer_support_channels: arrayToString(broker.globalReach.customer_support_channels) },
         };
     }
 
@@ -185,7 +185,7 @@ const getSafeDefaultValues = (broker?: Broker | null): Partial<BrokerFormValues>
         platforms: { platforms_supported: [] as any, mt4_license_type: 'None', mt5_license_type: 'None', custom_platform: false },
         instruments: { forex_pairs: "", crypto_trading: false, stocks: false, commodities: false, indices: false },
         depositsWithdrawals: { payment_methods: [] as any, min_withdrawal: 0, withdrawal_speed: "", deposit_fees: false, withdrawal_fees: false },
-        cashback: { cashback_per_lot: 0, cashback_account_type: [] as any, cashback_frequency: 'Daily', rebate_method: [] as any, affiliate_program_link: "https://example.com" },
+        cashback: { cashback_per_lot: broker.cashbackRate?.amount ?? 0, cashback_account_type: [] as any, cashback_frequency: 'Daily', rebate_method: [] as any, affiliate_program_link: "https://example.com" },
         globalReach: { business_region: [] as any, global_presence: "", languages_supported: [] as any, customer_support_channels: [] as any },
         additionalFeatures: { education_center: false, copy_trading: false, demo_account: false, trading_contests: false, regulatory_alerts: "" },
     };

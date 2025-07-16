@@ -35,9 +35,11 @@ export default function BrokersPage() {
   }, []);
 
   const filteredBrokers = useMemo(() => {
-    return allBrokers.filter((broker) =>
-      broker.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    return allBrokers.filter((broker) => {
+      // Backward compatibility for search
+      const name = broker.basicInfo?.broker_name || broker.name;
+      return name.toLowerCase().includes(searchQuery.toLowerCase())
+    });
   }, [allBrokers, searchQuery]);
 
   const renderBrokerList = (brokers: Broker[]) => {
@@ -65,6 +67,13 @@ export default function BrokersPage() {
         </div>
     )
   }
+  
+  const getBrokersForTab = (category: string) => {
+      return filteredBrokers.filter(b => {
+          const cat = b.category ?? 'other'; // Fallback for old data
+          return cat === category;
+      });
+  }
 
   return (
     <div className="max-w-md mx-auto w-full px-4 py-4 space-y-4">
@@ -88,13 +97,13 @@ export default function BrokersPage() {
           <TabsTrigger value="other">OTHER</TabsTrigger>
         </TabsList>
         <TabsContent value="forex" className="mt-4">
-          {renderBrokerList(filteredBrokers.filter(b => b.category === 'forex'))}
+          {renderBrokerList(getBrokersForTab('forex'))}
         </TabsContent>
         <TabsContent value="crypto" className="mt-4">
-          {renderBrokerList(filteredBrokers.filter(b => b.category === 'crypto'))}
+          {renderBrokerList(getBrokersForTab('crypto'))}
         </TabsContent>
         <TabsContent value="other" className="mt-4">
-          {renderBrokerList(filteredBrokers.filter(b => b.category === 'other'))}
+          {renderBrokerList(getBrokersForTab('other'))}
         </TabsContent>
       </Tabs>
 
