@@ -14,7 +14,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getPaymentMethods, addPaymentMethod, updatePaymentMethod, deletePaymentMethod } from "../actions";
 import { PlusCircle, Loader2, Edit, Trash2, GripVertical, Info } from "lucide-react";
@@ -59,7 +59,7 @@ const formSchema = z.object({
     name: z.string().min(2, "Method name is required"),
     description: z.string().min(5, "Description is required"),
     isEnabled: z.boolean(),
-    type: z.enum(['crypto', 'internal_transfer', 'other']),
+    type: z.enum(['crypto', 'internal_transfer', 'trading_account']),
     fields: z.array(fieldSchema),
 });
 
@@ -126,7 +126,7 @@ function PaymentMethodForm({ method, onSuccess, onCancel }: { method?: PaymentMe
                             <SelectContent>
                                 <SelectItem value="crypto">Crypto</SelectItem>
                                 <SelectItem value="internal_transfer">Internal Transfer</SelectItem>
-                                <SelectItem value="other">Other</SelectItem>
+                                <SelectItem value="trading_account">Trading Account</SelectItem>
                             </SelectContent>
                         </Select><FormMessage /></FormItem>
                     )}/>
@@ -269,18 +269,16 @@ export default function ManagePaymentMethodsPage() {
     }
 
     return (
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <>
             <div className="container mx-auto space-y-6">
                 <div className="flex justify-between items-start">
                     <PageHeader
                         title="Manage Payment Methods"
                         description="Configure how users can withdraw their funds."
                     />
-                    <DialogTrigger asChild>
-                        <Button onClick={handleAdd}>
-                            <PlusCircle className="mr-2 h-4 w-4" /> Add Method
-                        </Button>
-                    </DialogTrigger>
+                    <Button onClick={handleAdd}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add Method
+                    </Button>
                 </div>
 
                 <Card>
@@ -304,7 +302,7 @@ export default function ManagePaymentMethodsPage() {
                                     {methods.map((method) => (
                                         <TableRow key={method.id}>
                                             <TableCell className="font-medium">{method.name}</TableCell>
-                                            <TableCell><Badge variant="outline">{method.type}</Badge></TableCell>
+                                            <TableCell><Badge variant="outline">{method.type.replace('_', ' ')}</Badge></TableCell>
                                             <TableCell>
                                                 <Badge variant={method.isEnabled ? 'default' : 'secondary'}>
                                                     {method.isEnabled ? 'Enabled' : 'Disabled'}
@@ -341,22 +339,20 @@ export default function ManagePaymentMethodsPage() {
                 </Card>
             </div>
             
-            <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>{editingMethod ? "Edit" : "Add New"} Payment Method</DialogTitle>
-                </DialogHeader>
-                <div className="p-1">
-                    <PaymentMethodForm 
-                        method={editingMethod}
-                        onSuccess={handleFormSuccess}
-                        onCancel={handleFormCancel}
-                    />
-                </div>
-            </DialogContent>
-        </Dialog>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                 <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{editingMethod ? "Edit" : "Add New"} Payment Method</DialogTitle>
+                    </DialogHeader>
+                    <div className="p-1">
+                        <PaymentMethodForm 
+                            method={editingMethod}
+                            onSuccess={handleFormSuccess}
+                            onCancel={handleFormCancel}
+                        />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
-
-    
-
-    

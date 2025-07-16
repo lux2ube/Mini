@@ -4,7 +4,7 @@
 import { z } from "zod";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
     Card,
@@ -27,8 +27,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2, Copy } from "lucide-react";
-import type { Withdrawal, PaymentMethod } from "@/types";
+import { Info, Loader2, Copy, Wallet, Repeat, Briefcase } from "lucide-react";
+import type { Withdrawal, PaymentMethod, TradingAccount } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp, orderBy } from "firebase/firestore";
@@ -41,7 +41,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { getUserBalance, getPaymentMethods } from "@/app/admin/actions";
+import { Separator } from "@/components/ui/separator";
 
+const formSchema = z.object({
+    amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
+    paymentMethodId: z.string({ required_error: "You must select a payment method." }),
+    details: z.object({}).passthrough(),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 export default function WithdrawPage() {
     const { user } = useAuthContext();
@@ -52,16 +60,10 @@ export default function WithdrawPage() {
     const [availableBalance, setAvailableBalance] = useState(0);
     const [recentWithdrawals, setRecentWithdrawals] = useState<Withdrawal[]>([]);
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+    const [userAccounts, setUserAccounts] = useState<TradingAccount[]>([]);
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
 
-    // Dynamic schema based on selected payment method
-    const [formSchema, setFormSchema] = useState(z.object({
-        amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
-        paymentMethodId: z.string({ required_error: "You must select a payment method." }),
-        details: z.object({}).passthrough(),
-    }));
-
-    const form = useForm<z.infer<typeof formSchema>>({
+    const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             amount: 0,
@@ -70,19 +72,23 @@ export default function WithdrawPage() {
         }
     });
 
-    // Update schema when a method is selected
     useEffect(() => {
         if (selectedMethod) {
-            const detailsSchema = selectedMethod.fields.reduce((schema, field) => {
-                let validator: z.ZodTypeAny = z.string();
+            let newSchema = z.object({
+                amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
+                paymentMethodId: z.string(),
+            });
 
+            const detailsFields: Record<string, z.ZodTypeAny> = {};
+            selectedMethod.fields.forEach(field => {
+                let validator: z.ZodString | z.ZodTypeAny = z.string();
                 if (field.validation.required) {
                     validator = validator.min(1, `${field.label} is required.`);
                 }
                 if (field.validation.minLength) {
                     validator = validator.min(field.validation.minLength, `${field.label} must be at least ${field.validation.minLength} characters.`);
                 }
-                 if (field.validation.maxLength) {
+                if (field.validation.maxLength) {
                     validator = validator.max(field.validation.maxLength, `${field.label} must be at most ${field.validation.maxLength} characters.`);
                 }
                 if (field.validation.regex) {
@@ -90,29 +96,37 @@ export default function WithdrawPage() {
                         const regex = new RegExp(field.validation.regex);
                         validator = validator.regex(regex, field.validation.regexErrorMessage || `Invalid ${field.label} format.`);
                     } catch (e) {
-                        console.error("Invalid regex in payment method config:", field.validation.regex);
+                        console.error("Invalid regex:", e);
                     }
                 }
-                
-                return schema.extend({ [field.name]: validator });
-            }, z.object({}));
+                detailsFields[field.name] = validator;
+            });
+            
+            if (selectedMethod.type === 'trading_account' && userAccounts.length > 0) {
+                 detailsFields['tradingAccountId'] = z.string().min(1, 'Please select a trading account.');
+            }
 
-            setFormSchema(z.object({
-                amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
-                paymentMethodId: z.string(),
-                details: detailsSchema,
-            }));
+            const detailsSchema = z.object(detailsFields);
+            const finalSchema = newSchema.extend({ details: detailsSchema });
+            
+            // @ts-ignore - a bit of a hack to update the schema dynamically
+            form.resolver = zodResolver(finalSchema);
         }
-    }, [selectedMethod]);
-    
+    }, [selectedMethod, form.reset, userAccounts]);
+
     useEffect(() => {
-        form.reset();
+        form.reset({
+            amount: 0,
+            paymentMethodId: selectedMethod?.id || '',
+            details: {},
+        });
         if (selectedMethod) {
-            form.setValue('paymentMethodId', selectedMethod.id);
             selectedMethod.fields.forEach(field => {
-                // Explicitly set a defined value for each dynamic field to prevent uncontrolled -> controlled error.
                 form.setValue(`details.${field.name}`, '');
             });
+            if (selectedMethod.type === 'trading_account') {
+                form.setValue('details.tradingAccountId', '');
+            }
         }
     }, [selectedMethod, form]);
 
@@ -121,17 +135,19 @@ export default function WithdrawPage() {
         if (user) {
             setIsFetching(true);
             try {
-                const [balanceData, methodsData, withdrawalsSnapshot] = await Promise.all([
+                const [balanceData, methodsData, withdrawalsSnapshot, accountsSnapshot] = await Promise.all([
                     getUserBalance(user.uid),
                     getPaymentMethods(),
-                    getDocs(query(collection(db, "withdrawals"), where("userId", "==", user.uid)))
+                    getDocs(query(collection(db, "withdrawals"), where("userId", "==", user.uid))),
+                    getDocs(query(collection(db, "tradingAccounts"), where("userId", "==", user.uid), where("status", "==", "Approved")))
                 ]);
 
                 setAvailableBalance(balanceData.availableBalance);
                 
-                // Filter for enabled methods
                 const enabledMethods = methodsData.filter(method => method.isEnabled);
                 setPaymentMethods(enabledMethods);
+
+                setUserAccounts(accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TradingAccount)));
 
                 const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
                     const data = doc.data();
@@ -144,8 +160,8 @@ export default function WithdrawPage() {
                 });
                 
                 withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
-
                 setRecentWithdrawals(withdrawals);
+
             } catch (error) {
                 console.error("Error fetching withdrawal data:", error);
                 toast({ variant: 'destructive', title: "Error", description: "Failed to load page data."});
@@ -160,8 +176,16 @@ export default function WithdrawPage() {
             fetchData();
         }
     }, [user]);
+    
+    const categorizedMethods = useMemo(() => {
+        return {
+            crypto: paymentMethods.filter(p => p.type === 'crypto'),
+            internal_transfer: paymentMethods.filter(p => p.type === 'internal_transfer'),
+            trading_account: paymentMethods.filter(p => p.type === 'trading_account'),
+        }
+    }, [paymentMethods]);
 
-    async function onSubmit(values: z.infer<typeof formSchema>) {
+    async function onSubmit(values: FormValues) {
         if (!user || !selectedMethod) {
             toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in and select a method.' });
             return;
@@ -172,6 +196,16 @@ export default function WithdrawPage() {
         }
 
         setIsLoading(true);
+
+        const submissionDetails = { ...values.details };
+        if (selectedMethod.type === 'trading_account' && submissionDetails.tradingAccountId) {
+            const account = userAccounts.find(a => a.id === submissionDetails.tradingAccountId);
+            if (account) {
+                 submissionDetails.accountNumber = account.accountNumber;
+                 submissionDetails.broker = account.broker;
+            }
+        }
+
         try {
             await addDoc(collection(db, "withdrawals"), {
                 userId: user.uid,
@@ -179,12 +213,12 @@ export default function WithdrawPage() {
                 status: 'Processing',
                 requestedAt: serverTimestamp(),
                 paymentMethod: selectedMethod.name,
-                withdrawalDetails: values.details,
+                withdrawalDetails: submissionDetails,
             });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
             form.reset();
             setSelectedMethod(null);
-            fetchData(); // Refetch data
+            fetchData();
         } catch (error) {
             console.error('Error submitting withdrawal: ', error);
             toast({ variant: 'destructive', title: 'Error', description: 'There was a problem submitting your request.' });
@@ -214,6 +248,36 @@ export default function WithdrawPage() {
             </div>
         );
     }
+    
+    const renderMethodGroup = (title: string, icon: React.ReactNode, methods: PaymentMethod[]) => {
+        if (methods.length === 0) return null;
+        return (
+             <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    {icon}
+                    <h3 className="font-semibold">{title}</h3>
+                </div>
+                <RadioGroup 
+                    onValueChange={(value) => {
+                        form.setValue('paymentMethodId', value);
+                        setSelectedMethod(paymentMethods.find(p => p.id === value) || null);
+                    }} 
+                    value={form.watch('paymentMethodId')} 
+                    className="flex flex-col space-y-2"
+                >
+                    {methods.map(method => (
+                        <FormItem key={method.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                            <FormControl><RadioGroupItem value={method.id} id={method.id} className="sr-only"/></FormControl>
+                            <FormLabel htmlFor={method.id} className="font-normal cursor-pointer w-full">
+                                <p className="font-medium">{method.name}</p>
+                                <p className="text-xs text-muted-foreground">{method.description}</p>
+                            </FormLabel>
+                        </FormItem>
+                    ))}
+                </RadioGroup>
+            </div>
+        )
+    }
 
     return (
         <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
@@ -240,28 +304,15 @@ export default function WithdrawPage() {
                                 control={form.control}
                                 name="paymentMethodId"
                                 render={({ field }) => (
-                                    <FormItem className="space-y-3">
-                                        <FormLabel>Select Payment Method</FormLabel>
-                                        <FormControl>
-                                            <RadioGroup 
-                                                onValueChange={(value) => {
-                                                    field.onChange(value);
-                                                    setSelectedMethod(paymentMethods.find(p => p.id === value) || null);
-                                                }} 
-                                                value={field.value} 
-                                                className="flex flex-col space-y-2"
-                                            >
-                                                {paymentMethods.map(method => (
-                                                    <FormItem key={method.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                                                        <FormControl><RadioGroupItem value={method.id} id={method.id} className="sr-only"/></FormControl>
-                                                        <FormLabel htmlFor={method.id} className="font-normal cursor-pointer w-full">
-                                                            <p className="font-medium">{method.name}</p>
-                                                            <p className="text-xs text-muted-foreground">{method.description}</p>
-                                                        </FormLabel>
-                                                    </FormItem>
-                                                ))}
-                                            </RadioGroup>
-                                        </FormControl>
+                                    <FormItem className="space-y-6">
+                                        <FormLabel className="text-base font-semibold">1. Select Payment Method</FormLabel>
+                                         <FormControl>
+                                            <div className="space-y-6">
+                                                {renderMethodGroup("Crypto", <Wallet className="h-5 w-5 text-muted-foreground" />, categorizedMethods.crypto)}
+                                                {renderMethodGroup("Internal Transfer", <Repeat className="h-5 w-5 text-muted-foreground" />, categorizedMethods.internal_transfer)}
+                                                {renderMethodGroup("To Approved Trading Account", <Briefcase className="h-5 w-5 text-muted-foreground" />, categorizedMethods.trading_account)}
+                                            </div>
+                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -269,6 +320,7 @@ export default function WithdrawPage() {
 
                             {selectedMethod && (
                                 <div className="space-y-4 pt-4 border-t">
+                                     <h3 className="text-base font-semibold">2. Enter Details</h3>
                                      <FormField
                                         control={form.control}
                                         name="amount"
@@ -285,6 +337,32 @@ export default function WithdrawPage() {
                                             </FormItem>
                                         )}
                                     />
+                                    {selectedMethod.type === 'trading_account' && (
+                                         <FormField
+                                            control={form.control}
+                                            name="details.tradingAccountId"
+                                            render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Select Account</FormLabel>
+                                                <FormControl>
+                                                    <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-2">
+                                                        {userAccounts.map(acc => (
+                                                            <FormItem key={acc.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                                                                <FormControl><RadioGroupItem value={acc.id} id={acc.id} className="sr-only"/></FormControl>
+                                                                <FormLabel htmlFor={acc.id} className="font-normal cursor-pointer w-full">
+                                                                    <p className="font-medium">{acc.broker}</p>
+                                                                    <p className="text-xs text-muted-foreground">{acc.accountNumber}</p>
+                                                                </FormLabel>
+                                                            </FormItem>
+                                                        ))}
+                                                    </RadioGroup>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                            )}
+                                        />
+                                    )}
+
                                     {selectedMethod.fields.map((customField) => (
                                         <FormField
                                             key={customField.name}

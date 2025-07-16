@@ -104,7 +104,7 @@ export interface PaymentMethod {
     description: string;
     isEnabled: boolean;
     fields: PaymentMethodField[];
-    type: 'crypto' | 'internal_transfer' | 'other';
+    type: 'crypto' | 'internal_transfer' | 'trading_account';
 }
 
 
