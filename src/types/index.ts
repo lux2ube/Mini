@@ -93,3 +93,17 @@ export interface Withdrawal {
     completedAt?: Date;
     txId?: string; // Transaction ID from the blockchain
 }
+
+
+/**
+ * Represents a notification for a user.
+ */
+export interface Notification {
+    id: string;
+    userId: string;
+    message: string;
+    type: 'account' | 'cashback' | 'withdrawal' | 'general';
+    isRead: boolean;
+    createdAt: Date;
+    link?: string;
+}

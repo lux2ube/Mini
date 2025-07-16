@@ -1,4 +1,6 @@
 
+"use client";
+
 import Link from "next/link";
 import {
     CircleUser,
@@ -11,7 +13,9 @@ import {
     ReceiptText,
     LogOut,
     Users,
-    Gift
+    Gift,
+    Bell,
+    Check
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -23,25 +27,111 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
-import { AuthProvider } from "@/hooks/useAuthContext";
+import { AuthProvider, useAuthContext } from "@/hooks/useAuthContext";
 import { AuthGuard } from "@/components/shared/AuthGuard";
+import { useEffect, useState } from "react";
+import type { Notification } from "@/types";
+import { getNotificationsForUser, markNotificationsAsRead } from "../admin/actions";
+import { formatDistanceToNow } from "date-fns";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+
+const navLinks = [
+    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/dashboard/my-accounts", icon: Users, label: "My Accounts" },
+    { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
+    { href: "/dashboard/transactions", icon: ReceiptText, label: "Transactions" },
+    { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
+    { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
+    { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+];
+
+
+function NotificationBell() {
+    const { user } = useAuthContext();
+    const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        if (!user) return;
+        
+        const fetchNotifications = async () => {
+            const data = await getNotificationsForUser(user.uid);
+            setNotifications(data);
+            setUnreadCount(data.filter(n => !n.isRead).length);
+        };
+        fetchNotifications();
+        
+        // Poll for new notifications
+        const intervalId = setInterval(fetchNotifications, 30000); // every 30 seconds
+        return () => clearInterval(intervalId);
+
+    }, [user]);
+
+    const handleMarkAsRead = async () => {
+        const unreadIds = notifications.filter(n => !n.isRead).map(n => n.id);
+        if (unreadIds.length > 0) {
+            await markNotificationsAsRead(unreadIds);
+            setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+            setUnreadCount(0);
+        }
+    };
+
+    return (
+        <Popover onOpenChange={(open) => { if (!open) handleMarkAsRead(); }}>
+            <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-xs text-white">
+                            {unreadCount}
+                        </span>
+                    )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80 p-0" align="end">
+                <div className="p-4 border-b">
+                    <h3 className="font-semibold">Notifications</h3>
+                </div>
+                <ScrollArea className="h-80">
+                    <div className="p-2 space-y-1">
+                        {notifications.length > 0 ? (
+                            notifications.map(n => (
+                                <Link href={n.link || '/dashboard'} key={n.id} className="block">
+                                    <div className={cn("p-2 rounded-md hover:bg-muted", !n.isRead && "bg-primary/10")}>
+                                        <p className="text-sm">{n.message}</p>
+                                        <p className="text-xs text-muted-foreground">{formatDistanceToNow(n.createdAt, { addSuffix: true })}</p>
+                                    </div>
+                                </Link>
+                            ))
+                        ) : (
+                            <p className="p-4 text-center text-sm text-muted-foreground">No notifications yet.</p>
+                        )}
+                    </div>
+                </ScrollArea>
+                <div className="p-2 border-t">
+                    <Button variant="ghost" size="sm" className="w-full text-sm" onClick={handleMarkAsRead}>
+                        <Check className="mr-2 h-4 w-4" />
+                        Mark all as read
+                    </Button>
+                </div>
+            </PopoverContent>
+        </Popover>
+    )
+}
+
 
 export default function DashboardLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const navLinks = [
-        { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-        { href: "/dashboard/my-accounts", icon: Users, label: "My Accounts" },
-        { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
-        { href: "/dashboard/transactions", icon: ReceiptText, label: "Transactions" },
-        { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
-        { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
-        { href: "/dashboard/settings", icon: Settings, label: "Settings" },
-    ];
-
     return (
         <AuthProvider>
             <AuthGuard>
@@ -91,22 +181,25 @@ export default function DashboardLayout({
                         <div className="w-full flex-1">
                             <h1 className="text-lg font-semibold font-headline">Cashback Companion</h1>
                         </div>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button variant="secondary" size="icon" className="rounded-full">
-                                    <CircleUser className="h-5 w-5" />
-                                    <span className="sr-only">Toggle user menu</span>
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <Link href="/dashboard/settings"><DropdownMenuItem>Settings</DropdownMenuItem></Link>
-                                <DropdownMenuItem>Support</DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <Link href="/"><DropdownMenuItem>Logout</DropdownMenuItem></Link>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
+                        <div className="flex items-center gap-2">
+                            <NotificationBell />
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="secondary" size="icon" className="rounded-full">
+                                        <CircleUser className="h-5 w-5" />
+                                        <span className="sr-only">Toggle user menu</span>
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                                    <DropdownMenuSeparator />
+                                    <Link href="/dashboard/settings"><DropdownMenuItem>Settings</DropdownMenuItem></Link>
+                                    <DropdownMenuItem>Support</DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <Link href="/"><DropdownMenuItem>Logout</DropdownMenuItem></Link>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </header>
                     <main className="flex flex-1 flex-col">
                         {children}

@@ -5,6 +5,23 @@ import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
 import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings } from '@/types';
 
+// Generic function to create a notification
+async function createNotification(userId: string, message: string, type: 'account' | 'cashback' | 'withdrawal' | 'general', link?: string) {
+    try {
+        await addDoc(collection(db, 'notifications'), {
+            userId,
+            message,
+            type,
+            link,
+            isRead: false,
+            createdAt: serverTimestamp(),
+        });
+    } catch (error) {
+        console.error(`Failed to create notification for user ${userId}:`, error);
+    }
+}
+
+
 // Banner Management
 export async function getBannerSettings(): Promise<BannerSettings> {
     const docRef = doc(db, 'settings', 'banner');
@@ -105,7 +122,15 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
 export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected') {
   try {
     const accountRef = doc(db, 'tradingAccounts', accountId);
+    const accountSnap = await getDoc(accountRef);
+    if (!accountSnap.exists()) throw new Error("Account not found");
+    const accountData = accountSnap.data() as TradingAccount;
+
     await updateDoc(accountRef, { status });
+
+    const message = `Your trading account ${accountData.accountNumber} has been ${status.toLowerCase()}.`;
+    await createNotification(accountData.userId, message, 'account', '/dashboard/my-accounts');
+
     return { success: true, message: `Account status updated to ${status}.` };
   } catch (error) {
     console.error("Error updating account status:", error);
@@ -133,6 +158,10 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
             ...data,
             date: serverTimestamp(),
         });
+
+        const message = `You received $${data.cashbackAmount.toFixed(2)} cashback for account ${data.accountNumber}.`;
+        await createNotification(data.userId, message, 'cashback', '/dashboard/transactions');
+
         return { success: true, message: 'Cashback transaction added successfully.' };
     } catch (error) {
         console.error("Error adding cashback transaction:", error);
@@ -160,11 +189,19 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
 export async function approveWithdrawal(withdrawalId: string, txId: string) {
     try {
         const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
+        const withdrawalSnap = await getDoc(withdrawalRef);
+        if (!withdrawalSnap.exists()) throw new Error("Withdrawal not found");
+        const withdrawalData = withdrawalSnap.data() as Withdrawal;
+
         await updateDoc(withdrawalRef, {
             status: 'Completed',
             completedAt: serverTimestamp(),
             txId: txId,
         });
+
+        const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has been completed.`;
+        await createNotification(withdrawalData.userId, message, 'withdrawal', '/dashboard/withdraw');
+
         return { success: true, message: 'Withdrawal approved successfully with TXID.' };
     } catch (error) {
         console.error("Error approving withdrawal:", error);
@@ -175,10 +212,45 @@ export async function approveWithdrawal(withdrawalId: string, txId: string) {
 export async function rejectWithdrawal(withdrawalId: string) {
      try {
         const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
+        const withdrawalSnap = await getDoc(withdrawalRef);
+        if (!withdrawalSnap.exists()) throw new Error("Withdrawal not found");
+        const withdrawalData = withdrawalSnap.data() as Withdrawal;
+
         await updateDoc(withdrawalRef, { status: 'Failed' });
+
+        const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has failed. Please contact support.`;
+        await createNotification(withdrawalData.userId, message, 'withdrawal', '/dashboard/withdraw');
+
         return { success: true, message: `Withdrawal status updated to Failed.` };
     } catch (error) {
         console.error("Error rejecting withdrawal:", error);
         return { success: false, message: 'Failed to reject withdrawal.' };
     }
+}
+
+// Notification Actions
+export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
+    const q = query(
+        collection(db, 'notifications'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp).toDate(),
+        } as Notification;
+    });
+}
+
+export async function markNotificationsAsRead(notificationIds: string[]) {
+    const batch = writeBatch(db);
+    notificationIds.forEach(id => {
+        const docRef = doc(db, 'notifications', id);
+        batch.update(docRef, { isRead: true });
+    });
+    await batch.commit();
 }
