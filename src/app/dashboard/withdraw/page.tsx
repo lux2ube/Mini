@@ -101,8 +101,20 @@ export default function WithdrawPage() {
     }, [selectedMethod]);
     
     useEffect(() => {
-        form.reset();
-    }, [formSchema, form]);
+        // When the schema changes (or a new method is selected), reset the form.
+        // Provide default values for all dynamic fields to avoid uncontrolled -> controlled error.
+        const defaultDetails = selectedMethod?.fields.reduce((acc, field) => {
+            acc[field.name] = '';
+            return acc;
+        }, {} as Record<string, string>) || {};
+
+        form.reset({
+            amount: 0,
+            paymentMethodId: selectedMethod?.id || '',
+            details: defaultDetails,
+        });
+
+    }, [formSchema, form, selectedMethod]);
 
 
     const fetchData = async () => {
@@ -131,7 +143,7 @@ export default function WithdrawPage() {
                     } as Withdrawal;
                 });
                 
-                withdrawals.sort((a, b) => b.requestedAt.getTime() - a.createdAt.getTime());
+                withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
 
                 setRecentWithdrawals(withdrawals);
             } catch (error) {
