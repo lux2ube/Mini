@@ -136,9 +136,11 @@ export default function UserDashboardPage() {
           });
 
           // Fetch orders to factor into balance
-            const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid), where("status", "!=", "Cancelled"));
+            const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid));
             const ordersSnapshot = await getDocs(ordersQuery);
-            const totalSpentOnOrders = ordersSnapshot.docs.reduce((sum, doc) => sum + doc.data().price, 0);
+            const totalSpentOnOrders = ordersSnapshot.docs
+                .filter(doc => doc.data().status !== 'Cancelled')
+                .reduce((sum, doc) => sum + doc.data().price, 0);
 
 
           const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals - totalSpentOnOrders;

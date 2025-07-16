@@ -393,9 +393,12 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
                 .filter(doc => doc.data().status === 'Completed' || doc.data().status === 'Processing')
                 .reduce((sum, doc) => sum + doc.data().amount, 0);
             
-            const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId), where('status', '!=', 'Cancelled'));
+            const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
             const ordersSnap = await getDocs(ordersQuery);
-            const totalSpent = ordersSnap.docs.reduce((sum, doc) => sum + doc.data().price, 0);
+            const totalSpent = ordersSnap.docs
+                .filter(doc => doc.data().status !== 'Cancelled')
+                .reduce((sum, doc) => sum + doc.data().price, 0);
+
 
             const balance = totalEarned - totalWithdrawn - totalSpent;
             
