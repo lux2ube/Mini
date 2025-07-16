@@ -63,6 +63,11 @@ export default function WithdrawPage() {
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
+        defaultValues: {
+            amount: 0,
+            paymentMethodId: '',
+            details: {},
+        }
     });
 
     // Update schema when a method is selected
@@ -101,20 +106,15 @@ export default function WithdrawPage() {
     }, [selectedMethod]);
     
     useEffect(() => {
-        // When the schema changes (or a new method is selected), reset the form.
-        // Provide default values for all dynamic fields to avoid uncontrolled -> controlled error.
-        const defaultDetails = selectedMethod?.fields.reduce((acc, field) => {
-            acc[field.name] = '';
-            return acc;
-        }, {} as Record<string, string>) || {};
-
-        form.reset({
-            amount: 0,
-            paymentMethodId: selectedMethod?.id || '',
-            details: defaultDetails,
-        });
-
-    }, [formSchema, form, selectedMethod]);
+        form.reset();
+        if (selectedMethod) {
+            form.setValue('paymentMethodId', selectedMethod.id);
+            selectedMethod.fields.forEach(field => {
+                // Explicitly set a defined value for each dynamic field to prevent uncontrolled -> controlled error.
+                form.setValue(`details.${field.name}`, '');
+            });
+        }
+    }, [selectedMethod, form]);
 
 
     const fetchData = async () => {
