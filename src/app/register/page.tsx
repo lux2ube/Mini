@@ -23,12 +23,20 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
   const referralCodeFromUrl = searchParams.get('ref');
+
+  useEffect(() => {
+    if (referralCodeFromUrl) {
+      setReferralCode(referralCodeFromUrl);
+    }
+  }, [referralCodeFromUrl]);
+
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,14 +57,14 @@ export default function RegisterPage() {
         let referrerProfile: { uid: string, data: any } | null = null;
         
         // Find the referrer if a code is provided
-        if (referralCodeFromUrl) {
-          const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCodeFromUrl));
+        if (referralCode) {
+          const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCode));
           const referrerSnapshot = await getDocs(referrerQuery);
           if (!referrerSnapshot.empty) {
             const doc = referrerSnapshot.docs[0];
             referrerProfile = { uid: doc.id, data: doc.data() };
           } else {
-            console.warn("Referral code not found:", referralCodeFromUrl);
+            console.warn("Referral code not found:", referralCode);
           }
         }
         
@@ -123,6 +131,10 @@ export default function RegisterPage() {
                     <div className="space-y-2">
                         <Label htmlFor="confirm-password">Confirm Password</Label>
                         <Input id="confirm-password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="referral-code">Referral Code (Optional)</Label>
+                        <Input id="referral-code" type="text" placeholder="e.g. JOH123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} />
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? <Loader2 className="animate-spin" /> : "Create Account"}
