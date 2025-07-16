@@ -5,22 +5,31 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getCountFromServer } from "firebase/firestore";
+import { collection, query, where, getCountFromServer, getDocs, Timestamp } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
-import type { BannerSettings } from "@/types";
+import type { BannerSettings, TradingAccount } from "@/types";
 import { getBannerSettings, getUserBalance } from "../admin/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 
 interface DashboardStats {
     availableBalance: number;
     totalEarned: number;
-    linkedAccounts: number;
+    linkedAccounts: TradingAccount[];
     pendingWithdrawals: number;
     completedWithdrawals: number;
     totalReferrals: number;
@@ -84,7 +93,7 @@ export default function UserDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({
     availableBalance: 0,
     totalEarned: 0,
-    linkedAccounts: 0,
+    linkedAccounts: [],
     pendingWithdrawals: 0,
     completedWithdrawals: 0,
     totalReferrals: 0,
@@ -105,17 +114,18 @@ export default function UserDashboardPage() {
       if (user) {
         setIsLoading(true);
         try {
-          // Fetch balance using the centralized function
           const balanceData = await getUserBalance(user.uid);
-
-          // Fetch other stats
-          const accountsQuery = query(
-            collection(db, "tradingAccounts"), 
-            where("userId", "==", user.uid),
-            where("status", "==", "Approved")
-          );
-          const accountsSnapshot = await getCountFromServer(accountsQuery);
-          const linkedAccounts = accountsSnapshot.data().count;
+          
+          const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
+          const accountsSnapshot = await getDocs(accountsQuery);
+          const linkedAccounts = accountsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              ...data,
+              createdAt: (data.createdAt as Timestamp).toDate(),
+            } as TradingAccount;
+          });
           
           setStats({
             ...balanceData,
@@ -146,124 +156,111 @@ export default function UserDashboardPage() {
   }
 
   return (
-    <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
-      <PageHeader
-        title={`Welcome, ${user?.profile?.name || 'User'}!`}
-        description="Your cashback overview."
-      />
-      
-      <PromoBanner />
+    <div className="flex-1 bg-muted/30">
+        <div className="container mx-auto px-4 py-4 space-y-4 max-w-2xl">
+        
+            <Tabs defaultValue="wallet" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="wallet">UTSPAY WALLET</TabsTrigger>
+                    <TabsTrigger value="rebate">AUTO REBATE</TabsTrigger>
+                </TabsList>
+                <TabsContent value="wallet" className="space-y-4">
+                    <h2 className="text-xl font-semibold mt-4">Account Rebates</h2>
+                    <Card className="bg-slate-800 text-white shadow-lg overflow-hidden">
+                        <CardContent className="p-4 relative">
+                            <div className="absolute top-0 left-0 w-full h-full bg-slate-900/20" style={{ backgroundImage: `radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 50%)`}}></div>
+                            <div className="relative z-10">
+                                <div className="flex justify-between items-start">
+                                    <h3 className="text-lg font-semibold text-gray-300">COIN CASH</h3>
+                                    <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-6 h-6 text-primary-foreground"><path fill="currentColor" d="M213.38 181.38a8 8 0 0 1-10.76 1.35A103.92 103.92 0 0 0 128 160a103.92 103.92 0 0 0-74.62 22.73a8 8 0 1 1-9.41-12.7A119.92 119.92 0 0 1 128 144a119.92 119.92 0 0 1 83.94 25.32a8 8 0 0 1 1.44 12.06M240 128a112 112 0 1 1-112-112a112 112 0 0 1 112 112m-24 0a88 88 0 1 0-88 88a88.1 88.1 0 0 0 88-88"/></svg>
+                                    </div>
+                                </div>
+                                <div className="mt-4">
+                                    <p className="text-sm text-gray-400">Total Cashback</p>
+                                    <p className="text-4xl font-bold">${stats.availableBalance.toFixed(2)}</p>
+                                </div>
+                                <div className="mt-6 grid grid-cols-3 divide-x divide-slate-700">
+                                    <div className="px-2">
+                                        <p className="text-xs text-gray-400">Incoming</p>
+                                        <p className="font-semibold">${stats.totalEarned.toFixed(2)}</p>
+                                    </div>
+                                     <div className="px-2 text-center">
+                                        <p className="text-xs text-gray-400">Outgoing</p>
+                                        <p className="font-semibold">${stats.completedWithdrawals.toFixed(2)}</p>
+                                    </div>
+                                     <div className="px-2 text-right">
+                                        <p className="text-xs text-gray-400">PENDING</p>
+                                        <p className="font-semibold">${stats.pendingWithdrawals.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-      <Card>
-          <CardHeader>
-              <CardDescription>Available Balance</CardDescription>
-              <CardTitle className="text-4xl font-bold">${stats.availableBalance.toFixed(2)}</CardTitle>
-              <p className="text-sm text-muted-foreground">
-                  Total earned: ${stats.totalEarned.toFixed(2)}
-              </p>
-          </CardHeader>
-           <CardContent className="flex flex-col space-y-2">
-              <Button asChild className="w-full">
-                  <Link href="/dashboard/withdraw">Withdraw</Link>
-              </Button>
-              <Button asChild variant="secondary" className="w-full">
-                  <Link href="/dashboard/brokers">Earn Now</Link>
-              </Button>
-          </CardContent>
-      </Card>
+                    <div className="grid grid-cols-2 gap-4">
+                        <Button asChild variant="secondary" className="bg-white text-black hover:bg-gray-200">
+                            <Link href="/dashboard/brokers">Get Cashback</Link>
+                        </Button>
+                        <Button asChild variant="secondary" className="bg-white text-black hover:bg-gray-200">
+                            <Link href="/dashboard/withdraw">Withdraw</Link>
+                        </Button>
+                    </div>
 
-      <Card>
-          <CardHeader>
-               <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-primary/10">
-                      <Gift className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                      <CardTitle>Referral Program</CardTitle>
-                      <CardDescription>Invite friends and earn rewards.</CardDescription>
-                  </div>
-               </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-muted text-center">
-                    <p className="text-sm font-medium">Invited</p>
-                    <p className="text-2xl font-bold text-primary">{stats.totalReferrals}</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted text-center">
-                    <p className="text-sm font-medium">Points</p>
-                    <p className="text-2xl font-bold text-primary">{stats.referralPoints}</p>
-                </div>
-              </div>
-              <div className="relative">
-                <Input value={referralLink} readOnly className="pr-10" />
-                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8" onClick={copyToClipboard}>
-                    <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-               <Button asChild className="w-full">
-                  <Link href="/dashboard/referrals">
-                      View Details
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-              </Button>
-          </CardContent>
-      </Card>
+                    <div>
+                        <h2 className="text-xl font-semibold mt-4">List Brokers</h2>
+                        <Card className="mt-2">
+                          <CardContent className="p-0">
+                            <Table>
+                               <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Account</TableHead>
+                                    <TableHead>Broker</TableHead>
+                                    <TableHead className="text-right">Status</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {stats.linkedAccounts.length > 0 ? (
+                                    stats.linkedAccounts.map(account => (
+                                      <TableRow key={account.id}>
+                                        <TableCell className="font-medium">{account.accountNumber}</TableCell>
+                                        <TableCell>{account.broker}</TableCell>
+                                        <TableCell className="text-right">{account.status}</TableCell>
+                                      </TableRow>
+                                    ))
+                                  ) : (
+                                    <TableRow>
+                                      <TableCell colSpan={3} className="text-center text-muted-foreground py-4">
+                                        No linked accounts.
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </TableBody>
+                            </Table>
+                          </CardContent>
+                          <CardHeader className="p-2 border-t">
+                             <Button asChild variant="ghost" size="sm" className="w-full justify-center">
+                                <Link href="/dashboard/my-accounts">View All Accounts <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                              </Button>
+                          </CardHeader>
+                        </Card>
+                    </div>
 
-      <Card>
-          <CardHeader>
-               <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-primary/10">
-                      <Briefcase className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                      <CardTitle>Trading Accounts</CardTitle>
-                      <CardDescription>Link accounts to earn.</CardDescription>
-                  </div>
-               </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <div className="p-4 rounded-lg bg-muted flex justify-between items-center">
-                  <span className="font-medium">Approved Accounts</span>
-                  <span className="text-2xl font-bold text-primary">{stats.linkedAccounts}</span>
-              </div>
-               <Button asChild className="w-full">
-                  <Link href="/dashboard/my-accounts">
-                      <PlusCircle className="mr-2 h-5 w-5" />
-                      Manage Accounts
-                  </Link>
-              </Button>
-          </CardContent>
-      </Card>
-
-      <Card>
-          <CardHeader>
-              <div className="flex items-start gap-4">
-                  <div className="p-3 rounded-lg bg-primary/10">
-                      <Landmark className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                      <CardTitle>Withdrawals</CardTitle>
-                      <CardDescription>View your history.</CardDescription>
-                  </div>
-              </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-              <div className="p-4 rounded-lg bg-muted flex flex-col space-y-2">
-                  <div>
-                      <p className="font-medium">Pending</p>
-                      <p className="text-lg font-bold text-muted-foreground">${stats.pendingWithdrawals.toFixed(2)}</p>
-                  </div>
-                   <div>
-                      <p className="font-medium">Completed</p>
-                      <p className="text-lg font-bold text-muted-foreground">${stats.completedWithdrawals.toFixed(2)}</p>
-                  </div>
-              </div>
-              <Button asChild variant="outline" className="w-full">
-                  <Link href="/dashboard/withdraw">View History</Link>
-              </Button>
-          </CardContent>
-      </Card>
+                </TabsContent>
+                <TabsContent value="rebate">
+                    <Card className="mt-4">
+                        <CardContent className="p-6">
+                            <p className="text-center text-muted-foreground">Auto Rebate feature is coming soon.</p>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
+        </div>
+        <div className="fixed bottom-6 right-6">
+            <Button size="icon" className="rounded-full h-14 w-14 shadow-lg">
+                <MessageCircle className="h-7 w-7" />
+            </Button>
+        </div>
     </div>
   );
 }
