@@ -1,3 +1,4 @@
+
 import type { Timestamp } from "firebase/firestore";
 
 /**
@@ -77,6 +78,35 @@ export interface CashbackTransaction {
     referralBonusAmount?: number;
 }
 
+/**
+ * Represents a configurable field for a payment method.
+ */
+export interface PaymentMethodField {
+    name: string; // e.g., "walletAddress", "binanceId"
+    label: string; // e.g., "USDT (BEP20) Wallet Address", "Binance ID"
+    type: 'text' | 'number';
+    placeholder?: string;
+    validation: {
+        required: boolean;
+        minLength?: number;
+        maxLength?: number;
+        regex?: string; // Stored as a string
+        regexErrorMessage?: string;
+    };
+}
+
+/**
+ * Represents a withdrawal payment method configured by the admin.
+ */
+export interface PaymentMethod {
+    id: string;
+    name: string; // e.g., "USDT (BEP20)", "Internal Transfer"
+    description: string;
+    isEnabled: boolean;
+    fields: PaymentMethodField[];
+    type: 'crypto' | 'internal_transfer' | 'other';
+}
+
 
 /**
  * Represents a withdrawal request document in the 'withdrawals' collection.
@@ -86,11 +116,16 @@ export interface Withdrawal {
     userId: string;
     amount: number;
     status: 'Processing' | 'Completed' | 'Failed';
-    network: 'bep20' | 'trc20';
-    walletAddress: string;
+    // Deprecated fields
+    network?: 'bep20' | 'trc20';
+    walletAddress?: string;
+    // New fields
+    paymentMethod: string; // Name of the payment method, e.g., "USDT (TRC20)"
+    withdrawalDetails: Record<string, any>; // Stores field values, e.g., { walletAddress: '0x123...' }
+    // Timestamps
     requestedAt: Date;
     completedAt?: Date;
-    txId?: string; // Transaction ID from the blockchain
+    txId?: string; // Transaction ID from the blockchain or internal reference
 }
 
 

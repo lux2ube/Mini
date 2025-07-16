@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -17,6 +18,7 @@ import {
     List,
     Package,
     ShoppingBag,
+    Wallet,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -32,6 +34,7 @@ const navLinks = [
     { href: "/admin/manage-accounts", icon: Briefcase, label: "Manage Accounts" },
     { href: "/admin/manage-cashback", icon: PlusCircle, label: "Manage Cashback" },
     { href: "/admin/manage-withdrawals", icon: ArrowDownUp, label: "Manage Withdrawals" },
+    { href: "/admin/manage-payment-methods", icon: Wallet, label: "Payment Methods" },
     { href: "/admin/manage-brokers", icon: Briefcase, label: "Manage Brokers" },
     { href: "/admin/manage-banner", icon: GalleryHorizontal, label: "Manage Banner" },
 ];

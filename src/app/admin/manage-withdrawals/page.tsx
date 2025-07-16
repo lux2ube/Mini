@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -52,11 +53,11 @@ function ApproveWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: st
             <AlertDialogHeader>
                 <AlertDialogTitle>Approve Withdrawal</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Enter the blockchain transaction ID (TXID) to confirm this withdrawal has been sent.
+                    Enter the blockchain transaction ID (TXID) or internal reference to confirm this withdrawal has been sent.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2">
-                <Label htmlFor="txid">Transaction ID (TXID)</Label>
+                <Label htmlFor="txid">Transaction ID / Reference</Label>
                 <Input 
                     id="txid" 
                     value={txId} 
@@ -72,6 +73,21 @@ function ApproveWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: st
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
+    )
+}
+
+function WithdrawalDetail({ label, value }: { label: string, value: any }) {
+    if (!value) return null;
+    return (
+        <div className="flex items-center gap-2 text-xs">
+            <span className="font-semibold">{label}:</span>
+            <span className="text-muted-foreground truncate" style={{ maxWidth: '150px' }}>
+                {value}
+            </span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { navigator.clipboard.writeText(value); }}>
+                <Copy className="h-3 w-3" />
+            </Button>
+        </div>
     )
 }
 
@@ -107,11 +123,6 @@ export default function ManageWithdrawalsPage() {
         }
     };
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text);
-        toast({ title: 'Copied!', description: 'Wallet address copied to clipboard.' });
-    };
-
     const getStatusVariant = (status: string) => {
         switch (status) {
             case 'Completed': return 'default';
@@ -139,8 +150,8 @@ export default function ManageWithdrawalsPage() {
                                         <TableHead>Date</TableHead>
                                         <TableHead>User ID</TableHead>
                                         <TableHead>Amount</TableHead>
-                                        <TableHead>Network</TableHead>
-                                        <TableHead>Address</TableHead>
+                                        <TableHead>Method</TableHead>
+                                        <TableHead>Details</TableHead>
                                         <TableHead>Status</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
@@ -151,13 +162,15 @@ export default function ManageWithdrawalsPage() {
                                             <TableCell>{format(new Date(w.requestedAt), 'PP')}</TableCell>
                                             <TableCell className="text-xs text-muted-foreground truncate" style={{ maxWidth: '100px' }}>{w.userId}</TableCell>
                                             <TableCell className="font-medium">${w.amount.toFixed(2)}</TableCell>
-                                            <TableCell><Badge variant="outline">{w.network.toUpperCase()}</Badge></TableCell>
-                                            <TableCell className="text-xs text-muted-foreground truncate" style={{ maxWidth: '150px' }}>
-                                                <div className="flex items-center gap-2">
-                                                    <span>{w.walletAddress}</span>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyToClipboard(w.walletAddress)}>
-                                                        <Copy className="h-3 w-3" />
-                                                    </Button>
+                                            <TableCell>
+                                                <Badge variant="outline">{w.paymentMethod}</Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="space-y-1">
+                                                {Object.entries(w.withdrawalDetails).map(([key, value]) => (
+                                                    <WithdrawalDetail key={key} label={key} value={value} />
+                                                ))}
+                                                {w.walletAddress && <WithdrawalDetail label="Wallet Address (Old)" value={w.walletAddress} />}
                                                 </div>
                                             </TableCell>
                                             <TableCell><Badge variant={getStatusVariant(w.status)}>{w.status}</Badge></TableCell>
@@ -190,6 +203,9 @@ export default function ManageWithdrawalsPage() {
                                                         </AlertDialogContent>
                                                     </AlertDialog>
                                                     </>
+                                                )}
+                                                {w.status === 'Completed' && w.txId && (
+                                                     <WithdrawalDetail label="TXID" value={w.txId} />
                                                 )}
                                             </TableCell>
                                         </TableRow>

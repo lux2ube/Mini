@@ -1,9 +1,10 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order } from '@/types';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod } from '@/types';
 
 // Generic function to create a notification
 async function createNotification(
@@ -440,11 +441,12 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             const userRef = doc(db, 'users', userId);
             
             // Execute all reads
-            const [productSnap, userSnap, balanceData] = await Promise.all([
+            const [productSnap, userSnap] = await Promise.all([
                 transaction.get(productRef),
                 transaction.get(userRef),
-                getUserBalance(userId) // Use the centralized balance function
             ]);
+
+            const balanceData = await getUserBalance(userId); // Centralized balance function is not transaction-aware, so call it outside transaction for reads.
             
             // --- VALIDATION AND LOGIC ---
             if (!productSnap.exists()) {
@@ -496,5 +498,41 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
         console.error('Error placing order:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
         return { success: false, message: errorMessage };
+    }
+}
+
+// Payment Method Management
+export async function getPaymentMethods(): Promise<PaymentMethod[]> {
+    const snapshot = await getDocs(query(collection(db, 'paymentMethods'), orderBy('name')));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
+}
+
+export async function addPaymentMethod(data: Omit<PaymentMethod, 'id'>) {
+    try {
+        await addDoc(collection(db, 'paymentMethods'), data);
+        return { success: true, message: 'Payment method added successfully.' };
+    } catch (error) {
+        console.error("Error adding payment method:", error);
+        return { success: false, message: 'Failed to add payment method.' };
+    }
+}
+
+export async function updatePaymentMethod(id: string, data: Partial<PaymentMethod>) {
+    try {
+        await updateDoc(doc(db, 'paymentMethods', id), data);
+        return { success: true, message: 'Payment method updated successfully.' };
+    } catch (error) {
+        console.error("Error updating payment method:", error);
+        return { success: false, message: 'Failed to update payment method.' };
+    }
+}
+
+export async function deletePaymentMethod(id: string) {
+    try {
+        await deleteDoc(doc(db, 'paymentMethods', id));
+        return { success: true, message: 'Payment method deleted successfully.' };
+    } catch (error) {
+        console.error("Error deleting payment method:", error);
+        return { success: false, message: 'Failed to delete payment method.' };
     }
 }
