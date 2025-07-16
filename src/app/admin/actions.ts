@@ -303,7 +303,7 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
         } as Notification;
     });
 
-    // Perform sorting in-memory
+    // Perform sorting in-memory to avoid composite index requirement
     notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     
     return notifications;
@@ -395,6 +395,7 @@ export async function deleteProduct(id: string) {
 
 // Store Management - Orders
 export async function getOrders(): Promise<Order[]> {
+    // This query is on the entire collection, so sorting is fine.
     const snapshot = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
     return snapshot.docs.map(doc => {
         const data = doc.data();
@@ -555,8 +556,10 @@ export async function deletePaymentMethod(id: string) {
 
 // User: Payment Method Management
 export async function getUserPaymentMethods(userId: string): Promise<UserPaymentMethod[]> {
-    const snapshot = await getDocs(query(collection(db, 'userPaymentMethods'), where('userId', '==', userId), orderBy('createdAt', 'desc')));
-    return snapshot.docs.map(doc => {
+    const q = query(collection(db, 'userPaymentMethods'), where('userId', '==', userId));
+    const snapshot = await getDocs(q);
+
+    const methods = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -564,6 +567,11 @@ export async function getUserPaymentMethods(userId: string): Promise<UserPayment
             createdAt: (data.createdAt as Timestamp).toDate(),
         } as UserPaymentMethod
     });
+    
+    // Perform sorting in-memory to avoid composite index
+    methods.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    return methods;
 }
 
 export async function addUserPaymentMethod(data: Omit<UserPaymentMethod, 'id' | 'createdAt'>) {

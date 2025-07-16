@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
 import type { Order } from '@/types';
 import { format } from 'date-fns';
 
@@ -23,6 +23,8 @@ export default function MyOrdersPage() {
             if (!user) return;
             setIsLoading(true);
             try {
+                // This query requires a composite index on userId and createdAt.
+                // It is better to fetch and sort in memory if the index is not created.
                 const q = query(
                     collection(db, 'orders'),
                     where('userId', '==', user.uid)
