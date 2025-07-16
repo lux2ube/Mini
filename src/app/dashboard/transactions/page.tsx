@@ -119,18 +119,19 @@ export default function TransactionsPage() {
             />
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Filters</CardTitle>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base">Filters</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-2 p-4 pt-0">
                     <Input
                         placeholder="Search transactions..."
                         value={filters.search}
                         onChange={(e) => handleFilterChange('search', e.target.value)}
+                        className="h-9"
                     />
 
                     <Select value={filters.account} onValueChange={(value) => handleFilterChange('account', value)}>
-                        <SelectTrigger><SelectValue placeholder="All Accounts" /></SelectTrigger>
+                        <SelectTrigger className="h-9"><SelectValue placeholder="All Accounts" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Accounts</SelectItem>
                             {accounts.map(acc => (
@@ -141,7 +142,7 @@ export default function TransactionsPage() {
 
                     <Popover>
                         <PopoverTrigger asChild>
-                            <Button variant={"outline"} className="w-full justify-start text-left font-normal">
+                            <Button variant={"outline"} className="w-full justify-start text-left font-normal h-9">
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {filters.date?.from ? (
                                     filters.date.to ? (
@@ -173,9 +174,9 @@ export default function TransactionsPage() {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Results</CardTitle>
-                    <CardDescription>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base">Results</CardTitle>
+                    <CardDescription className="text-xs">
                         Showing {filteredTransactions.length} of {transactions.length} transactions.
                     </CardDescription>
                 </CardHeader>
@@ -184,9 +185,9 @@ export default function TransactionsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Account</TableHead>
-                                    <TableHead className="text-right">Cashback</TableHead>
+                                    <TableHead className="text-xs">Date</TableHead>
+                                    <TableHead className="text-xs">Account</TableHead>
+                                    <TableHead className="text-right text-xs">Cashback</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -199,14 +200,14 @@ export default function TransactionsPage() {
                                 ) : filteredTransactions.length > 0 ? (
                                     filteredTransactions.map(tx => (
                                         <TableRow key={tx.id}>
-                                            <TableCell className="font-medium whitespace-nowrap">{format(tx.date, "PP")}</TableCell>
-                                            <TableCell className="whitespace-nowrap">{tx.accountNumber}</TableCell>
-                                            <TableCell className="text-right font-semibold text-primary whitespace-nowrap">${tx.cashbackAmount.toFixed(2)}</TableCell>
+                                            <TableCell className="font-medium whitespace-nowrap text-xs">{format(tx.date, "PP")}</TableCell>
+                                            <TableCell className="whitespace-nowrap text-xs">{tx.accountNumber}</TableCell>
+                                            <TableCell className="text-right font-semibold text-primary whitespace-nowrap text-xs">${tx.cashbackAmount.toFixed(2)}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-24">
+                                        <TableCell colSpan={3} className="text-center h-24 text-xs">
                                             No transactions found.
                                         </TableCell>
                                     </TableRow>

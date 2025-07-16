@@ -90,8 +90,8 @@ function NotificationBell() {
     return (
         <Popover onOpenChange={(open) => { if (!open) handleMarkAsRead(); }}>
             <PopoverTrigger asChild>
-                <Button variant="outline" size="icon" className="relative">
-                    <Bell className="h-5 w-5" />
+                <Button variant="outline" size="icon" className="relative h-9 w-9">
+                    <Bell className="h-4 w-4" />
                     {unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-xs text-white">
                             {unreadCount}
@@ -100,8 +100,8 @@ function NotificationBell() {
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="end">
-                <div className="p-4 border-b">
-                    <h3 className="font-semibold">Notifications</h3>
+                <div className="p-2 border-b">
+                    <h3 className="font-semibold text-sm">Notifications</h3>
                 </div>
                 <ScrollArea className="h-80">
                     <div className="p-2 space-y-1">
@@ -140,10 +140,10 @@ export default function DashboardLayout({
         <AuthProvider>
             <AuthGuard>
                 <div className="flex flex-col min-h-screen w-full">
-                    <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4">
+                    <header className="sticky top-0 flex h-12 items-center gap-4 border-b bg-background px-4">
                         <Sheet>
                             <SheetTrigger asChild>
-                                <Button variant="outline" size="icon">
+                                <Button variant="outline" size="icon" className="h-9 w-9">
                                     <Menu className="h-5 w-5" />
                                     <span className="sr-only">Toggle navigation menu</span>
                                 </Button>
@@ -155,18 +155,18 @@ export default function DashboardLayout({
                                             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-6 h-6 text-primary-foreground"><path fill="currentColor" d="M213.38 181.38a8 8 0 0 1-10.76 1.35A103.92 103.92 0 0 0 128 160a103.92 103.92 0 0 0-74.62 22.73a8 8 0 1 1-9.41-12.7A119.92 119.92 0 0 1 128 144a119.92 119.92 0 0 1 83.94 25.32a8 8 0 0 1 1.44 12.06M240 128a112 112 0 1 1-112-112a112 112 0 0 1 112 112m-24 0a88 88 0 1 0-88 88a88.1 88.1 0 0 0 88-88"/></svg>
                                             </div>
-                                            <span className="font-headline">Cashback Companion</span>
+                                            <span className="font-headline text-base">Cashback Companion</span>
                                         </Link>
                                     </SheetTitle>
                                 </SheetHeader>
-                                <nav className="grid gap-2 text-lg font-medium p-4">
+                                <nav className="grid gap-1 text-sm font-medium p-2">
                                     {navLinks.map(link => (
                                         <Link
                                             key={link.href}
                                             href={link.href}
-                                            className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                                            className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground hover:text-foreground"
                                         >
-                                            <link.icon className="h-5 w-5" />
+                                            <link.icon className="h-4 w-4" />
                                             {link.label}
                                         </Link>
                                     ))}
@@ -174,22 +174,22 @@ export default function DashboardLayout({
                                 <div className="mt-auto p-4 border-t">
                                      <Link
                                         href="/"
-                                        className="flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                                        className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground hover:text-foreground"
                                     >
-                                        <LogOut className="h-5 w-5" />
+                                        <LogOut className="h-4 w-4" />
                                         Logout
                                     </Link>
                                 </div>
                             </SheetContent>
                         </Sheet>
                         <div className="w-full flex-1">
-                            <h1 className="text-lg font-semibold font-headline">Cashback Companion</h1>
+                            <h1 className="text-base font-semibold font-headline">Cashback Companion</h1>
                         </div>
                         <div className="flex items-center gap-2">
                             <NotificationBell />
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="secondary" size="icon" className="rounded-full">
+                                    <Button variant="secondary" size="icon" className="rounded-full h-9 w-9">
                                         <CircleUser className="h-5 w-5" />
                                         <span className="sr-only">Toggle user menu</span>
                                     </Button>

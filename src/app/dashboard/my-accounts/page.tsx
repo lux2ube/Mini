@@ -68,23 +68,23 @@ export default function MyAccountsPage() {
         description="Your linked forex trading accounts."
       />
 
-      <Button asChild className="w-full">
+      <Button asChild className="w-full" size="sm">
         <Link href="/dashboard/brokers">
-            <PlusCircle className="mr-2 h-5 w-5" />
+            <PlusCircle className="mr-2 h-4 w-4" />
             Link New Account
         </Link>
       </Button>
 
       {accounts.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {accounts.map((account) => (
             <AccountCard key={account.id} account={account} />
           ))}
         </div>
       ) : (
         <Card>
-            <CardContent className="p-10 text-center">
-                <p className="text-muted-foreground">You have no linked accounts yet.</p>
+            <CardContent className="p-6 text-center">
+                <p className="text-sm text-muted-foreground">You have no linked accounts yet.</p>
             </CardContent>
         </Card>
       )}

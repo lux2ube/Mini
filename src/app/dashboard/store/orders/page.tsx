@@ -70,36 +70,36 @@ export default function MyOrdersPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-6 space-y-6">
+        <div className="container mx-auto px-4 py-4 space-y-4">
             <PageHeader title="My Orders" description="Track your purchases from the store." />
 
             <div className="space-y-4">
                 {orders.length > 0 ? (
                     orders.map(order => (
                         <Card key={order.id}>
-                            <CardHeader>
+                            <CardHeader className="p-4">
                                 <div className="flex justify-between items-center">
-                                    <CardTitle className="text-base">Order ID: {order.id.slice(0, 8)}...</CardTitle>
+                                    <CardTitle className="text-sm">Order ID: {order.id.slice(0, 8)}...</CardTitle>
                                     <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
                                 </div>
-                                <CardDescription>
-                                    {format(order.createdAt, 'PPpp')}
+                                <CardDescription className="text-xs">
+                                    {format(order.createdAt, 'PPp')}
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="p-4 pt-0">
                                 <div className="flex items-center gap-4">
                                     <Image 
                                         src={order.productImage} 
                                         alt={order.productName} 
-                                        width={64} 
-                                        height={64}
+                                        width={48} 
+                                        height={48}
                                         className="rounded-md border aspect-square object-contain"
                                     />
                                     <div className="flex-grow">
-                                        <p className="font-semibold">{order.productName}</p>
-                                        <p className="text-sm text-muted-foreground">Qty: 1</p>
+                                        <p className="font-semibold text-sm">{order.productName}</p>
+                                        <p className="text-xs text-muted-foreground">Qty: 1</p>
                                     </div>
-                                    <p className="font-semibold text-lg">${order.price.toFixed(2)}</p>
+                                    <p className="font-semibold text-base">${order.price.toFixed(2)}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -107,7 +107,7 @@ export default function MyOrdersPage() {
                 ) : (
                     <Card>
                         <CardContent className="p-10 text-center">
-                            <p className="text-muted-foreground">You haven't placed any orders yet.</p>
+                            <p className="text-muted-foreground text-sm">You haven't placed any orders yet.</p>
                         </CardContent>
                     </Card>
                 )}

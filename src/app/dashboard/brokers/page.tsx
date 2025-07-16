@@ -78,10 +78,10 @@ export default function BrokersPage() {
       />
       
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filter & Sort</CardTitle>
+        <CardHeader className="p-4">
+          <CardTitle className="text-base">Filter & Sort</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0">
           <div className="flex items-center space-x-2">
             <div className="flex-grow">
                <Input
@@ -114,7 +114,7 @@ export default function BrokersPage() {
           ))
         ) : (
           <div className="text-center py-10">
-            <p className="text-muted-foreground">No brokers found.</p>
+            <p className="text-muted-foreground text-sm">No brokers found.</p>
           </div>
         )}
       </div>

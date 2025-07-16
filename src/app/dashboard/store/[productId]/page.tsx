@@ -32,17 +32,17 @@ type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
 function ProductPageSkeleton() {
     return (
-        <div className="container mx-auto px-4 py-6 space-y-6">
-            <Skeleton className="h-8 w-48" />
+        <div className="container mx-auto px-4 py-4 space-y-4">
+            <Skeleton className="h-8 w-32" />
             <div className="grid md:grid-cols-2 gap-8">
                 <Skeleton className="aspect-square w-full rounded-lg" />
-                <div className="space-y-4">
-                    <Skeleton className="h-10 w-3/4" />
-                    <Skeleton className="h-6 w-1/4" />
+                <div className="space-y-3">
+                    <Skeleton className="h-8 w-3/4" />
+                    <Skeleton className="h-5 w-1/4" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-5/6" />
-                    <Skeleton className="h-12 w-full mt-4" />
+                    <Skeleton className="h-10 w-full mt-4" />
                 </div>
             </div>
         </div>
@@ -112,8 +112,8 @@ export default function ProductDetailPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-6 space-y-6">
-             <Button variant="ghost" onClick={() => router.back()} className="mb-4">
+        <div className="container mx-auto px-4 py-4 space-y-4">
+             <Button variant="ghost" onClick={() => router.back()} className="mb-2 h-auto p-0 text-sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Store
             </Button>
@@ -127,11 +127,11 @@ export default function ProductDetailPage() {
                         data-ai-hint="product image"
                     />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-3">
                     <Badge variant="secondary">{product.categoryName}</Badge>
-                    <h1 className="text-3xl font-bold font-headline">{product.name}</h1>
-                    <p className="text-3xl font-bold text-primary">${product.price.toFixed(2)}</p>
-                    <p className="text-muted-foreground">{product.description}</p>
+                    <h1 className="text-2xl font-bold font-headline">{product.name}</h1>
+                    <p className="text-2xl font-bold text-primary">${product.price.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground">{product.description}</p>
                     
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>

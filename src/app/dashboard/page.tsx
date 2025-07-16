@@ -172,33 +172,33 @@ export default function UserDashboardPage() {
                     <TabsTrigger value="rebate">AUTO REBATE</TabsTrigger>
                 </TabsList>
                 <TabsContent value="wallet" className="space-y-4">
-                    <h2 className="text-xl font-semibold mt-4">Account Rebates</h2>
+                    <h2 className="text-lg font-semibold mt-4">Account Rebates</h2>
                     <Card className="bg-slate-800 text-white shadow-lg overflow-hidden">
                         <CardContent className="p-4 relative">
                             <div className="absolute top-0 left-0 w-full h-full bg-slate-900/20" style={{ backgroundImage: `radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 50%)`}}></div>
                             <div className="relative z-10">
                                 <div className="flex justify-between items-start">
-                                    <h3 className="text-lg font-semibold text-gray-300">COIN CASH</h3>
+                                    <h3 className="text-base font-semibold text-gray-300">COIN CASH</h3>
                                     <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
                                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-6 h-6 text-primary-foreground"><path fill="currentColor" d="M213.38 181.38a8 8 0 0 1-10.76 1.35A103.92 103.92 0 0 0 128 160a103.92 103.92 0 0 0-74.62 22.73a8 8 0 1 1-9.41-12.7A119.92 119.92 0 0 1 128 144a119.92 119.92 0 0 1 83.94 25.32a8 8 0 0 1 1.44 12.06M240 128a112 112 0 1 1-112-112a112 112 0 0 1 112 112m-24 0a88 88 0 1 0-88 88a88.1 88.1 0 0 0 88-88"/></svg>
                                     </div>
                                 </div>
-                                <div className="mt-4">
-                                    <p className="text-sm text-gray-400">Total Cashback</p>
-                                    <p className="text-4xl font-bold">${stats.availableBalance.toFixed(2)}</p>
+                                <div className="mt-2">
+                                    <p className="text-xs text-gray-400">Total Cashback</p>
+                                    <p className="text-3xl font-bold">${stats.availableBalance.toFixed(2)}</p>
                                 </div>
-                                <div className="mt-6 grid grid-cols-3 divide-x divide-slate-700">
+                                <div className="mt-4 grid grid-cols-3 divide-x divide-slate-700">
                                     <div className="px-2">
                                         <p className="text-xs text-gray-400">Incoming</p>
-                                        <p className="font-semibold">${stats.totalEarned.toFixed(2)}</p>
+                                        <p className="font-semibold text-sm">${stats.totalEarned.toFixed(2)}</p>
                                     </div>
                                      <div className="px-2 text-center">
                                         <p className="text-xs text-gray-400">Outgoing</p>
-                                        <p className="font-semibold">${stats.completedWithdrawals.toFixed(2)}</p>
+                                        <p className="font-semibold text-sm">${stats.completedWithdrawals.toFixed(2)}</p>
                                     </div>
                                      <div className="px-2 text-right">
                                         <p className="text-xs text-gray-400">PENDING</p>
-                                        <p className="font-semibold">${stats.pendingWithdrawals.toFixed(2)}</p>
+                                        <p className="font-semibold text-sm">${stats.pendingWithdrawals.toFixed(2)}</p>
                                     </div>
                                 </div>
                             </div>
@@ -215,29 +215,29 @@ export default function UserDashboardPage() {
                     </div>
 
                     <div className="space-y-4">
-                        <h2 className="text-xl font-semibold mt-4">List Brokers</h2>
+                        <h2 className="text-lg font-semibold mt-4">List Brokers</h2>
                         <Card>
                           <CardContent className="p-0">
                             <Table>
                                <TableHeader>
                                   <TableRow>
-                                    <TableHead>Account</TableHead>
-                                    <TableHead>Broker</TableHead>
-                                    <TableHead className="text-right">Status</TableHead>
+                                    <TableHead className="text-xs">Account</TableHead>
+                                    <TableHead className="text-xs">Broker</TableHead>
+                                    <TableHead className="text-right text-xs">Status</TableHead>
                                   </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                   {stats.linkedAccounts.length > 0 ? (
                                     stats.linkedAccounts.map(account => (
                                       <TableRow key={account.id}>
-                                        <TableCell className="font-medium">{account.accountNumber}</TableCell>
-                                        <TableCell>{account.broker}</TableCell>
-                                        <TableCell className="text-right">{account.status}</TableCell>
+                                        <TableCell className="font-medium text-xs">{account.accountNumber}</TableCell>
+                                        <TableCell className="text-xs">{account.broker}</TableCell>
+                                        <TableCell className="text-right text-xs">{account.status}</TableCell>
                                       </TableRow>
                                     ))
                                   ) : (
                                     <TableRow>
-                                      <TableCell colSpan={3} className="text-center text-muted-foreground py-4">
+                                      <TableCell colSpan={3} className="text-center text-muted-foreground py-4 text-xs">
                                         No linked accounts.
                                       </TableCell>
                                     </TableRow>
@@ -254,21 +254,21 @@ export default function UserDashboardPage() {
                     </div>
 
                     <div className="space-y-4">
-                         <h2 className="text-xl font-semibold mt-4">Referrals</h2>
+                         <h2 className="text-lg font-semibold mt-4">Referrals</h2>
                          <Card>
                             <CardContent className="p-4 space-y-4">
                                 <div className="grid grid-cols-2 gap-4 text-center">
                                     <div>
-                                        <p className="text-2xl font-bold">{stats.totalReferrals}</p>
+                                        <p className="text-xl font-bold">{stats.totalReferrals}</p>
                                         <p className="text-xs text-muted-foreground">Total Referrals</p>
                                     </div>
                                      <div>
-                                        <p className="text-2xl font-bold">{stats.referralPoints}</p>
+                                        <p className="text-xl font-bold">{stats.referralPoints}</p>
                                         <p className="text-xs text-muted-foreground">Referral Points</p>
                                     </div>
                                 </div>
                                 <div className="space-y-2">
-                                     <p className="text-sm font-medium">Your Invite Link</p>
+                                     <p className="text-xs font-medium">Your Invite Link</p>
                                      <div className="flex items-center gap-2">
                                         <Input readOnly value={referralLink} className="text-xs" />
                                         <Button size="icon" variant="outline" onClick={copyToClipboard}>
@@ -290,15 +290,15 @@ export default function UserDashboardPage() {
                 <TabsContent value="rebate">
                     <Card className="mt-4">
                         <CardContent className="p-6">
-                            <p className="text-center text-muted-foreground">Auto Rebate feature is coming soon.</p>
+                            <p className="text-center text-muted-foreground text-sm">Auto Rebate feature is coming soon.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
             </Tabs>
         </div>
-        <div className="fixed bottom-6 right-6">
-            <Button size="icon" className="rounded-full h-14 w-14 shadow-lg">
-                <MessageCircle className="h-7 w-7" />
+        <div className="fixed bottom-4 right-4">
+            <Button size="icon" className="rounded-full h-12 w-12 shadow-lg">
+                <MessageCircle className="h-6 w-6" />
             </Button>
         </div>
     </div>

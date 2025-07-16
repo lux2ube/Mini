@@ -198,7 +198,7 @@ export default function WithdrawPage() {
                                     userMethod ? (
                                         <SelectItem key={userMethod.id} value={userMethod.id}>
                                             <div className="flex flex-col">
-                                                <span>{userMethod.methodName}</span>
+                                                <span className="text-xs">{userMethod.methodName}</span>
                                                 <span className="text-xs text-muted-foreground">
                                                     {Object.entries(userMethod.details)
                                                         .map(([, value]) => `${value}`)
@@ -207,7 +207,7 @@ export default function WithdrawPage() {
                                             </div>
                                         </SelectItem>
                                     ) : (
-                                        <div key={adminMethod.id} className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm text-muted-foreground opacity-70">
+                                        <div key={adminMethod.id} className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-xs text-muted-foreground opacity-70">
                                             <span className="flex-grow">{adminMethod.name}</span>
                                             <Button asChild variant="secondary" size="sm" className="h-6">
                                                 <Link href="/dashboard/settings">Add</Link>
@@ -232,17 +232,17 @@ export default function WithdrawPage() {
             />
 
             <Card>
-                <CardHeader>
-                    <CardTitle className="text-3xl">${availableBalance.toFixed(2)}</CardTitle>
-                    <CardDescription>Available to Withdraw</CardDescription>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-2xl">${availableBalance.toFixed(2)}</CardTitle>
+                    <CardDescription className="text-xs">Available to Withdraw</CardDescription>
                 </CardHeader>
             </Card>
             
             <Card>
-                <CardHeader>
-                    <CardTitle>New Withdrawal</CardTitle>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base">New Withdrawal</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 pt-0">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             {renderPaymentMethodSelector()}
@@ -274,25 +274,25 @@ export default function WithdrawPage() {
             
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Recent Withdrawals</CardTitle>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base">Recent Withdrawals</CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                    <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Status / TXID</TableHead>
+                                <TableHead className="text-xs">Date</TableHead>
+                                <TableHead className="text-xs">Amount</TableHead>
+                                <TableHead className="text-xs">Status / TXID</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                              {recentWithdrawals.length > 0 ? (
                                 recentWithdrawals.map((w) => (
                                 <TableRow key={w.id}>
-                                    <TableCell className="text-muted-foreground">{format(new Date(w.requestedAt), "PP")}</TableCell>
-                                    <TableCell className="font-medium">${w.amount.toFixed(2)}</TableCell>
+                                    <TableCell className="text-muted-foreground text-xs">{format(new Date(w.requestedAt), "PP")}</TableCell>
+                                    <TableCell className="font-medium text-xs">${w.amount.toFixed(2)}</TableCell>
                                     <TableCell>
                                         <div className="flex flex-col items-start gap-1">
                                             <Badge variant={getStatusVariant(w.status)}>{w.status}</Badge>
@@ -320,7 +320,7 @@ export default function WithdrawPage() {
                                 ))
                              ) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24">No withdrawal history.</TableCell>
+                                    <TableCell colSpan={3} className="text-center h-24 text-xs">No withdrawal history.</TableCell>
                                 </TableRow>
                              )}
                         </TableBody>
@@ -331,7 +331,7 @@ export default function WithdrawPage() {
 
             <Alert>
                 <Info className="h-4 w-4" />
-                <AlertTitle>Important</AlertTitle>
+                <AlertTitle className="text-sm">Important</AlertTitle>
                 <AlertDescription>
                     <ul className="list-disc list-inside space-y-1 text-xs">
                         <li>Withdrawals are processed within 24 hours.</li>

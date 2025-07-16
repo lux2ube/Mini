@@ -160,7 +160,7 @@ export default function BrokerDetailPage() {
   };
 
   return (
-    <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-6">
+    <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col items-start gap-4">
@@ -173,7 +173,7 @@ export default function BrokerDetailPage() {
                 data-ai-hint="logo"
               />
             <div className="flex-1">
-              <h1 className="text-xl font-bold font-headline">{broker.name}</h1>
+              <h1 className="text-lg font-bold font-headline">{broker.name}</h1>
               <p className="text-xs text-muted-foreground">{broker.description}</p>
             </div>
           </div>
@@ -196,7 +196,7 @@ export default function BrokerDetailPage() {
       </Card>
       
       <div className="text-center">
-        <h2 className="text-xl font-bold font-headline">Start Earning Now</h2>
+        <h2 className="text-lg font-bold font-headline">Start Earning Now</h2>
       </div>
 
       <div className="w-full">
@@ -245,8 +245,8 @@ function Step1({ brokerName }: { brokerName: string }) {
     return (
         <>
             <CardHeader>
-                <CardTitle>Choose Your Path</CardTitle>
-                <CardDescription>Do you already have a trading account with {brokerName}?</CardDescription>
+                <CardTitle className="text-base">Choose Your Path</CardTitle>
+                <CardDescription className="text-xs">Do you already have a trading account with {brokerName}?</CardDescription>
             </CardHeader>
             <CardContent>
                 <FormField
@@ -256,13 +256,13 @@ function Step1({ brokerName }: { brokerName: string }) {
                         <FormItem>
                             <FormControl>
                                 <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-2">
-                                    <FormItem className="flex items-center space-x-3 space-y-0 p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                                    <FormItem className="flex items-center space-x-3 space-y-0 p-3 border rounded-md has-[[data-state=checked]]:border-primary">
                                         <FormControl><RadioGroupItem value="no" id="no" /></FormControl>
-                                        <FormLabel htmlFor="no" className="font-normal cursor-pointer w-full">No, I need a new account</FormLabel>
+                                        <FormLabel htmlFor="no" className="font-normal cursor-pointer w-full text-sm">No, I need a new account</FormLabel>
                                     </FormItem>
-                                     <FormItem className="flex items-center space-x-3 space-y-0 p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                                     <FormItem className="flex items-center space-x-3 space-y-0 p-3 border rounded-md has-[[data-state=checked]]:border-primary">
                                         <FormControl><RadioGroupItem value="yes" id="yes" /></FormControl>
-                                        <FormLabel htmlFor="yes" className="font-normal cursor-pointer w-full">Yes, I have an account</FormLabel>
+                                        <FormLabel htmlFor="yes" className="font-normal cursor-pointer w-full text-sm">Yes, I have an account</FormLabel>
                                     </FormItem>
                                 </RadioGroup>
                             </FormControl>
@@ -279,8 +279,8 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
     return (
         <>
             <CardHeader>
-                <CardTitle>Instructions</CardTitle>
-                <CardDescription>Follow the relevant instructions.</CardDescription>
+                <CardTitle className="text-base">Instructions</CardTitle>
+                <CardDescription className="text-xs">Follow the relevant instructions.</CardDescription>
             </CardHeader>
             <CardContent>
                 {hasAccount === 'no' && (
@@ -288,7 +288,7 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
                         <UserPlus className="h-4 w-4" />
                         <AlertTitle>Create New Account</AlertTitle>
                         <AlertDescription className="space-y-4">
-                            <p>{broker.instructions.description}</p>
+                            <p className="text-xs">{broker.instructions.description}</p>
                             <Button asChild size="sm" className="w-full">
                                 <a href={broker.instructions.link} target="_blank" rel="noopener noreferrer">
                                     {broker.instructions.linkText} <ExternalLink className="ml-2 h-4 w-4" />
@@ -302,7 +302,7 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
                         <Info className="h-4 w-4" />
                         <AlertTitle>Important: Link Existing Account</AlertTitle>
                         <AlertDescription>
-                            <p>{broker.existingAccountInstructions}</p>
+                            <p className="text-xs">{broker.existingAccountInstructions}</p>
                         </AlertDescription>
                     </Alert>
                 )}
@@ -316,8 +316,8 @@ function Step3() {
     return (
         <>
             <CardHeader>
-                <CardTitle>Link Account</CardTitle>
-                <CardDescription>Enter your trading account number.</CardDescription>
+                <CardTitle className="text-base">Link Account</CardTitle>
+                <CardDescription className="text-xs">Enter your trading account number.</CardDescription>
             </CardHeader>
             <CardContent>
                  <FormField
@@ -340,34 +340,34 @@ function Step3() {
 
 function BrokerPageSkeleton() {
     return (
-        <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-6 animate-pulse">
+        <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4 animate-pulse">
             <Card>
                 <CardContent className="p-4">
                     <div className="flex flex-col items-start gap-4">
                          <Skeleton className="w-12 h-12 rounded-lg" />
                          <div className="w-full space-y-2">
-                             <Skeleton className="h-6 w-1/2" />
-                             <Skeleton className="h-4 w-full" />
-                             <Skeleton className="h-4 w-4/5" />
+                             <Skeleton className="h-5 w-1/2" />
+                             <Skeleton className="h-3 w-full" />
+                             <Skeleton className="h-3 w-4/5" />
                          </div>
                     </div>
                     <Separator className="my-3" />
                      <div className="flex flex-col space-y-4 text-left">
-                         <Skeleton className="h-8 w-full" />
-                         <Skeleton className="h-8 w-full" />
-                         <Skeleton className="h-8 w-full" />
+                         <Skeleton className="h-6 w-full" />
+                         <Skeleton className="h-6 w-full" />
+                         <Skeleton className="h-6 w-full" />
                      </div>
                 </CardContent>
             </Card>
-            <Skeleton className="h-8 w-1/2 mx-auto" />
-            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-6 w-1/2 mx-auto" />
+            <Skeleton className="h-16 w-full" />
             <Card>
                 <CardHeader>
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
                 </CardHeader>
                 <CardContent>
-                    <Skeleton className="h-24 w-full" />
+                    <Skeleton className="h-20 w-full" />
                 </CardContent>
             </Card>
         </div>

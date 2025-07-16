@@ -27,15 +27,13 @@ export function AccountCard({ account }: AccountCardProps) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="p-4">
         <div className="flex justify-between items-center">
-            <CardTitle>Acc: {account.accountNumber}</CardTitle>
+            <CardTitle className="text-base">Acc: {account.accountNumber}</CardTitle>
             <Badge variant={getStatusVariant(account.status)}>{account.status}</Badge>
         </div>
-        <CardDescription>{account.broker}</CardDescription>
+        <CardDescription className="text-xs">{account.broker}</CardDescription>
       </CardHeader>
     </Card>
   )
 }
-
-    

@@ -169,9 +169,9 @@ function PaymentMethodsList({ methods, onMethodDeleted }: { methods: UserPayment
             {methods.length > 0 ? methods.map(method => (
                 <div key={method.id} className="border p-3 rounded-md flex justify-between items-start">
                     <div className="space-y-1">
-                        <p className="font-semibold">{method.methodName}</p>
+                        <p className="font-semibold text-sm">{method.methodName}</p>
                         {Object.entries(method.details).map(([key, value]) => (
-                            <div key={key} className="text-sm text-muted-foreground">
+                            <div key={key} className="text-xs text-muted-foreground">
                                 <span className="font-medium capitalize">{key.replace(/([A-Z])/g, ' $1')}: </span>
                                 <span>{value}</span>
                             </div>
@@ -216,14 +216,14 @@ export default function SettingsPage() {
   const { profile, paymentMethods } = user;
 
   return (
-    <div className="max-w-md mx-auto w-full px-4 py-6 space-y-6">
+    <div className="max-w-md mx-auto w-full px-4 py-4 space-y-4">
         <PageHeader title="My Profile" description="Manage your account details and settings." />
         
         <Card>
             <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
+                <CardTitle className="text-base">Profile Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-3">
                 <ProfileInfoItem label="Name">
                    {profile.name}
                 </ProfileInfoItem>
@@ -254,7 +254,7 @@ export default function SettingsPage() {
                 <Separator/>
                 <ProfileInfoItem label="Level">
                     <div>
-                        <Badge variant="secondary" className="text-sm">{profile.tier}</Badge>
+                        <Badge variant="secondary">{profile.tier}</Badge>
                     </div>
                 </ProfileInfoItem>
             </CardContent>
@@ -263,8 +263,8 @@ export default function SettingsPage() {
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
-                    <CardTitle>Payment Methods</CardTitle>
-                    <CardDescription>Your saved withdrawal accounts.</CardDescription>
+                    <CardTitle className="text-base">Payment Methods</CardTitle>
+                    <CardDescription className="text-xs">Your saved withdrawal accounts.</CardDescription>
                 </div>
                 <AddPaymentMethodDialog adminMethods={adminMethods} onMethodAdded={refetchUserData}/>
             </CardHeader>
@@ -275,8 +275,8 @@ export default function SettingsPage() {
 
          <Card>
             <CardHeader>
-                <CardTitle>Change Password</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-base">Change Password</CardTitle>
+                <CardDescription className="text-xs">
                    Update your account password.
                 </CardDescription>
             </CardHeader>
@@ -293,11 +293,9 @@ export default function SettingsPage() {
                     <Label htmlFor="confirm-password">Confirm New Password</Label>
                     <Input id="confirm-password" type="password" />
                 </div>
-                <Button className="w-full">Update Password</Button>
+                <Button className="w-full" size="sm">Update Password</Button>
             </CardContent>
         </Card>
     </div>
   );
 }
-
-    

@@ -74,11 +74,11 @@ export default function ReferralsPage() {
             />
             
             <Card>
-                <CardHeader>
-                    <CardTitle>Your Invite Link</CardTitle>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base">Your Invite Link</CardTitle>
                 </CardHeader>
-                <CardContent className="flex items-center gap-2">
-                    <Input readOnly value={referralLink || ''} />
+                <CardContent className="p-4 pt-0 flex items-center gap-2">
+                    <Input readOnly value={referralLink || ''} className="text-xs" />
                     <Button variant="outline" size="icon" onClick={() => copyToClipboard(referralLink || '')}>
                         <Copy className="h-4 w-4" />
                     </Button>
@@ -86,9 +86,9 @@ export default function ReferralsPage() {
             </Card>
 
             <Card>
-                <CardHeader>
-                    <CardTitle>Your Referrals</CardTitle>
-                    <CardDescription>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base">Your Referrals</CardTitle>
+                    <CardDescription className="text-xs">
                         You have invited {referrals.length} {referrals.length === 1 ? 'user' : 'users'}.
                     </CardDescription>
                 </CardHeader>
@@ -97,8 +97,8 @@ export default function ReferralsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Name</TableHead>
-                                    <TableHead>Join Date</TableHead>
+                                    <TableHead className="text-xs">Name</TableHead>
+                                    <TableHead className="text-xs">Join Date</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -111,13 +111,13 @@ export default function ReferralsPage() {
                                 ) : referrals.length > 0 ? (
                                     referrals.map(ref => (
                                         <TableRow key={ref.uid}>
-                                            <TableCell className="font-medium">{ref.name}</TableCell>
-                                            <TableCell>{ref.createdAt ? format(ref.createdAt, 'PP') : '-'}</TableCell>
+                                            <TableCell className="font-medium text-xs">{ref.name}</TableCell>
+                                            <TableCell className="text-xs">{ref.createdAt ? format(ref.createdAt, 'PP') : '-'}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={2} className="text-center h-24">
+                                        <TableCell colSpan={2} className="text-center h-24 text-xs">
                                             You haven't referred anyone yet.
                                         </TableCell>
                                     </TableRow>
