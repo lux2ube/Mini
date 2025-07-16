@@ -22,8 +22,6 @@ import {
   getBrokers,
   deleteBroker,
   updateBrokerOrder,
-  addBroker,
-  updateBroker
 } from "../actions";
 import type { Broker } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,6 +40,7 @@ import {
   Trash2,
   Loader2,
   GripVertical,
+  Star,
 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -57,6 +56,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { BrokerFormDialog } from "@/components/admin/BrokerFormDialog";
+import { Badge } from "@/components/ui/badge";
 
 function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: () => void }) {
   const {
@@ -106,8 +106,10 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
         />
       </TableCell>
       <TableCell className="font-medium">{broker.name}</TableCell>
-      <TableCell>{broker.details.minDeposit}</TableCell>
-      <TableCell>{broker.details.leverage}</TableCell>
+      <TableCell><Badge variant="outline" className="capitalize">{broker.category}</Badge></TableCell>
+      <TableCell className="flex items-center gap-1">
+          {broker.rating} <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+      </TableCell>
       <TableCell className="space-x-2 text-right">
         <BrokerFormDialog
           broker={broker}
@@ -256,8 +258,8 @@ export default function ManageBrokersPage() {
                     <TableHead className="w-10"></TableHead>
                     <TableHead>Logo</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead>Min. Deposit</TableHead>
-                    <TableHead>Leverage</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Rating</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

@@ -38,11 +38,20 @@ export interface Broker {
     name: string;
     description: string;
     logoUrl: string;
+    category: 'forex' | 'crypto' | 'other';
+    rating: number; // A number from 1 to 5
     details: {
-        minDeposit: string;
-        leverage: string;
-        spreads: string;
+        cashbackType: string; // e.g., "Daily Forex Cashback"
+        minDeposit: string; // e.g., "$1"
     };
+    cashbackRate: {
+        tradeType: string; // e.g., "Trade 1 lot"
+        amount: number; // e.g., 8
+    };
+    features: {
+        text: string;
+        available: boolean;
+    }[];
     instructions: {
         description: string;
         linkText: string;

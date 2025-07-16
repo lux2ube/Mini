@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter, useParams, notFound } from 'next/navigation';
+import { useRouter, useParams, useSearchParams, notFound } from 'next/navigation';
 import { useForm, FormProvider, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -39,12 +39,14 @@ const STEPS = [
 export default function BrokerDetailPage() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const { user } = useAuthContext();
   const { toast } = useToast();
   const [broker, setBroker] = useState<Broker | null>(null);
   const [isBrokerLoading, setIsBrokerLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const action = searchParams.get('action');
 
   const brokerId = params.brokerId as string;
 
@@ -73,10 +75,21 @@ export default function BrokerDetailPage() {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      hasAccount: undefined,
+      hasAccount: action === 'existing' ? 'yes' : action === 'new' ? 'no' : undefined,
       accountNumber: '',
     },
   });
+
+  // Effect to sync URL param to form state
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'existing') {
+        form.setValue('hasAccount', 'yes');
+    } else if (action === 'new') {
+        form.setValue('hasAccount', 'no');
+    }
+  }, [searchParams, form]);
+
 
   const hasAccountValue = form.watch("hasAccount");
 
@@ -160,7 +173,7 @@ export default function BrokerDetailPage() {
   };
 
   return (
-    <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
+    <div className="max-w-md mx-auto w-full px-4 py-4 space-y-4">
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col items-start gap-4">
@@ -176,21 +189,6 @@ export default function BrokerDetailPage() {
               <h1 className="text-lg font-bold font-headline">{broker.name}</h1>
               <p className="text-xs text-muted-foreground">{broker.description}</p>
             </div>
-          </div>
-          <Separator className="my-3" />
-          <div className="flex flex-col space-y-2 text-left">
-              <div>
-                  <p className="text-xs text-muted-foreground">Min. Deposit</p>
-                  <p className="font-semibold text-sm">{broker.details.minDeposit}</p>
-              </div>
-              <div>
-                  <p className="text-xs text-muted-foreground">Max. Leverage</p>
-                  <p className="font-semibold text-sm">{broker.details.leverage}</p>
-              </div>
-              <div>
-                  <p className="text-xs text-muted-foreground">Spreads From</p>
-                  <p className="font-semibold text-sm">{broker.details.spreads}</p>
-              </div>
           </div>
         </CardContent>
       </Card>
@@ -340,7 +338,7 @@ function Step3() {
 
 function BrokerPageSkeleton() {
     return (
-        <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4 animate-pulse">
+        <div className="max-w-md mx-auto w-full px-4 py-4 space-y-4 animate-pulse">
             <Card>
                 <CardContent className="p-4">
                     <div className="flex flex-col items-start gap-4">
@@ -351,12 +349,6 @@ function BrokerPageSkeleton() {
                              <Skeleton className="h-3 w-4/5" />
                          </div>
                     </div>
-                    <Separator className="my-3" />
-                     <div className="flex flex-col space-y-4 text-left">
-                         <Skeleton className="h-6 w-full" />
-                         <Skeleton className="h-6 w-full" />
-                         <Skeleton className="h-6 w-full" />
-                     </div>
                 </CardContent>
             </Card>
             <Skeleton className="h-6 w-1/2 mx-auto" />
