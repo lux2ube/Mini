@@ -4,7 +4,7 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod } from '@/types';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod, UserPaymentMethod } from '@/types';
 
 // Generic function to create a notification
 async function createNotification(
@@ -517,7 +517,7 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
     }
 }
 
-// Payment Method Management
+// Admin: Payment Method Management
 export async function getPaymentMethods(): Promise<PaymentMethod[]> {
     const snapshot = await getDocs(query(collection(db, 'paymentMethods'), orderBy('name')));
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaymentMethod));
@@ -549,6 +549,42 @@ export async function deletePaymentMethod(id: string) {
         return { success: true, message: 'Payment method deleted successfully.' };
     } catch (error) {
         console.error("Error deleting payment method:", error);
+        return { success: false, message: 'Failed to delete payment method.' };
+    }
+}
+
+// User: Payment Method Management
+export async function getUserPaymentMethods(userId: string): Promise<UserPaymentMethod[]> {
+    const snapshot = await getDocs(query(collection(db, 'userPaymentMethods'), where('userId', '==', userId), orderBy('createdAt', 'desc')));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp).toDate(),
+        } as UserPaymentMethod
+    });
+}
+
+export async function addUserPaymentMethod(data: Omit<UserPaymentMethod, 'id' | 'createdAt'>) {
+    try {
+        await addDoc(collection(db, 'userPaymentMethods'), {
+            ...data,
+            createdAt: serverTimestamp(),
+        });
+        return { success: true, message: 'Payment method saved.' };
+    } catch (error) {
+        console.error("Error adding user payment method:", error);
+        return { success: false, message: 'Failed to save payment method.' };
+    }
+}
+
+export async function deleteUserPaymentMethod(id: string) {
+    try {
+        await deleteDoc(doc(db, 'userPaymentMethods', id));
+        return { success: true, message: 'Payment method deleted.' };
+    } catch (error) {
+        console.error("Error deleting user payment method:", error);
         return { success: false, message: 'Failed to delete payment method.' };
     }
 }

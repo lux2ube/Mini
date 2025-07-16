@@ -18,6 +18,9 @@ export interface UserProfile {
     name: string;
     role: 'user' | 'admin';
     createdAt: Date;
+    // New profile fields
+    phoneNumber?: string;
+    phoneNumberVerified?: boolean;
     // Referral fields
     referralCode: string;
     referredBy?: string; // UID of the user who referred this person
@@ -104,7 +107,20 @@ export interface PaymentMethod {
     description: string;
     isEnabled: boolean;
     fields: PaymentMethodField[];
-    type: 'crypto' | 'internal_transfer'; // Removed 'trading_account' as it's a separate category now
+    type: 'crypto' | 'internal_transfer' | 'trading_account';
+}
+
+/**
+ * Represents a payment method saved by a user.
+ */
+export interface UserPaymentMethod {
+    id: string; // Document ID
+    userId: string;
+    paymentMethodId: string; // Reference to the admin-defined PaymentMethod
+    methodName: string; // e.g., "USDT (TRC20)"
+    methodType: PaymentMethod['type'];
+    details: Record<string, any>; // e.g., { walletAddress: '0x123...' }
+    createdAt: Date;
 }
 
 

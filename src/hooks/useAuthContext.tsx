@@ -1,69 +1,100 @@
 
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
-import type { UserProfile } from '@/types';
+import type { UserProfile, UserPaymentMethod } from '@/types';
+import { getUserPaymentMethods } from '@/app/admin/actions';
 
-// Extend the user object to include the profile data from Firestore
+// Extend the user object to include the profile and payment methods
 export interface AppUser extends FirebaseAuthUser {
     profile?: UserProfile;
+    paymentMethods?: UserPaymentMethod[];
 }
 
 interface AuthContextType {
   user: AppUser | null;
   isLoading: boolean;
+  refetchUserData: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, isLoading: true });
+const AuthContext = createContext<AuthContextType>({ 
+    user: null, 
+    isLoading: true,
+    refetchUserData: () => {},
+});
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // Fetch additional user data from Firestore
+  const fetchUserData = useCallback(async (firebaseUser: FirebaseAuthUser) => {
+    if (!firebaseUser) {
+        setUser(null);
+        setIsLoading(false);
+        return;
+    }
+    try {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+        const userDocSnap = await getDoc(userDocRef);
         
-        if (userDoc.exists()) {
-          const userProfile = { uid: firebaseUser.uid, ...userDoc.data() } as UserProfile;
-          setUser({ ...firebaseUser, profile: userProfile });
-        } else {
-           setUser(firebaseUser); // User exists in Auth, but not in Firestore yet
-        }
+        const userProfile = userDocSnap.exists() 
+            ? { uid: firebaseUser.uid, ...userDocSnap.data() } as UserProfile
+            : undefined;
+
+        const userPaymentMethods = await getUserPaymentMethods(firebaseUser.uid);
+
+        setUser({ 
+            ...firebaseUser, 
+            profile: userProfile,
+            paymentMethods: userPaymentMethods,
+        });
+
+    } catch (error) {
+        console.error("Error fetching user data:", error);
+        setUser(firebaseUser); // Fallback to just firebase user
+    } finally {
+        setIsLoading(false);
+    }
+  }, []);
+
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setIsLoading(true);
+      if (firebaseUser) {
+        fetchUserData(firebaseUser);
       } else {
         setUser(null);
+        setIsLoading(false);
       }
-      setIsLoading(false);
     });
 
-    // Listen for custom event to refetch user data, e.g., after profile update
-    const handleRefetchUser = async () => {
-        if (auth.currentUser) {
-            const userDocRef = doc(db, 'users', auth.currentUser.uid);
-            const userDoc = await getDoc(userDocRef);
-             if (userDoc.exists()) {
-                const userProfile = { uid: auth.currentUser.uid, ...userDoc.data() } as UserProfile;
-                setUser({ ...auth.currentUser, profile: userProfile });
-            }
+    // Custom event to trigger a refetch
+    const handleRefetch = () => {
+        if(auth.currentUser) {
+            fetchUserData(auth.currentUser);
         }
     };
-
-    window.addEventListener('refetchUser', handleRefetchUser);
+    window.addEventListener('refetchUser', handleRefetch);
 
     return () => {
         unsubscribe();
-        window.removeEventListener('refetchUser', handleRefetchUser);
+        window.removeEventListener('refetchUser', handleRefetch);
     };
-  }, []);
+  }, [fetchUserData]);
+  
+  const refetchUserData = useCallback(() => {
+      if(auth.currentUser) {
+          setIsLoading(true);
+          fetchUserData(auth.currentUser);
+      }
+  }, [fetchUserData]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading }}>
+    <AuthContext.Provider value={{ user, isLoading, refetchUserData }}>
       {children}
     </AuthContext.Provider>
   );
