@@ -79,15 +79,17 @@ export default function BrokerLinkPage() {
     },
   });
 
-  // Effect to sync URL param to form state
+  // Effect to sync URL param to form state and advance step
   useEffect(() => {
     const action = searchParams.get('action');
     if (action === 'existing') {
         form.setValue('hasAccount', 'yes');
+        if (currentStep === 1) setCurrentStep(2);
     } else if (action === 'new') {
         form.setValue('hasAccount', 'no');
+        if (currentStep === 1) setCurrentStep(2);
     }
-  }, [searchParams, form]);
+  }, [searchParams, form, currentStep]);
 
 
   const hasAccountValue = form.watch("hasAccount");
@@ -100,6 +102,8 @@ export default function BrokerLinkPage() {
     notFound();
   }
 
+  const brokerName = broker.basicInfo?.broker_name || broker.name;
+
   const processForm = async (data: FormData) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add an account.' });
@@ -110,7 +114,7 @@ export default function BrokerLinkPage() {
       // Check for duplicate account
       const q = query(
         collection(db, 'tradingAccounts'),
-        where('broker', '==', broker.basicInfo.broker_name),
+        where('broker', '==', brokerName),
         where('accountNumber', '==', data.accountNumber)
       );
       const querySnapshot = await getDocs(q);
@@ -127,7 +131,7 @@ export default function BrokerLinkPage() {
 
       await addDoc(collection(db, 'tradingAccounts'), {
         userId: user.uid,
-        broker: broker.basicInfo.broker_name,
+        broker: brokerName,
         accountNumber: data.accountNumber,
         status: 'Pending',
         createdAt: serverTimestamp(),
@@ -182,15 +186,15 @@ export default function BrokerLinkPage() {
           <div className="flex flex-col items-start gap-4">
             <Image
                 src={broker.logoUrl}
-                alt={`${broker.basicInfo.broker_name} logo`}
+                alt={`${brokerName} logo`}
                 width={48}
                 height={48}
                 className="w-12 h-12 object-contain rounded-lg border p-1 bg-background flex-shrink-0"
                 data-ai-hint="logo"
               />
             <div className="flex-1">
-              <h1 className="text-lg font-bold font-headline">{broker.basicInfo.broker_name}</h1>
-              <p className="text-xs text-muted-foreground">{`Founded in ${broker.basicInfo.founded_year}, based in ${broker.basicInfo.headquarters}`}</p>
+              <h1 className="text-lg font-bold font-headline">{brokerName}</h1>
+              <p className="text-xs text-muted-foreground">{broker.basicInfo ? `Founded in ${broker.basicInfo.founded_year}, based in ${broker.basicInfo.headquarters}` : broker.description}</p>
             </div>
           </div>
         </CardContent>
@@ -219,7 +223,7 @@ export default function BrokerLinkPage() {
       <FormProvider {...form}>
         <form onSubmit={form.handleSubmit(processForm)} className="space-y-4">
             <Card>
-                {currentStep === 1 && <Step1 brokerName={broker.basicInfo.broker_name} />}
+                {currentStep === 1 && <Step1 brokerName={brokerName} />}
                 {currentStep === 2 && <Step2 hasAccount={hasAccountValue} broker={broker} />}
                 {currentStep === 3 && <Step3 />}
             </Card>
@@ -229,7 +233,7 @@ export default function BrokerLinkPage() {
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {currentStep === STEPS.length ? 'Submit' : 'Next'}
                 </Button>
-                {currentStep > 1 && (
+                {currentStep > 1 && !action && (
                     <Button type="button" onClick={prev} variant="secondary" className="w-full">
                         Previous
                     </Button>
@@ -278,10 +282,12 @@ function Step1({ brokerName }: { brokerName: string }) {
 
 function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker: Broker }) {
     // Fallback to legacy instructions if new structure doesn't exist.
-    const description = broker.instructions?.description || "Follow the link to open a new account.";
-    const link = broker.instructions?.link || broker.cashback?.affiliate_program_link;
-    const linkText = broker.instructions?.linkText || `Open an account with ${broker.basicInfo.broker_name}`;
-    const existingAccountInstructions = broker.existingAccountInstructions || "Please contact support to link your existing account under our partner network.";
+    const isNewStructure = !!broker.basicInfo;
+    const brokerName = isNewStructure ? broker.basicInfo.broker_name : broker.name;
+    const description = isNewStructure ? broker.instructions?.description || "Follow the link to open a new account." : "Follow the link to open a new account.";
+    const link = isNewStructure ? broker.cashback?.affiliate_program_link : (broker as any).instructions?.link;
+    const linkText = isNewStructure ? broker.instructions?.linkText || `Open an account with ${brokerName}`: `Open an account with ${brokerName}`;
+    const existingAccountInstructions = isNewStructure ? broker.existingAccountInstructions || "Please contact support to link your existing account under our partner network." : (broker as any).existingAccountInstructions || "Please contact support to link your existing account under our partner network.";
 
     return (
         <>
