@@ -37,8 +37,9 @@ export default function ManageUsersPage() {
                 });
 
                 enriched.sort((a, b) => {
-                    const timeA = a.createdAt?.toMillis() || 0;
-                    const timeB = b.createdAt?.toMillis() || 0;
+                    // Handle both Timestamp and Date objects
+                    const timeA = a.createdAt && typeof a.createdAt.toMillis === 'function' ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+                    const timeB = b.createdAt && typeof b.createdAt.toMillis === 'function' ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
                     return timeB - timeA;
                 });
                 setUsers(enriched);
@@ -59,9 +60,21 @@ export default function ManageUsersPage() {
         return users.filter(user =>
             user.name.toLowerCase().includes(lowerCaseQuery) ||
             user.email.toLowerCase().includes(lowerCaseQuery) ||
-            user.referralCode.toLowerCase().includes(lowerCaseQuery)
+            (user.referralCode && user.referralCode.toLowerCase().includes(lowerCaseQuery))
         );
     }, [searchQuery, users]);
+
+    const getSafeDate = (timestamp: any) => {
+        if (!timestamp) return '-';
+        if (typeof timestamp.toDate === 'function') {
+            return format(timestamp.toDate(), 'PP');
+        }
+        if (timestamp instanceof Date) {
+            return format(timestamp, 'PP');
+        }
+        return '-';
+    }
+
 
     return (
         <div className="container mx-auto space-y-6">
@@ -100,7 +113,7 @@ export default function ManageUsersPage() {
                                         <TableRow key={user.uid}>
                                             <TableCell className="font-medium">{user.name}</TableCell>
                                             <TableCell>{user.email}</TableCell>
-                                            <TableCell>{user.createdAt ? format(user.createdAt.toDate(), 'PP') : '-'}</TableCell>
+                                            <TableCell>{getSafeDate(user.createdAt)}</TableCell>
                                             <TableCell>{user.referrals?.length || 0}</TableCell>
                                             <TableCell>{user.points || 0}</TableCell>
                                             <TableCell>{user.referredByName}</TableCell>
