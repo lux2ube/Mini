@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { useAuthContext } from '@/hooks/useAuthContext';
 import { db } from '@/lib/firebase/config';
-import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import type { Order } from '@/types';
 import { format } from 'date-fns';
 
@@ -25,8 +25,7 @@ export default function MyOrdersPage() {
             try {
                 const q = query(
                     collection(db, 'orders'),
-                    where('userId', '==', user.uid),
-                    orderBy('createdAt', 'desc')
+                    where('userId', '==', user.uid)
                 );
                 const querySnapshot = await getDocs(q);
                 const userOrders = querySnapshot.docs.map(doc => {
@@ -37,6 +36,8 @@ export default function MyOrdersPage() {
                         createdAt: (data.createdAt as Timestamp).toDate(),
                     } as Order;
                 });
+                // Sort orders in memory instead of in the query
+                userOrders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
                 setOrders(userOrders);
             } catch (error) {
                 console.error("Error fetching orders:", error);
