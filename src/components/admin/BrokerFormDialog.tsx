@@ -13,6 +13,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -32,7 +33,7 @@ import type { Broker } from "@/types";
 import { addBroker, updateBroker } from "@/app/admin/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { DialogTrigger } from "@radix-ui/react-dialog";
+
 
 const formSchema = z.object({
   logoUrl: z.string().url("Must be a valid URL.").optional().default("https://placehold.co/100x100.png"),
@@ -362,6 +363,15 @@ export function BrokerFormDialog({
                       <FormField control={form.control} name="additionalFeatures.regulatory_alerts" render={({ field }) => (<FormItem><FormLabel>Regulatory Alerts</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)}/>
                   </AccordionContent>
               </AccordionItem>
+                <AccordionItem value="item-11">
+                    <AccordionTrigger>Section 11: Instructions (Legacy Support)</AccordionTrigger>
+                    <AccordionContent className="space-y-4">
+                        <FormField control={form.control} name="instructions.description" render={({ field }) => (<FormItem><FormLabel>New Account Instructions</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="instructions.linkText" render={({ field }) => (<FormItem><FormLabel>Link Text</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="instructions.link" render={({ field }) => (<FormItem><FormLabel>Link URL</FormLabel><FormControl><Input type="url" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="existingAccountInstructions" render={({ field }) => (<FormItem><FormLabel>Existing Account Instructions</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </AccordionContent>
+                </AccordionItem>
             </Accordion>
             
             <DialogFooter>

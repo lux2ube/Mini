@@ -39,7 +39,7 @@ export function BrokerCard({ broker }: { broker: Broker }) {
   const name = isNewStructure ? broker.basicInfo.broker_name : broker.name;
   const rating = isNewStructure ? (broker.reputation?.wikifx_score ?? 0) / 2 : broker.rating;
   const description = isNewStructure ? `Founded in ${broker.basicInfo.founded_year}` : broker.description;
-  const cashbackPerLot = isNewStructure ? broker.cashback?.cashback_per_lot ?? 0 : (broker.cashbackRate as any)?.amount ?? 0;
+  const cashbackPerLot = isNewStructure ? broker.cashback?.cashback_per_lot ?? 0 : (broker as any).cashbackRate?.amount ?? 0;
   const cashbackFrequency = isNewStructure ? broker.cashback?.cashback_frequency : "Daily";
   const swapFree = isNewStructure ? broker.tradingConditions?.swap_free : (broker.features as any)?.find(f => f.text.toLowerCase().includes("islamic"))?.available ?? false;
   const copyTrading = isNewStructure ? broker.additionalFeatures?.copy_trading : (broker.features as any)?.find(f => f.text.toLowerCase().includes("copy"))?.available ?? false;
