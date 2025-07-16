@@ -15,6 +15,7 @@ import type { CashbackTransaction, Withdrawal, BannerSettings } from "@/types";
 import Image from "next/image";
 import { getBannerSettings } from "../admin/actions";
 import { useToast } from "@/hooks/use-toast";
+import { Input } from "@/components/ui/input";
 
 
 interface DashboardStats {
@@ -92,7 +93,8 @@ export default function UserDashboardPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
 
-  const referralLink = `${window.location.origin}/register?ref=${user?.profile?.referralCode}`;
+  const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/register?ref=${user?.profile?.referralCode}` : '';
+
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
