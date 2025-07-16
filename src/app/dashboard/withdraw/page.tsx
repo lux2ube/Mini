@@ -43,16 +43,14 @@ import {
 import { getUserBalance, getPaymentMethods } from "@/app/admin/actions";
 import { Separator } from "@/components/ui/separator";
 
-// Base schema for all withdrawals
-const baseWithdrawalSchema = z.object({
+// Define a more flexible schema to handle dynamic details
+const withdrawalSchema = z.object({
     amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
     paymentMethodId: z.string({ required_error: "You must select a payment method." }),
+    details: z.record(z.string(), z.any()).optional(), // Allow any string keys for details
 });
 
-// We will handle dynamic fields in the submission logic, not with a complex Zod schema
-type FormValues = z.infer<typeof baseWithdrawalSchema> & {
-    details: Record<string, string>;
-};
+type FormValues = z.infer<typeof withdrawalSchema>;
 
 export default function WithdrawPage() {
     const { user } = useAuthContext();
@@ -67,31 +65,37 @@ export default function WithdrawPage() {
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(baseWithdrawalSchema),
+        resolver: zodResolver(withdrawalSchema),
         defaultValues: {
             amount: 0,
             paymentMethodId: '',
-            details: {},
+            details: {}, // Ensure details is initialized as an object
         }
     });
-    
-    // When a new method is selected, reset the form and set initial values for its fields
+
     useEffect(() => {
-        const initialDetails: Record<string, string> = {};
-        if (selectedMethod) {
-            selectedMethod.fields.forEach(field => {
-                initialDetails[field.name] = '';
+        // When a new method is selected, reset form fields but keep the method ID
+        const paymentMethodId = form.getValues('paymentMethodId');
+        const newSelectedMethod = paymentMethods.find(p => p.id === paymentMethodId) || null;
+        setSelectedMethod(newSelectedMethod);
+        
+        const defaultDetails: Record<string, string> = {};
+        if (newSelectedMethod) {
+            newSelectedMethod.fields.forEach(field => {
+                defaultDetails[field.name] = '';
             });
-            if (selectedMethod.type === 'trading_account') {
-                initialDetails['tradingAccountId'] = '';
+             if (newSelectedMethod.type === 'trading_account') {
+                defaultDetails['tradingAccountId'] = '';
             }
         }
+        
         form.reset({
             amount: 0,
-            paymentMethodId: selectedMethod?.id || '',
-            details: initialDetails
+            paymentMethodId: paymentMethodId,
+            details: defaultDetails,
         });
-    }, [selectedMethod, form]);
+
+    }, [form.watch('paymentMethodId'), paymentMethods]);
 
 
     const fetchData = async () => {
@@ -160,8 +164,9 @@ export default function WithdrawPage() {
 
         // Manual validation for dynamic fields
         let isValid = true;
+        const submissionDetails = values.details || {};
         for (const field of selectedMethod.fields) {
-            const value = values.details[field.name];
+            const value = submissionDetails[field.name];
             if (field.validation.required && !value) {
                 form.setError(`details.${field.name}`, { type: 'manual', message: `${field.label} is required.` });
                 isValid = false;
@@ -172,12 +177,12 @@ export default function WithdrawPage() {
 
         setIsLoading(true);
 
-        const submissionDetails = { ...values.details };
-        if (selectedMethod.type === 'trading_account' && submissionDetails.tradingAccountId) {
-            const account = userAccounts.find(a => a.id === submissionDetails.tradingAccountId);
+        const finalDetails = { ...submissionDetails };
+        if (selectedMethod.type === 'trading_account' && finalDetails.tradingAccountId) {
+            const account = userAccounts.find(a => a.id === finalDetails.tradingAccountId);
             if (account) {
-                 submissionDetails.accountNumber = account.accountNumber;
-                 submissionDetails.broker = account.broker;
+                 finalDetails.accountNumber = account.accountNumber;
+                 finalDetails.broker = account.broker;
             }
         }
 
@@ -188,7 +193,7 @@ export default function WithdrawPage() {
                 status: 'Processing',
                 requestedAt: serverTimestamp(),
                 paymentMethod: selectedMethod.name,
-                withdrawalDetails: submissionDetails,
+                withdrawalDetails: finalDetails,
             });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
             form.reset();
@@ -235,7 +240,6 @@ export default function WithdrawPage() {
                 <RadioGroup 
                     onValueChange={(value) => {
                         form.setValue('paymentMethodId', value);
-                        setSelectedMethod(paymentMethods.find(p => p.id === value) || null);
                     }} 
                     value={form.watch('paymentMethodId')} 
                     className="flex flex-col space-y-2"
@@ -275,7 +279,7 @@ export default function WithdrawPage() {
                             <CardTitle>Request Withdrawal</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <FormField
+                             <FormField
                                 control={form.control}
                                 name="paymentMethodId"
                                 render={({ field }) => (
@@ -338,26 +342,30 @@ export default function WithdrawPage() {
                                         />
                                     )}
 
-                                    {selectedMethod.fields.map((customField) => (
-                                        <FormField
-                                            key={customField.name}
-                                            control={form.control}
-                                            name={`details.${customField.name}`}
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>{customField.label}</FormLabel>
-                                                    <FormControl>
-                                                        <Input 
-                                                            type={customField.type} 
-                                                            placeholder={customField.placeholder} 
-                                                            {...field}
-                                                        />
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    ))}
+                                    {selectedMethod.fields.map((customField) => {
+                                        const fieldName = `details.${customField.name}` as const;
+                                        return (
+                                            <FormField
+                                                key={customField.name}
+                                                control={form.control}
+                                                name={fieldName}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>{customField.label}</FormLabel>
+                                                        <FormControl>
+                                                            <Input 
+                                                                type={customField.type} 
+                                                                placeholder={customField.placeholder} 
+                                                                {...field}
+                                                                value={form.watch(fieldName) || ''} // THE FIX
+                                                            />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                        )
+                                    })}
                                 </div>
                             )}
                         </CardContent>
@@ -439,5 +447,3 @@ export default function WithdrawPage() {
         </div>
     );
 }
-
-    
