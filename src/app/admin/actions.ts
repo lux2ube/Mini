@@ -6,19 +6,24 @@ import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, wh
 import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order } from '@/types';
 
 // Generic function to create a notification
-async function createNotification(userId: string, message: string, type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store', link?: string) {
-    try {
-        await addDoc(collection(db, 'notifications'), {
-            userId,
-            message,
-            type,
-            link,
-            isRead: false,
-            createdAt: serverTimestamp(),
-        });
-    } catch (error) {
-        console.error(`Failed to create notification for user ${userId}:`, error);
-    }
+async function createNotification(
+    transaction: any, // Can be a transaction or the db instance
+    userId: string, 
+    message: string, 
+    type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store', 
+    link?: string
+) {
+    // We use a transaction to create the notification if one is provided
+    const notificationsCollection = collection(db, 'notifications');
+    const newNotifRef = doc(notificationsCollection); // Generate a new doc ref
+    transaction.set(newNotifRef, {
+        userId,
+        message,
+        type,
+        link,
+        isRead: false,
+        createdAt: serverTimestamp(),
+    });
 }
 
 
@@ -121,14 +126,18 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
 export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected') {
   try {
     const accountRef = doc(db, 'tradingAccounts', accountId);
-    const accountSnap = await getDoc(accountRef);
-    if (!accountSnap.exists()) throw new Error("Account not found");
-    const accountData = accountSnap.data() as TradingAccount;
+    
+    // Use a transaction to ensure atomicity
+    await runTransaction(db, async (transaction) => {
+        const accountSnap = await transaction.get(accountRef);
+        if (!accountSnap.exists()) throw new Error("Account not found");
+        const accountData = accountSnap.data() as TradingAccount;
 
-    await updateDoc(accountRef, { status });
+        transaction.update(accountRef, { status });
 
-    const message = `Your trading account ${accountData.accountNumber} has been ${status.toLowerCase()}.`;
-    await createNotification(accountData.userId, message, 'account', '/dashboard/my-accounts');
+        const message = `Your trading account ${accountData.accountNumber} has been ${status.toLowerCase()}.`;
+        await createNotification(transaction, accountData.userId, message, 'account', '/dashboard/my-accounts');
+    });
 
     return { success: true, message: `Account status updated to ${status}.` };
   } catch (error) {
@@ -153,13 +162,16 @@ export async function getUsers(): Promise<UserProfile[]> {
 // Cashback Management
 export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id' | 'date'>) {
     try {
-        await addDoc(collection(db, 'cashbackTransactions'), {
-            ...data,
-            date: serverTimestamp(),
-        });
+        await runTransaction(db, async (transaction) => {
+            const newTransactionRef = doc(collection(db, 'cashbackTransactions'));
+            transaction.set(newTransactionRef, {
+                ...data,
+                date: serverTimestamp(),
+            });
 
-        const message = `You received $${data.cashbackAmount.toFixed(2)} cashback for account ${data.accountNumber}.`;
-        await createNotification(data.userId, message, 'cashback', '/dashboard/transactions');
+            const message = `You received $${data.cashbackAmount.toFixed(2)} cashback for account ${data.accountNumber}.`;
+            await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
+        });
 
         return { success: true, message: 'Cashback transaction added successfully.' };
     } catch (error) {
@@ -187,18 +199,21 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
 export async function approveWithdrawal(withdrawalId: string, txId: string) {
     try {
         const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
-        const withdrawalSnap = await getDoc(withdrawalRef);
-        if (!withdrawalSnap.exists()) throw new Error("Withdrawal not found");
-        const withdrawalData = withdrawalSnap.data() as Withdrawal;
+        
+        await runTransaction(db, async (transaction) => {
+            const withdrawalSnap = await transaction.get(withdrawalRef);
+            if (!withdrawalSnap.exists()) throw new Error("Withdrawal not found");
+            const withdrawalData = withdrawalSnap.data() as Withdrawal;
 
-        await updateDoc(withdrawalRef, {
-            status: 'Completed',
-            completedAt: serverTimestamp(),
-            txId: txId,
+            transaction.update(withdrawalRef, {
+                status: 'Completed',
+                completedAt: serverTimestamp(),
+                txId: txId,
+            });
+
+            const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has been completed.`;
+            await createNotification(transaction, withdrawalData.userId, message, 'withdrawal', '/dashboard/withdraw');
         });
-
-        const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has been completed.`;
-        await createNotification(withdrawalData.userId, message, 'withdrawal', '/dashboard/withdraw');
 
         return { success: true, message: 'Withdrawal approved successfully with TXID.' };
     } catch (error) {
@@ -210,14 +225,17 @@ export async function approveWithdrawal(withdrawalId: string, txId: string) {
 export async function rejectWithdrawal(withdrawalId: string) {
      try {
         const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
-        const withdrawalSnap = await getDoc(withdrawalRef);
-        if (!withdrawalSnap.exists()) throw new Error("Withdrawal not found");
-        const withdrawalData = withdrawalSnap.data() as Withdrawal;
+        
+        await runTransaction(db, async (transaction) => {
+            const withdrawalSnap = await transaction.get(withdrawalRef);
+            if (!withdrawalSnap.exists()) throw new Error("Withdrawal not found");
+            const withdrawalData = withdrawalSnap.data() as Withdrawal;
 
-        await updateDoc(withdrawalRef, { status: 'Failed' });
+            transaction.update(withdrawalRef, { status: 'Failed' });
 
-        const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has failed. Please contact support.`;
-        await createNotification(withdrawalData.userId, message, 'withdrawal', '/dashboard/withdraw');
+            const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has failed. Please contact support.`;
+            await createNotification(transaction, withdrawalData.userId, message, 'withdrawal', '/dashboard/withdraw');
+        });
 
         return { success: true, message: `Withdrawal status updated to Failed.` };
     } catch (error) {
@@ -243,6 +261,7 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
         } as Notification;
     });
 
+    // Perform sorting in-memory
     notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     
     return notifications;
@@ -348,15 +367,19 @@ export async function getOrders(): Promise<Order[]> {
 export async function updateOrderStatus(orderId: string, status: Order['status']) {
     try {
         const orderRef = doc(db, 'orders', orderId);
-        await updateDoc(orderRef, { status });
+        
+        await runTransaction(db, async (transaction) => {
+            transaction.update(orderRef, { status });
 
-        // Optional: Notify user
-        const orderSnap = await getDoc(orderRef);
-        if (orderSnap.exists()) {
-            const orderData = orderSnap.data() as Order;
-            const message = `The status of your order for "${orderData.productName}" has been updated to ${status}.`;
-            await createNotification(orderData.userId, message, 'store', '/dashboard/store/orders');
-        }
+            // Optional: Notify user
+            const orderSnap = await transaction.get(orderRef);
+            if (orderSnap.exists()) {
+                const orderData = orderSnap.data() as Order;
+                const message = `The status of your order for "${orderData.productName}" has been updated to ${status}.`;
+                await createNotification(transaction, orderData.userId, message, 'store', '/dashboard/store/orders');
+            }
+        });
+
 
         return { success: true, message: 'Order status updated.' };
     } catch (error) {
@@ -368,37 +391,54 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 export async function placeOrder(userId: string, productId: string, phoneNumber: string) {
     try {
         return await runTransaction(db, async (transaction) => {
+            // --- ALL READS MUST HAPPEN FIRST ---
             const productRef = doc(db, 'products', productId);
-            const productSnap = await transaction.get(productRef);
+            const userRef = doc(db, 'users', userId);
+            
+            const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
+            const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', userId));
+            const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
 
+            // Execute all reads
+            const [
+                productSnap, 
+                userSnap,
+                transactionsSnap,
+                withdrawalsSnap,
+                ordersSnap,
+            ] = await Promise.all([
+                transaction.get(productRef),
+                transaction.get(userRef),
+                getDocs(transactionsQuery), // Cannot use transaction.get() on queries
+                getDocs(withdrawalsQuery),
+                getDocs(ordersQuery)
+            ]);
+            
+            // --- VALIDATION AND LOGIC ---
             if (!productSnap.exists()) {
                 throw new Error("Product not found.");
             }
+            if (!userSnap.exists()) {
+                throw new Error("User not found.");
+            }
 
             const product = productSnap.data() as Product;
-            const price = product.price;
+            const userData = userSnap.data();
 
             if (product.stock <= 0) {
                 return { success: false, message: 'This item is out of stock.' };
             }
 
-            // Calculate current balance
-            const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
-            const transactionsSnap = await getDocs(transactionsQuery);
-            const totalEarned = transactionsSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
+            const price = product.price;
 
-            const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', userId));
-            const withdrawalsSnap = await getDocs(withdrawalsQuery);
+            // Calculate balance based on non-transactional reads
+            const totalEarned = transactionsSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
             const totalWithdrawn = withdrawalsSnap.docs
                 .filter(doc => doc.data().status === 'Completed' || doc.data().status === 'Processing')
                 .reduce((sum, doc) => sum + doc.data().amount, 0);
-            
-            const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
-            const ordersSnap = await getDocs(ordersQuery);
             const totalSpent = ordersSnap.docs
                 .filter(doc => doc.data().status !== 'Cancelled')
                 .reduce((sum, doc) => sum + doc.data().price, 0);
-
 
             const balance = totalEarned - totalWithdrawn - totalSpent;
             
@@ -406,13 +446,11 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
                 return { success: false, message: 'Insufficient balance to purchase this item.' };
             }
 
-            // Decrement stock and create order
+            // --- ALL WRITES HAPPEN LAST ---
+            // 1. Decrement stock
             transaction.update(productRef, { stock: product.stock - 1 });
 
-            const userRef = doc(db, 'users', userId);
-            const userSnap = await transaction.get(userRef);
-            const userData = userSnap.data();
-
+            // 2. Create order
             const orderRef = doc(collection(db, 'orders'));
             transaction.set(orderRef, {
                 userId,
@@ -427,7 +465,8 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
                 userEmail: userData?.email || 'N/A',
             });
 
-            await createNotification(userId, `Your order for ${product.name} has been placed.`, 'store', '/dashboard/store/orders');
+            // 3. Create notification
+            await createNotification(transaction, userId, `Your order for ${product.name} has been placed.`, 'store', '/dashboard/store/orders');
             
             return { success: true, message: 'Order placed successfully!' };
         });
