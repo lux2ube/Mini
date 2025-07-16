@@ -67,8 +67,7 @@ export default function WithdrawPage() {
                 // Fetch recent withdrawals for history display
                 const withdrawalsQuery = query(
                     collection(db, "withdrawals"), 
-                    where("userId", "==", user.uid),
-                    orderBy("requestedAt", "desc")
+                    where("userId", "==", user.uid)
                 );
                 const withdrawalsSnapshot = await getDocs(withdrawalsQuery);
                 const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
@@ -81,6 +80,9 @@ export default function WithdrawPage() {
                     } as Withdrawal;
                 });
                 
+                // Sort in-memory after fetching
+                withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+
                 setRecentWithdrawals(withdrawals);
             } catch (error) {
                 console.error("Error fetching withdrawal data:", error);
@@ -95,7 +97,7 @@ export default function WithdrawPage() {
         if (user) {
             fetchData();
         }
-    }, [user, toast]);
+    }, [user]);
 
 
     const form = useForm<z.infer<typeof formSchema>>({
