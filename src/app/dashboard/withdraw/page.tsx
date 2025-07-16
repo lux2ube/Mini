@@ -24,7 +24,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
 import { Info, Loader2, Copy, Wallet, Repeat, Briefcase, Banknote } from "lucide-react";
@@ -41,12 +40,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { getUserBalance, getPaymentMethods } from "@/app/admin/actions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 const withdrawalSchema = z.object({
     amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
-    paymentMethodId: z.string({ required_error: "You must select a payment method." }),
+    paymentMethodId: z.string().optional(),
     tradingAccountId: z.string().optional(),
-    details: z.record(z.string(), z.any()).optional(),
+    details: z.record(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof withdrawalSchema>;
@@ -130,7 +131,7 @@ export default function WithdrawPage() {
         if (user) {
             fetchData();
         }
-    }, [user]);
+    }, [user, toast]);
     
     const categorizedMethods = useMemo(() => {
         return {
@@ -139,10 +140,21 @@ export default function WithdrawPage() {
         }
     }, [paymentMethods]);
 
+    const selectedMethodId = form.watch('paymentMethodId');
     const selectedMethod = useMemo(() => {
-        const selectedId = form.watch('paymentMethodId');
-        return paymentMethods.find(p => p.id === selectedId) || null;
-    }, [form.watch('paymentMethodId'), paymentMethods]);
+        return paymentMethods.find(p => p.id === selectedMethodId) || null;
+    }, [selectedMethodId, paymentMethods]);
+
+    useEffect(() => {
+        const newDetails: Record<string, string> = {};
+        if (selectedMethod) {
+            selectedMethod.fields.forEach(field => {
+                newDetails[field.name] = '';
+            });
+        }
+        form.setValue('details', newDetails);
+    }, [selectedMethod, form.setValue]);
+
 
     async function onSubmit(values: FormValues) {
         if (!user || !selectedCategory) return;
@@ -219,31 +231,30 @@ export default function WithdrawPage() {
             </div>
         );
     }
-
+    
     const renderCategorySelector = () => (
-        <RadioGroup onValueChange={(value: Category) => handleCategoryChange(value)} className="space-y-3">
-             <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                <FormControl><RadioGroupItem value="crypto" id="cat-crypto" className="sr-only"/></FormControl>
-                <FormLabel htmlFor="cat-crypto" className="font-normal cursor-pointer w-full flex items-center gap-3">
-                    <Wallet className="h-5 w-5 text-muted-foreground"/>
-                    <span>Withdraw using Crypto</span>
-                </FormLabel>
-            </FormItem>
-            <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                <FormControl><RadioGroupItem value="internal_transfer" id="cat-internal" className="sr-only"/></FormControl>
-                <FormLabel htmlFor="cat-internal" className="font-normal cursor-pointer w-full flex items-center gap-3">
-                    <Repeat className="h-5 w-5 text-muted-foreground"/>
-                    <span>Internal Transfer</span>
-                </FormLabel>
-            </FormItem>
-             <FormItem className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                <FormControl><RadioGroupItem value="trading_account" id="cat-trading" className="sr-only"/></FormControl>
-                <FormLabel htmlFor="cat-trading" className="font-normal cursor-pointer w-full flex items-center gap-3">
-                    <Briefcase className="h-5 w-5 text-muted-foreground"/>
-                    <span>Transfer to Trading Account</span>
-                </FormLabel>
-            </FormItem>
-        </RadioGroup>
+        <Select onValueChange={(value: Category) => handleCategoryChange(value)}>
+            <SelectTrigger>
+                <SelectValue placeholder="Select a withdrawal category" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="crypto">
+                    <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4" /> Withdraw using Crypto
+                    </div>
+                </SelectItem>
+                 <SelectItem value="internal_transfer">
+                    <div className="flex items-center gap-2">
+                        <Repeat className="h-4 w-4" /> Internal Transfer
+                    </div>
+                </SelectItem>
+                 <SelectItem value="trading_account">
+                    <div className="flex items-center gap-2">
+                        <Briefcase className="h-4 w-4" /> Transfer to Trading Account
+                    </div>
+                </SelectItem>
+            </SelectContent>
+        </Select>
     );
 
     const renderPaymentMethodSelector = (methods: PaymentMethod[]) => (
@@ -253,19 +264,20 @@ export default function WithdrawPage() {
             render={({ field }) => (
                 <FormItem>
                     <FormLabel className="text-base font-semibold">2. Select Method</FormLabel>
-                    <FormControl>
-                        <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3">
-                        {methods.map(method => (
-                            <FormItem key={method.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                                <FormControl><RadioGroupItem value={method.id} id={method.id} className="sr-only"/></FormControl>
-                                <FormLabel htmlFor={method.id} className="font-normal cursor-pointer w-full">
-                                    <p className="font-medium">{method.name}</p>
-                                    <p className="text-xs text-muted-foreground">{method.description}</p>
-                                </FormLabel>
-                            </FormItem>
-                        ))}
-                        </RadioGroup>
-                    </FormControl>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a payment method" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                             {methods.map(method => (
+                                <SelectItem key={method.id} value={method.id}>
+                                    {method.name}
+                                </SelectItem>
+                             ))}
+                        </SelectContent>
+                    </Select>
                     <FormMessage />
                 </FormItem>
             )}
@@ -279,19 +291,20 @@ export default function WithdrawPage() {
             render={({ field }) => (
                 <FormItem>
                     <FormLabel className="text-base font-semibold">2. Select Account</FormLabel>
-                     <FormControl>
-                        <RadioGroup onValueChange={field.onChange} value={field.value} className="space-y-3">
-                        {userAccounts.map(account => (
-                            <FormItem key={account.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                                <FormControl><RadioGroupItem value={account.id} id={account.id} className="sr-only"/></FormControl>
-                                <FormLabel htmlFor={account.id} className="font-normal cursor-pointer w-full">
-                                    <p className="font-medium">{account.broker}</p>
-                                    <p className="text-xs text-muted-foreground">{account.accountNumber}</p>
-                                </FormLabel>
-                            </FormItem>
-                        ))}
-                        </RadioGroup>
-                    </FormControl>
+                     <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a trading account" />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                             {userAccounts.map(account => (
+                                <SelectItem key={account.id} value={account.id}>
+                                    {account.broker} - {account.accountNumber}
+                                </SelectItem>
+                             ))}
+                        </SelectContent>
+                    </Select>
                     <FormMessage />
                 </FormItem>
             )}
@@ -317,27 +330,30 @@ export default function WithdrawPage() {
                     </FormItem>
                 )}
             />
-            {selectedMethod?.fields.map((customField) => (
-                <FormField
-                    key={customField.name}
-                    control={form.control}
-                    name={`details.${customField.name}`}
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>{customField.label}</FormLabel>
-                            <FormControl>
-                                <Input 
-                                    type={customField.type} 
-                                    placeholder={customField.placeholder} 
-                                    {...field}
-                                    value={field.value || ''}
-                                />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-            ))}
+            {selectedMethod?.fields.map((customField) => {
+                const fieldName = `details.${customField.name}`;
+                return (
+                    <FormField
+                        key={customField.name}
+                        control={form.control}
+                        name={fieldName}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{customField.label}</FormLabel>
+                                <FormControl>
+                                    <Input 
+                                        type={customField.type} 
+                                        placeholder={customField.placeholder} 
+                                        {...field}
+                                        value={form.watch(fieldName) || ''}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                )
+            })}
         </div>
     );
 
@@ -375,7 +391,7 @@ export default function WithdrawPage() {
 
                                 {((selectedCategory !== 'trading_account' && selectedMethod) || (selectedCategory === 'trading_account' && form.watch('tradingAccountId'))) && (
                                     <>
-                                        <h3 className="text-base font-semibold pt-4 border-t">3. Enter Amount</h3>
+                                        <h3 className="text-base font-semibold pt-4 border-t">3. Enter Amount & Details</h3>
                                         {renderDetailsForm()}
                                     </>
                                 )}
