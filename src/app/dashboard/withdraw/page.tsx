@@ -82,10 +82,17 @@ export default function WithdrawPage() {
                     } as Withdrawal;
                 });
                 
+                // Fetch orders to factor into balance
+                const ordersQuery = query(collection(db, "orders"), where("userId", "==", user.uid));
+                const ordersSnapshot = await getDocs(ordersQuery);
+                const totalSpentOnOrders = ordersSnapshot.docs
+                    .filter(doc => doc.data().status !== 'Cancelled')
+                    .reduce((sum, doc) => sum + doc.data().price, 0);
+
                 // Sort in-memory instead of in the query
                 withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
 
-                setAvailableBalance(totalEarned - totalWithdrawn);
+                setAvailableBalance(totalEarned - totalWithdrawn - totalSpentOnOrders);
                 setRecentWithdrawals(withdrawals);
             } catch (error) {
                 console.error("Error fetching withdrawal data:", error);
