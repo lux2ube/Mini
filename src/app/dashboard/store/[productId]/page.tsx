@@ -22,6 +22,7 @@ import { Loader2, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { placeOrder } from "@/app/admin/actions";
+import { Badge } from "@/components/ui/badge";
 
 
 const purchaseSchema = z.object({
