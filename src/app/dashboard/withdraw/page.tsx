@@ -43,13 +43,16 @@ import {
 import { getUserBalance, getPaymentMethods } from "@/app/admin/actions";
 import { Separator } from "@/components/ui/separator";
 
-const formSchema = z.object({
+// Base schema for all withdrawals
+const baseWithdrawalSchema = z.object({
     amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
     paymentMethodId: z.string({ required_error: "You must select a payment method." }),
-    details: z.object({}).passthrough(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+// We will handle dynamic fields in the submission logic, not with a complex Zod schema
+type FormValues = z.infer<typeof baseWithdrawalSchema> & {
+    details: Record<string, string>;
+};
 
 export default function WithdrawPage() {
     const { user } = useAuthContext();
@@ -64,70 +67,30 @@ export default function WithdrawPage() {
     const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
 
     const form = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(baseWithdrawalSchema),
         defaultValues: {
             amount: 0,
             paymentMethodId: '',
             details: {},
         }
     });
-
+    
+    // When a new method is selected, reset the form and set initial values for its fields
     useEffect(() => {
+        const initialDetails: Record<string, string> = {};
         if (selectedMethod) {
-            let newSchema = z.object({
-                amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
-                paymentMethodId: z.string(),
-            });
-
-            const detailsFields: Record<string, z.ZodTypeAny> = {};
             selectedMethod.fields.forEach(field => {
-                let validator: z.ZodString | z.ZodTypeAny = z.string();
-                if (field.validation.required) {
-                    validator = validator.min(1, `${field.label} is required.`);
-                }
-                if (field.validation.minLength) {
-                    validator = validator.min(field.validation.minLength, `${field.label} must be at least ${field.validation.minLength} characters.`);
-                }
-                if (field.validation.maxLength) {
-                    validator = validator.max(field.validation.maxLength, `${field.label} must be at most ${field.validation.maxLength} characters.`);
-                }
-                if (field.validation.regex) {
-                    try {
-                        const regex = new RegExp(field.validation.regex);
-                        validator = validator.regex(regex, field.validation.regexErrorMessage || `Invalid ${field.label} format.`);
-                    } catch (e) {
-                        console.error("Invalid regex:", e);
-                    }
-                }
-                detailsFields[field.name] = validator;
+                initialDetails[field.name] = '';
             });
-            
-            if (selectedMethod.type === 'trading_account' && userAccounts.length > 0) {
-                 detailsFields['tradingAccountId'] = z.string().min(1, 'Please select a trading account.');
+            if (selectedMethod.type === 'trading_account') {
+                initialDetails['tradingAccountId'] = '';
             }
-
-            const detailsSchema = z.object(detailsFields);
-            const finalSchema = newSchema.extend({ details: detailsSchema });
-            
-            // @ts-ignore - a bit of a hack to update the schema dynamically
-            form.resolver = zodResolver(finalSchema);
         }
-    }, [selectedMethod, form.reset, userAccounts]);
-
-    useEffect(() => {
         form.reset({
             amount: 0,
             paymentMethodId: selectedMethod?.id || '',
-            details: {},
+            details: initialDetails
         });
-        if (selectedMethod) {
-            selectedMethod.fields.forEach(field => {
-                form.setValue(`details.${field.name}`, '');
-            });
-            if (selectedMethod.type === 'trading_account') {
-                form.setValue('details.tradingAccountId', '');
-            }
-        }
     }, [selectedMethod, form]);
 
 
@@ -194,6 +157,18 @@ export default function WithdrawPage() {
             form.setError("amount", { type: "manual", message: "Withdrawal amount cannot exceed available balance."});
             return;
         }
+
+        // Manual validation for dynamic fields
+        let isValid = true;
+        for (const field of selectedMethod.fields) {
+            const value = values.details[field.name];
+            if (field.validation.required && !value) {
+                form.setError(`details.${field.name}`, { type: 'manual', message: `${field.label} is required.` });
+                isValid = false;
+            }
+        }
+        if (!isValid) return;
+
 
         setIsLoading(true);
 
@@ -338,25 +313,25 @@ export default function WithdrawPage() {
                                         )}
                                     />
                                     {selectedMethod.type === 'trading_account' && (
-                                         <FormField
+                                        <FormField
                                             control={form.control}
                                             name="details.tradingAccountId"
                                             render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel>Select Account</FormLabel>
-                                                <FormControl>
-                                                    <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-2">
-                                                        {userAccounts.map(acc => (
-                                                            <FormItem key={acc.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
-                                                                <FormControl><RadioGroupItem value={acc.id} id={acc.id} className="sr-only"/></FormControl>
-                                                                <FormLabel htmlFor={acc.id} className="font-normal cursor-pointer w-full">
-                                                                    <p className="font-medium">{acc.broker}</p>
-                                                                    <p className="text-xs text-muted-foreground">{acc.accountNumber}</p>
-                                                                </FormLabel>
-                                                            </FormItem>
-                                                        ))}
-                                                    </RadioGroup>
-                                                </FormControl>
+                                                <RadioGroup onValueChange={field.onChange} value={field.value} className="flex flex-col space-y-2">
+                                                    {userAccounts.map(acc => (
+                                                        <FormItem key={acc.id} className="p-4 border rounded-md has-[[data-state=checked]]:border-primary">
+                                                            <FormControl>
+                                                                <RadioGroupItem value={acc.id} id={`acc-${acc.id}`} className="sr-only"/>
+                                                            </FormControl>
+                                                            <FormLabel htmlFor={`acc-${acc.id}`} className="font-normal cursor-pointer w-full">
+                                                                <p className="font-medium">{acc.broker}</p>
+                                                                <p className="text-xs text-muted-foreground">{acc.accountNumber}</p>
+                                                            </FormLabel>
+                                                        </FormItem>
+                                                    ))}
+                                                </RadioGroup>
                                                 <FormMessage />
                                             </FormItem>
                                             )}
@@ -464,3 +439,5 @@ export default function WithdrawPage() {
         </div>
     );
 }
+
+    
