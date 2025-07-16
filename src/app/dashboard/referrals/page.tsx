@@ -45,12 +45,12 @@ export default function ReferralsPage() {
                 const referredUsersData = referredUsersDocs
                     .filter(docSnap => docSnap.exists())
                     .map(docSnap => {
-                        const data = docSnap.data() as UserProfile;
+                        const data = docSnap.data();
                         return {
-                            uid: data.uid,
+                            uid: docSnap.id,
                             name: data.name,
                             createdAt: (data.createdAt as Timestamp).toDate(),
-                        };
+                        } as ReferralInfo;
                     });
                 
                 setReferrals(referredUsersData);
@@ -78,8 +78,8 @@ export default function ReferralsPage() {
                     <CardTitle>Your Invite Link</CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center gap-2">
-                    <Input readOnly value={referralLink} />
-                    <Button variant="outline" size="icon" onClick={() => copyToClipboard(referralLink)}>
+                    <Input readOnly value={referralLink || ''} />
+                    <Button variant="outline" size="icon" onClick={() => copyToClipboard(referralLink || '')}>
                         <Copy className="h-4 w-4" />
                     </Button>
                 </CardContent>
