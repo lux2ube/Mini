@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings } from '@/types';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification } from '@/types';
 
 // Generic function to create a notification
 async function createNotification(userId: string, message: string, type: 'account' | 'cashback' | 'withdrawal' | 'general', link?: string) {
@@ -230,13 +230,15 @@ export async function rejectWithdrawal(withdrawalId: string) {
 
 // Notification Actions
 export async function getNotificationsForUser(userId: string): Promise<Notification[]> {
+    // Query only by userId to avoid needing a composite index
     const q = query(
         collection(db, 'notifications'),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        where('userId', '==', userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
+
+    // Map to the correct type
+    const notifications = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -244,6 +246,11 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
             createdAt: (data.createdAt as Timestamp).toDate(),
         } as Notification;
     });
+
+    // Sort the notifications in-memory by date, descending
+    notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    
+    return notifications;
 }
 
 export async function markNotificationsAsRead(notificationIds: string[]) {
