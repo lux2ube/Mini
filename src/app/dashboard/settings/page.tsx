@@ -115,7 +115,7 @@ function AddPaymentMethodDialog({ adminMethods, onMethodAdded }: { adminMethods:
                         />
                         
                         {selectedMethod && selectedMethod.fields.map(customField => {
-                             const fieldName = `details.${customField.name}`;
+                             const fieldName = `details.${customField.name}` as const;
                              return (
                                  <FormField
                                      key={customField.name}
@@ -129,6 +129,7 @@ function AddPaymentMethodDialog({ adminMethods, onMethodAdded }: { adminMethods:
                                                     type={customField.type} 
                                                     placeholder={customField.placeholder} 
                                                     {...field}
+                                                    value={form.watch(fieldName) || ''}
                                                 />
                                              </FormControl>
                                              <FormMessage />
@@ -252,7 +253,9 @@ export default function SettingsPage() {
                 </ProfileInfoItem>
                 <Separator/>
                 <ProfileInfoItem label="Level">
-                    <Badge variant="secondary" className="text-sm">{profile.tier}</Badge>
+                    <div>
+                        <Badge variant="secondary" className="text-sm">{profile.tier}</Badge>
+                    </div>
                 </ProfileInfoItem>
             </CardContent>
         </Card>
@@ -296,3 +299,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
