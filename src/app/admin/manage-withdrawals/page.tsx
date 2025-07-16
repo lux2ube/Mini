@@ -78,9 +78,13 @@ function ApproveWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: st
 
 function WithdrawalDetail({ label, value }: { label: string, value: any }) {
     if (!value) return null;
+    
+    // Convert label from camelCase to Title Case
+    const formattedLabel = label.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+    
     return (
         <div className="flex items-center gap-2 text-xs">
-            <span className="font-semibold">{label}:</span>
+            <span className="font-semibold">{formattedLabel}:</span>
             <span className="text-muted-foreground truncate" style={{ maxWidth: '150px' }}>
                 {value}
             </span>

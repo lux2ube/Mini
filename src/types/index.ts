@@ -137,6 +137,8 @@ export interface Withdrawal {
     requestedAt: Date;
     completedAt?: Date;
     txId?: string; // Transaction ID from the blockchain or internal reference
+    // DEPRECATED - use withdrawalDetails
+    walletAddress?: string;
 }
 
 

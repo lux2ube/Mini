@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect, useMemo } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
     Card,
@@ -26,8 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2, Copy, Wallet, Repeat, Briefcase, Banknote } from "lucide-react";
-import type { Withdrawal, PaymentMethod, TradingAccount } from "@/types";
+import { Info, Loader2, Copy, Wallet, Repeat, Briefcase, Banknote, PlusCircle } from "lucide-react";
+import type { Withdrawal, UserPaymentMethod, TradingAccount } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp, orderBy } from "firebase/firestore";
@@ -39,29 +40,27 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getUserBalance, getPaymentMethods } from "@/app/admin/actions";
+import { getUserBalance } from "@/app/admin/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
 const withdrawalSchema = z.object({
     amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
-    paymentMethodId: z.string().optional(),
-    tradingAccountId: z.string().optional(),
-    details: z.record(z.string()).optional(),
+    userPaymentMethodId: z.string().min(1, "Please select a payment method."),
+    tradingAccountId: z.string().optional(), // Keep for trading account transfers
 });
 
 type FormValues = z.infer<typeof withdrawalSchema>;
 type Category = 'crypto' | 'internal_transfer' | 'trading_account';
 
 export default function WithdrawPage() {
-    const { user } = useAuthContext();
+    const { user, refetchUserData } = useAuthContext();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     
     const [availableBalance, setAvailableBalance] = useState(0);
     const [recentWithdrawals, setRecentWithdrawals] = useState<Withdrawal[]>([]);
-    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
     const [userAccounts, setUserAccounts] = useState<TradingAccount[]>([]);
     
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
@@ -70,18 +69,16 @@ export default function WithdrawPage() {
         resolver: zodResolver(withdrawalSchema),
         defaultValues: {
             amount: 0,
-            paymentMethodId: '',
+            userPaymentMethodId: '',
             tradingAccountId: '',
-            details: {},
         }
     });
 
     const resetFormState = () => {
         form.reset({
             amount: 0,
-            paymentMethodId: '',
+            userPaymentMethodId: '',
             tradingAccountId: '',
-            details: {},
         });
     };
 
@@ -94,15 +91,13 @@ export default function WithdrawPage() {
         if (user) {
             setIsFetching(true);
             try {
-                const [balanceData, methodsData, withdrawalsSnapshot, accountsSnapshot] = await Promise.all([
+                const [balanceData, withdrawalsSnapshot, accountsSnapshot] = await Promise.all([
                     getUserBalance(user.uid),
-                    getPaymentMethods(),
                     getDocs(query(collection(db, "withdrawals"), where("userId", "==", user.uid))),
                     getDocs(query(collection(db, "tradingAccounts"), where("userId", "==", user.uid), where("status", "==", "Approved")))
                 ]);
 
                 setAvailableBalance(balanceData.availableBalance);
-                setPaymentMethods(methodsData.filter(m => m.isEnabled));
                 setUserAccounts(accountsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TradingAccount)));
 
                 const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
@@ -131,29 +126,14 @@ export default function WithdrawPage() {
         if (user) {
             fetchData();
         }
-    }, [user, toast]);
+    }, [user]);
     
-    const categorizedMethods = useMemo(() => {
-        return {
-            crypto: paymentMethods.filter(p => p.type === 'crypto'),
-            internal_transfer: paymentMethods.filter(p => p.type === 'internal_transfer'),
-        }
-    }, [paymentMethods]);
+    const userPaymentMethods = useMemo(() => user?.paymentMethods || [], [user]);
 
-    const selectedMethodId = form.watch('paymentMethodId');
-    const selectedMethod = useMemo(() => {
-        return paymentMethods.find(p => p.id === selectedMethodId) || null;
-    }, [selectedMethodId, paymentMethods]);
-
-    useEffect(() => {
-        const newDetails: Record<string, string> = {};
-        if (selectedMethod) {
-            selectedMethod.fields.forEach(field => {
-                newDetails[field.name] = '';
-            });
-        }
-        form.setValue('details', newDetails);
-    }, [selectedMethod, form.setValue]);
+    const availableMethodsForCategory = useMemo(() => {
+        if (!selectedCategory) return [];
+        return userPaymentMethods.filter(pm => pm.methodType === selectedCategory);
+    }, [selectedCategory, userPaymentMethods]);
 
 
     async function onSubmit(values: FormValues) {
@@ -172,6 +152,8 @@ export default function WithdrawPage() {
             paymentMethod: '',
             withdrawalDetails: {},
         };
+        
+        let selectedSavedMethod: UserPaymentMethod | undefined;
 
         if (selectedCategory === 'trading_account') {
             const account = userAccounts.find(a => a.id === values.tradingAccountId);
@@ -182,16 +164,18 @@ export default function WithdrawPage() {
             }
             payload.paymentMethod = `Trading Account Transfer`;
             payload.withdrawalDetails = {
-                broker: account.broker,
-                accountNumber: account.accountNumber,
+                Broker: account.broker,
+                "Account Number": account.accountNumber,
             };
-        } else if (selectedMethod) {
-            payload.paymentMethod = selectedMethod.name;
-            payload.withdrawalDetails = values.details || {};
         } else {
-             toast({ variant: 'destructive', title: 'Error', description: 'Invalid payment method selected.' });
-             setIsLoading(false);
-             return;
+             selectedSavedMethod = userPaymentMethods.find(pm => pm.id === values.userPaymentMethodId);
+             if (!selectedSavedMethod) {
+                toast({ variant: 'destructive', title: 'Error', description: 'Invalid payment method selected.' });
+                setIsLoading(false);
+                return;
+             }
+             payload.paymentMethod = selectedSavedMethod.methodName;
+             payload.withdrawalDetails = selectedSavedMethod.details;
         }
 
         try {
@@ -256,26 +240,33 @@ export default function WithdrawPage() {
             </SelectContent>
         </Select>
     );
-
-    const renderPaymentMethodSelector = (methods: PaymentMethod[]) => (
-         <FormField
+    
+    const renderSavedMethodSelector = () => (
+        <FormField
             control={form.control}
-            name="paymentMethodId"
+            name="userPaymentMethodId"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel className="text-base font-semibold">2. Select Method</FormLabel>
+                    <FormLabel className="text-base font-semibold">2. Select Saved Method</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                             <SelectTrigger>
-                                <SelectValue placeholder="Select a payment method" />
+                                <SelectValue placeholder="Select a saved payment method" />
                             </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                             {methods.map(method => (
+                            {availableMethodsForCategory.map(method => (
                                 <SelectItem key={method.id} value={method.id}>
-                                    {method.name}
+                                    <div className="flex flex-col">
+                                        <span>{method.methodName}</span>
+                                        <span className="text-xs text-muted-foreground">
+                                            {Object.entries(method.details)
+                                                .map(([key, value]) => `${value}`)
+                                                .join(', ')}
+                                        </span>
+                                    </div>
                                 </SelectItem>
-                             ))}
+                            ))}
                         </SelectContent>
                     </Select>
                     <FormMessage />
@@ -313,6 +304,7 @@ export default function WithdrawPage() {
 
     const renderDetailsForm = () => (
         <div className="space-y-4">
+             <h3 className="text-base font-semibold pt-4 border-t">3. Enter Amount</h3>
              <FormField
                 control={form.control}
                 name="amount"
@@ -330,30 +322,19 @@ export default function WithdrawPage() {
                     </FormItem>
                 )}
             />
-            {selectedMethod?.fields.map((customField) => {
-                const fieldName = `details.${customField.name}`;
-                return (
-                    <FormField
-                        key={customField.name}
-                        control={form.control}
-                        name={fieldName}
-                        render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>{customField.label}</FormLabel>
-                                <FormControl>
-                                    <Input 
-                                        type={customField.type} 
-                                        placeholder={customField.placeholder} 
-                                        {...field}
-                                        value={form.watch(fieldName) || ''}
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                )
-            })}
+        </div>
+    );
+    
+    const renderNoMethodsMessage = () => (
+        <div className="text-center p-4 border rounded-md bg-muted/50 space-y-3">
+            <p className="text-sm text-muted-foreground">
+                You have no saved payment methods for this category.
+            </p>
+            <Button asChild size="sm">
+                <Link href="/dashboard/settings">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Go to Settings to Add One
+                </Link>
+            </Button>
         </div>
     );
 
@@ -385,15 +366,14 @@ export default function WithdrawPage() {
                     {selectedCategory && (
                          <Card>
                             <CardContent className="pt-6 space-y-4">
-                                {selectedCategory === 'crypto' && renderPaymentMethodSelector(categorizedMethods.crypto)}
-                                {selectedCategory === 'internal_transfer' && renderPaymentMethodSelector(categorizedMethods.internal_transfer)}
-                                {selectedCategory === 'trading_account' && renderTradingAccountSelector()}
+                                {selectedCategory === 'trading_account' ? (
+                                     userAccounts.length > 0 ? renderTradingAccountSelector() : <p className="text-sm text-muted-foreground text-center">You have no approved trading accounts to transfer to.</p>
+                                ) : (
+                                    availableMethodsForCategory.length > 0 ? renderSavedMethodSelector() : renderNoMethodsMessage()
+                                )}
 
-                                {((selectedCategory !== 'trading_account' && selectedMethod) || (selectedCategory === 'trading_account' && form.watch('tradingAccountId'))) && (
-                                    <>
-                                        <h3 className="text-base font-semibold pt-4 border-t">3. Enter Amount & Details</h3>
-                                        {renderDetailsForm()}
-                                    </>
+                                {((selectedCategory === 'trading_account' && form.watch('tradingAccountId')) || (selectedCategory !== 'trading_account' && form.watch('userPaymentMethodId'))) && (
+                                    renderDetailsForm()
                                 )}
                             </CardContent>
                         </Card>
