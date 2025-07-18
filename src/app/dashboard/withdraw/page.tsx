@@ -40,7 +40,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getUserBalance, getPaymentMethods } from "@/app/admin/actions";
+import { getUserBalance, getPaymentMethods, logUserActivity } from "@/app/admin/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
@@ -141,6 +141,7 @@ export default function WithdrawPage() {
                 ...payload,
                 requestedAt: serverTimestamp(),
             });
+            await logUserActivity(user.uid, 'withdrawal_request', { amount: values.amount, method: selectedSavedMethod.methodName });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
             form.reset();
             fetchData();

@@ -276,3 +276,21 @@ export interface Order {
     userEmail?: string;
     userName?: string;
 }
+
+/**
+ * Represents a log of user activity for security and analytics.
+ */
+export interface ActivityLog {
+    id: string;
+    userId: string;
+    event: 'login' | 'signup' | 'withdrawal_request' | 'store_purchase';
+    timestamp: Date;
+    ipAddress?: string;
+    userAgent?: string;
+    geo?: {
+        country?: string;
+        region?: string;
+        city?: string;
+    };
+    details?: Record<string, any>; // For event-specific data, e.g., { amount: 100, method: 'USDT' }
+}

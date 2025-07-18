@@ -4,7 +4,46 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod, UserPaymentMethod } from '@/types';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod, UserPaymentMethod, ActivityLog } from '@/types';
+import { headers } from 'next/headers';
+
+// Activity Logging
+export async function logUserActivity(
+    userId: string, 
+    event: ActivityLog['event'], 
+    details?: Record<string, any>
+) {
+    try {
+        const headersList = headers();
+        const ip = headersList.get('x-forwarded-for') ?? 'unknown';
+        const userAgent = headersList.get('user-agent') ?? 'unknown';
+
+        const logEntry: Omit<ActivityLog, 'id'> = {
+            userId,
+            event,
+            timestamp: new Date(), // Use client-side date for now
+            ipAddress: ip,
+            userAgent,
+            details,
+        };
+        await addDoc(collection(db, 'activityLogs'), logEntry);
+    } catch (error) {
+        console.error(`Failed to log activity for event ${event}:`, error);
+        // We don't want to block the user's action if logging fails
+    }
+}
+
+export async function getActivityLogs(): Promise<ActivityLog[]> {
+    const logsSnapshot = await getDocs(query(collection(db, 'activityLogs'), orderBy('timestamp', 'desc')));
+    return logsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            timestamp: (data.timestamp as Timestamp).toDate(),
+        } as ActivityLog
+    });
+}
 
 // Generic function to create a notification
 async function createNotification(
@@ -510,6 +549,9 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             // 3. Create notification
             await createNotification(transaction, userId, `Your order for ${product.name} has been placed.`, 'store', '/dashboard/store/orders');
             
+            // 4. Log the activity
+            await logUserActivity(userId, 'store_purchase', { productId: productId, price: product.price });
+
             return { success: true, message: 'Order placed successfully!' };
         });
     } catch (error) {

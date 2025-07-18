@@ -17,6 +17,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timestamp } from "firebase/firestore"; 
 import { Loader2 } from 'lucide-react';
 import { generateReferralCode } from '@/lib/referral';
+import { logUserActivity } from '../admin/actions';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -95,6 +96,9 @@ export default function RegisterPage() {
           });
         }
       });
+      
+      // 5. Log the signup event
+      await logUserActivity(user.uid, 'signup', { method: 'email', referralCode: referralCode || null });
 
       toast({ type: "success", title: "Success", description: "Account created successfully." });
       router.push('/dashboard');
