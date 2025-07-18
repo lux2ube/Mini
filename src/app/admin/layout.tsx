@@ -20,6 +20,7 @@ import {
     ShoppingBag,
     Wallet,
     Shield,
+    Newspaper,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -37,6 +38,7 @@ const navLinks = [
     { href: "/admin/manage-withdrawals", icon: ArrowDownUp, label: "Manage Withdrawals" },
     { href: "/admin/manage-payment-methods", icon: Wallet, label: "Payment Methods" },
     { href: "/admin/manage-brokers", icon: Briefcase, label: "Manage Brokers" },
+    { href: "/admin/blog", icon: Newspaper, label: "Manage Blog"},
     { href: "/admin/manage-banner", icon: GalleryHorizontal, label: "Manage Banner" },
     { href: "/admin/security-logs", icon: Shield, label: "Security Logs" },
 ];

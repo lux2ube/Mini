@@ -4,7 +4,7 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod, UserPaymentMethod, ActivityLog } from '@/types';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod, UserPaymentMethod, ActivityLog, BlogPost } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
@@ -637,5 +637,90 @@ export async function deleteUserPaymentMethod(id: string) {
     } catch (error) {
         console.error("Error deleting user payment method:", error);
         return { success: false, message: 'Failed to delete payment method.' };
+    }
+}
+
+
+// Blog Post Management
+function convertTimestamps(docData: any) {
+    const data = docData.data();
+    return {
+        id: docData.id,
+        ...data,
+        createdAt: (data.createdAt as Timestamp)?.toDate(),
+        updatedAt: (data.updatedAt as Timestamp)?.toDate(),
+    } as BlogPost;
+}
+
+
+// Get all posts (for admin view)
+export async function getAllBlogPosts(): Promise<BlogPost[]> {
+    const snapshot = await getDocs(query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc')));
+    return snapshot.docs.map(convertTimestamps);
+}
+
+// Get all published posts (for public view)
+export async function getPublishedBlogPosts(): Promise<BlogPost[]> {
+    const q = query(
+        collection(db, 'blogPosts'), 
+        where('status', '==', 'published'), 
+        orderBy('createdAt', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(convertTimestamps);
+}
+
+// Get a single post by its slug (for public view)
+export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+    const q = query(
+        collection(db, 'blogPosts'), 
+        where('slug', '==', slug), 
+        where('status', '==', 'published')
+    );
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) {
+        return null;
+    }
+    return convertTimestamps(snapshot.docs[0]);
+}
+
+// Add a new blog post
+export async function addBlogPost(data: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>) {
+    try {
+        await addDoc(collection(db, 'blogPosts'), {
+            ...data,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+        return { success: true, message: 'Blog post created successfully.' };
+    } catch (error) {
+        console.error("Error adding blog post:", error);
+        return { success: false, message: 'Failed to create blog post.' };
+    }
+}
+
+// Update a blog post
+export async function updateBlogPost(id: string, data: Partial<Omit<BlogPost, 'id' | 'createdAt'>>) {
+    try {
+        const postRef = doc(db, 'blogPosts', id);
+        await updateDoc(postRef, {
+            ...data,
+            updatedAt: serverTimestamp(),
+        });
+        return { success: true, message: 'Blog post updated successfully.' };
+    } catch (error) {
+        console.error("Error updating blog post:", error);
+        return { success: false, message: 'Failed to update blog post.' };
+    }
+}
+
+// Delete a blog post
+export async function deleteBlogPost(id: string) {
+    try {
+        await deleteDoc(doc(db, 'blogPosts', id));
+        return { success: true, message: 'Blog post deleted successfully.' };
+    } catch (error) {
+        console.error("Error deleting blog post:", error);
+        return { success: false, message: 'Failed to delete blog post.' };
     }
 }

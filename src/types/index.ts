@@ -1,4 +1,5 @@
 
+
 import type { Timestamp } from "firebase/firestore";
 
 /**
@@ -293,4 +294,22 @@ export interface ActivityLog {
         city?: string;
     };
     details?: Record<string, any>; // For event-specific data, e.g., { amount: 100, method: 'USDT' }
+}
+
+/**
+ * Represents a blog post in the 'blogPosts' collection.
+ */
+export interface BlogPost {
+    id: string;
+    slug: string;
+    title: string;
+    excerpt: string;
+    content: string; // Markdown content
+    imageUrl: string;
+    authorName: string;
+    authorId: string;
+    status: 'draft' | 'published';
+    tags: string[];
+    createdAt: Date;
+    updatedAt: Date;
 }

@@ -15,6 +15,7 @@ function Header() {
                     </Link>
                     <nav className="flex items-center gap-4">
                         <Button variant="ghost" asChild><Link href="/about">About</Link></Button>
+                        <Button variant="ghost" asChild><Link href="/blog">Blog</Link></Button>
                         <Button variant="ghost" asChild><Link href="/contact">Contact</Link></Button>
                         <Button asChild><Link href="/login">Login</Link></Button>
                     </nav>
@@ -44,6 +45,7 @@ function Footer() {
                       <h3 className="font-semibold mb-2 font-headline">Quick Links</h3>
                       <ul className="space-y-1 text-sm text-muted-foreground">
                           <li><Link href="/about" className="hover:text-primary">About Us</Link></li>
+                           <li><Link href="/blog" className="hover:text-primary">Blog</Link></li>
                           <li><Link href="/contact" className="hover:text-primary">Contact Us</Link></li>
                       </ul>
                   </div>
