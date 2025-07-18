@@ -175,12 +175,12 @@ export default function UserDashboardPage() {
                     <h2 className="text-lg font-semibold mt-4">Account Rebates</h2>
                     <Card className="bg-slate-800 text-white shadow-lg overflow-hidden">
                         <CardContent className="p-4 relative">
-                            <div className="absolute top-0 left-0 w-full h-full bg-slate-900/20" style={{ backgroundImage: `radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 50%)`}}></div>
+                            <div className="absolute top-0 left-0 w-full h-full bg-slate-900/20" style={{ backgroundImage: `radial-gradient(circle at top right, hsl(var(--primary) / 0.15), transparent 50%)`}}></div>
                             <div className="relative z-10">
                                 <div className="flex justify-between items-start">
                                     <h3 className="text-base font-semibold text-gray-300">COIN CASH</h3>
                                     <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" className="w-6 h-6 text-primary-foreground"><path fill="currentColor" d="M213.38 181.38a8 8 0 0 1-10.76 1.35A103.92 103.92 0 0 0 128 160a103.92 103.92 0 0 0-74.62 22.73a8 8 0 1 1-9.41-12.7A119.92 119.92 0 0 1 128 144a119.92 119.92 0 0 1 83.94 25.32a8 8 0 0 1 1.44 12.06M240 128a112 112 0 1 1-112-112a112 112 0 0 1 112 112m-24 0a88 88 0 1 0-88 88a88.1 88.1 0 0 0 88-88"/></svg>
+                                      <svg className="w-6 h-6 text-primary-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"></path><path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path><path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
                                     </div>
                                 </div>
                                 <div className="mt-2">
@@ -305,3 +305,4 @@ export default function UserDashboardPage() {
   );
 
     
+
