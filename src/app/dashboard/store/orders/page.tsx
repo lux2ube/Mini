@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -48,7 +47,9 @@ export default function MyOrdersPage() {
             }
         };
 
-        fetchOrders();
+        if(user) {
+            fetchOrders();
+        }
     }, [user]);
 
     const getStatusVariant = (status: Order['status']) => {
@@ -115,3 +116,5 @@ export default function MyOrdersPage() {
         </div>
     );
 }
+
+    

@@ -90,10 +90,10 @@ function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuc
             : await addBlogPost(payload);
 
         if (result.success) {
-            toast({ title: "Success", description: result.message });
+            toast({ type: "success", title: "Success", description: result.message });
             onSuccess();
         } else {
-            toast({ variant: "destructive", title: "Error", description: result.message });
+            toast({ type: "error", title: "Error", description: result.message });
         }
         setIsSubmitting(false);
     };
@@ -151,7 +151,7 @@ export default function ManageBlogPage() {
             const data = await getAllBlogPosts();
             setPosts(data);
         } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Could not fetch blog posts." });
+            toast({ type: "error", title: "Error", description: "Could not fetch blog posts." });
         } finally {
             setIsLoading(false);
         }
@@ -164,10 +164,10 @@ export default function ManageBlogPage() {
     const handleDelete = async (id: string) => {
         const result = await deleteBlogPost(id);
         if (result.success) {
-            toast({ title: "Success", description: result.message });
+            toast({ type: "success", title: "Success", description: result.message });
             fetchPosts();
         } else {
-            toast({ variant: "destructive", title: "Error", description: result.message });
+            toast({ type: "error", title: "Error", description: result.message });
         }
     };
 

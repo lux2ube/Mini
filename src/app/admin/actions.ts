@@ -663,11 +663,15 @@ export async function getAllBlogPosts(): Promise<BlogPost[]> {
 export async function getPublishedBlogPosts(): Promise<BlogPost[]> {
     const q = query(
         collection(db, 'blogPosts'), 
-        where('status', '==', 'published'), 
-        orderBy('createdAt', 'desc')
+        where('status', '==', 'published')
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(convertTimestamps);
+    const posts = snapshot.docs.map(convertTimestamps);
+
+    // Sort in-memory to avoid composite index
+    posts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    return posts;
 }
 
 // Get a single post by its slug (for public view)
@@ -724,3 +728,5 @@ export async function deleteBlogPost(id: string) {
         return { success: false, message: 'Failed to delete blog post.' };
     }
 }
+
+    
