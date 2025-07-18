@@ -1,3 +1,4 @@
+
 "use client"
 
 // Inspired by react-hot-toast library
@@ -16,6 +17,7 @@ type ToasterToast = ToastProps & {
   title?: React.ReactNode
   description?: React.ReactNode
   action?: ToastActionElement
+  type?: 'success' | 'error' | 'info' | 'default';
 }
 
 const actionTypes = {
@@ -158,6 +160,7 @@ function toast({ ...props }: Toast) {
       ...props,
       id,
       open: true,
+      variant: props.type === 'error' ? 'destructive' : 'default',
       onOpenChange: (open) => {
         if (!open) dismiss()
       },

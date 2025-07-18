@@ -61,6 +61,7 @@ export default function LoginPage() {
     }
     
     toast({
+        type: "success",
         title: "Success",
         description: "Logged in successfully.",
     });
@@ -81,8 +82,8 @@ export default function LoginPage() {
       await handleLoginSuccess(userCredential);
     } catch (error: any) {
       toast({
-        variant: "destructive",
-        title: "Error",
+        type: "error",
+        title: "Login Failed",
         description: error.message,
       });
     } finally {
@@ -97,7 +98,7 @@ export default function LoginPage() {
         await handleLoginSuccess(userCredential);
     } catch (error: any) {
          toast({
-            variant: "destructive",
+            type: "error",
             title: "Login Failed",
             description: error.code === 'auth/account-exists-with-different-credential'
                 ? "An account already exists with this email address. Please sign in with your original method."

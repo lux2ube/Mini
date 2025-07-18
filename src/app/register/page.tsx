@@ -41,7 +41,7 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast({ variant: "destructive", title: "Error", description: "Passwords do not match." });
+      toast({ type: "error", title: "Error", description: "Passwords do not match." });
       return;
     }
     setIsLoading(true);
@@ -96,11 +96,11 @@ export default function RegisterPage() {
         }
       });
 
-      toast({ title: "Success", description: "Account created successfully." });
+      toast({ type: "success", title: "Success", description: "Account created successfully." });
       router.push('/dashboard');
     } catch (error: any) {
       console.error("Registration Error: ", error);
-      toast({ variant: "destructive", title: "Error", description: error.message });
+      toast({ type: "error", title: "Error", description: error.message });
     } finally {
       setIsLoading(false);
     }
