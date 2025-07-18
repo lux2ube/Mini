@@ -90,10 +90,30 @@ export default {
             height: '0',
           },
         },
+        "toast-enter": {
+          from: { transform: "translateY(100%)", opacity: '0' },
+          to: { transform: "translateY(0)", opacity: '1' },
+        },
+        "toast-leave": {
+          from: { transform: "translateY(0)", opacity: '1' },
+          to: { transform: "translateY(100%)", opacity: '0' },
+        },
+        "ios-enter": {
+          from: { transform: "translateY(calc(100% + 1rem)) scale(0.9)", opacity: '0' },
+          to: { transform: "translateY(0) scale(1)", opacity: '1' },
+        },
+        "ios-leave": {
+          from: { transform: "translateY(0) scale(1)", opacity: '1' },
+          to: { transform: "translateY(calc(100% + 1rem)) scale(0.9)", opacity: '0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        "toast-enter": "toast-enter 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards",
+        "toast-leave": "toast-leave 0.3s cubic-bezier(0.21, 1.02, 0.73, 1) forwards",
+        "ios-enter": "ios-enter 0.4s cubic-bezier(0.21, 1.02, 0.73, 1) forwards",
+        "ios-leave": "ios-leave 0.4s cubic-bezier(0.21, 1.02, 0.73, 1) forwards",
       },
     },
   },

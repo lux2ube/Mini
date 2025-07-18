@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from "lucide-react"
+import { X, type LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -53,17 +53,30 @@ const DialogContent = React.forwardRef<
 ))
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
+type DialogHeaderProps = React.HTMLAttributes<HTMLDivElement> & {
+  icon?: LucideIcon
+}
+
 const DialogHeader = ({
   className,
+  icon: Icon,
+  children,
   ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
+}: DialogHeaderProps) => (
   <div
     className={cn(
       "flex flex-col space-y-1.5 text-center sm:text-left",
       className
     )}
     {...props}
-  />
+  >
+    {Icon && (
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 sm:mx-0">
+          <Icon className="h-6 w-6 text-primary" />
+        </div>
+      )}
+    {children}
+  </div>
 )
 DialogHeader.displayName = "DialogHeader"
 
