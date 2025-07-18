@@ -1,5 +1,4 @@
 
-
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -38,7 +37,7 @@ export default async function PostPage({ params }: { params: { slug: string } })
                 </div>
             </header>
 
-            <Prose html={post.content} />
+            <Prose content={post.content} />
         </article>
     );
 }

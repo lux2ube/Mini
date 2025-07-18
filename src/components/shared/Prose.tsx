@@ -1,30 +1,22 @@
-
-
-import { micromark } from 'micromark';
+import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '@/lib/utils';
+import { MarkdownComponents } from '@/components/blog/MarkdownComponents';
 
 interface ProseProps {
-  html: string;
+  content: string;
   className?: string;
 }
 
-export default function Prose({ html, className }: ProseProps) {
-  const processedHtml = micromark(html);
-
+export default function Prose({ content, className }: ProseProps) {
   return (
-    <div
-      className={cn(
-        'prose prose-gray dark:prose-invert max-w-none',
-        'prose-headings:font-headline prose-headings:font-bold',
-        'prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl',
-        'prose-a:text-primary hover:prose-a:text-primary/80 prose-a:transition-colors',
-        'prose-strong:font-semibold',
-        'prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground prose-blockquote:font-normal',
-        'prose-code:bg-muted prose-code:text-foreground prose-code:rounded-md prose-code:p-1 prose-code:font-mono',
-        'prose-pre:bg-muted prose-pre:text-foreground prose-pre:rounded-lg',
-        className
-      )}
-      dangerouslySetInnerHTML={{ __html: processedHtml }}
-    />
+    <ReactMarkdown
+      className={cn('prose dark:prose-invert max-w-none', className)}
+      remarkPlugins={[remarkGfm]}
+      components={MarkdownComponents}
+    >
+      {content}
+    </ReactMarkdown>
   );
 }
