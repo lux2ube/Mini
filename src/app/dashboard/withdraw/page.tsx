@@ -116,13 +116,20 @@ export default function WithdrawPage() {
     const selectedMethodId = form.watch("paymentMethodId");
     const selectedMethod = useMemo(() => adminPaymentMethods.find(m => m.id === selectedMethodId), [adminPaymentMethods, selectedMethodId]);
     
-    // Dynamically update validation schema when selected method changes
+    // Dynamically update validation schema and default values when selected method changes
     useEffect(() => {
         if (selectedMethod) {
+            // Set default values for the new fields to empty strings to avoid uncontrolled -> controlled error
+            const defaultDetails = selectedMethod.fields.reduce((acc, field) => {
+                acc[field.name] = '';
+                return acc;
+            }, {} as Record<string, string>);
+            form.setValue('details', defaultDetails);
+
             const newSchema = withdrawalSchema.extend({
                 details: z.object(
                     selectedMethod.fields.reduce((acc, field) => {
-                        let fieldValidation: z.ZodType<any> = z.string();
+                        let fieldValidation: z.ZodString = z.string();
                         if (field.validation.required) {
                             fieldValidation = fieldValidation.min(1, `${field.label} is required.`);
                         }
@@ -139,10 +146,14 @@ export default function WithdrawPage() {
                         }
                         acc[field.name] = fieldValidation;
                         return acc;
-                    }, {} as Record<string, z.ZodType<any>>)
+                    }, {} as Record<string, z.ZodString>)
                 ),
             });
-            form.trigger('details'); // Re-validate details
+            // Re-validate details after setting new defaults
+            form.trigger('details');
+        } else {
+            // Clear details if no method is selected
+            form.setValue('details', {});
         }
     }, [selectedMethod, form]);
 
