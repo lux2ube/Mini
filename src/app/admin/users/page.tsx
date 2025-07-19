@@ -98,10 +98,10 @@ export default function ManageUsersPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>User ID</TableHead>
                                         <TableHead>Client ID</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Email</TableHead>
+                                        <TableHead>Firebase UID</TableHead>
                                         <TableHead>Joined</TableHead>
                                         <TableHead>Referrals</TableHead>
                                         <TableHead>Points</TableHead>
@@ -111,10 +111,10 @@ export default function ManageUsersPage() {
                                 <TableBody>
                                     {filteredUsers.map(user => (
                                         <TableRow key={user.uid}>
-                                            <TableCell className="font-mono text-xs truncate max-w-xs">{user.uid}</TableCell>
                                             <TableCell className="font-mono text-xs">{user.clientId || 'N/A'}</TableCell>
                                             <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                                             <TableCell>{user.email || 'N/A'}</TableCell>
+                                            <TableCell className="font-mono text-xs truncate max-w-xs">{user.uid}</TableCell>
                                             <TableCell>{getSafeDate(user.createdAt)}</TableCell>
                                             <TableCell>{user.referrals?.length || 0}</TableCell>
                                             <TableCell>{user.points || 0}</TableCell>
