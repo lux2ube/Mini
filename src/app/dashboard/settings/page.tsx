@@ -197,8 +197,10 @@ function ProfileCard() {
     const { profile } = user;
     
     const handleCopy = () => {
-        navigator.clipboard.writeText(String(profile.clientId));
-        toast({ title: 'Copied!', description: 'Client ID copied to clipboard.' });
+        if (profile.clientId) {
+            navigator.clipboard.writeText(String(profile.clientId));
+            toast({ title: 'Copied!', description: 'Client ID copied to clipboard.' });
+        }
     }
 
     return (
@@ -207,18 +209,22 @@ function ProfileCard() {
                 <div className="flex items-center gap-4">
                     <Avatar className="h-16 w-16">
                         <AvatarFallback className="text-xl bg-primary/20 text-primary font-bold">
-                            {profile.name.charAt(0).toUpperCase()}
+                            {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
                         </AvatarFallback>
                     </Avatar>
                     <div className="flex-grow space-y-1">
                         <h2 className="font-bold text-lg">{profile.name}</h2>
-                        <div className="flex items-center gap-2">
-                           <p className="text-xs text-muted-foreground">Client ID: {profile.clientId}</p>
-                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
-                               <Copy className="h-3 w-3" />
-                           </Button>
-                        </div>
-                        <Badge variant="secondary">{profile.tier}</Badge>
+                        {profile.clientId ? (
+                            <div className="flex items-center gap-2">
+                               <p className="text-xs text-muted-foreground">Client ID: {profile.clientId}</p>
+                               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
+                                   <Copy className="h-3 w-3" />
+                               </Button>
+                            </div>
+                        ) : (
+                             <p className="text-xs text-muted-foreground">Client ID: Not Assigned</p>
+                        )}
+                        {profile.tier && <Badge variant="secondary">{profile.tier}</Badge>}
                     </div>
                     <Button variant="ghost" size="icon" asChild>
                         <Link href="/dashboard/profile">
