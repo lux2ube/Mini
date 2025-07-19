@@ -53,7 +53,8 @@ export default function RegisterPage() {
       
       const newReferralCode = generateReferralCode(name);
       
-      const finalReferralCode = referralCodeFromUrl || '';
+      // Use the referral code from the state, which can be from the URL or manually entered.
+      const finalReferralCode = referralCode.trim();
 
       // 2. Handle referral logic and new user creation within a transaction
       await runTransaction(db, async (transaction) => {
