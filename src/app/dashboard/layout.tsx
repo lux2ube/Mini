@@ -50,10 +50,9 @@ const navLinks = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/dashboard/my-accounts", icon: Users, label: "My Accounts" },
     { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
-    { href: "/dashboard/wallet/history", icon: History, label: "History" },
+    { href: "/dashboard/wallet/history", icon: History, label: "Wallet History" },
     { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
     { href: "/dashboard/store", icon: Store, label: "Store" },
-    { href: "/dashboard/store/orders", icon: ShoppingBag, label: "My Orders"},
     { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
     { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];

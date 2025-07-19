@@ -12,12 +12,14 @@ import { Badge } from "@/components/ui/badge"
 import type { TradingAccount } from "@/types"
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
 import { XCircle } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface AccountCardProps {
     account: TradingAccount;
+    isSelected?: boolean;
 }
 
-export function AccountCard({ account }: AccountCardProps) {
+export function AccountCard({ account, isSelected }: AccountCardProps) {
   const getStatusVariant = (status: string) => {
     switch (status) {
       case 'Approved': return 'default';
@@ -28,22 +30,19 @@ export function AccountCard({ account }: AccountCardProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="p-4 pb-0">
-        <div className="flex justify-between items-center">
-            <CardTitle className="text-base">Acc: {account.accountNumber}</CardTitle>
-            <Badge variant={getStatusVariant(account.status)}>{account.status}</Badge>
+    <Card className={cn("w-40 h-28", isSelected && "border-primary ring-2 ring-primary")}>
+      <CardHeader className="p-2 pb-0">
+        <div className="flex justify-between items-start">
+            <CardTitle className="text-sm truncate">Acc: {account.accountNumber}</CardTitle>
+            <Badge variant={getStatusVariant(account.status)} className="text-xs">{account.status}</Badge>
         </div>
-        <CardDescription className="text-xs">{account.broker}</CardDescription>
+        <CardDescription className="text-xs truncate">{account.broker}</CardDescription>
       </CardHeader>
-       <CardContent className="p-4">
+       <CardContent className="p-2">
         {account.status === 'Rejected' && account.rejectionReason && (
-          <Alert variant="destructive" className="p-3">
-              <XCircle className="h-4 w-4" />
-              <AlertTitle className="text-xs font-bold">Rejection Reason</AlertTitle>
-              <AlertDescription className="text-xs">
-                  {account.rejectionReason}
-              </AlertDescription>
+          <Alert variant="destructive" className="p-1 text-xs mt-1">
+              <XCircle className="h-3 w-3" />
+              <AlertTitle className="text-xs font-bold">Rejected</AlertTitle>
           </Alert>
         )}
       </CardContent>
