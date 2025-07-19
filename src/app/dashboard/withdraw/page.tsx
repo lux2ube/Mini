@@ -13,6 +13,7 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
+    CardFooter,
 } from "@/components/ui/card";
 import {
     Table,
@@ -27,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2, Copy, Banknote, XCircle, Wallet, Briefcase, History, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { Info, Loader2, Copy, Banknote, XCircle, Wallet, Briefcase, History, ArrowDownToLine, ArrowUpFromLine, ChevronRight } from "lucide-react";
 import type { Withdrawal, PaymentMethod, TradingAccount } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
@@ -44,6 +45,7 @@ import { getUserBalance, getPaymentMethods, logUserActivity } from "@/app/admin/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getClientSessionInfo } from "@/lib/device-info";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from "next/link";
 
 
 const withdrawalSchema = z.object({
@@ -415,7 +417,7 @@ function WithdrawTabContent() {
                 <CardHeader className="p-4">
                     <CardTitle className="text-base flex items-center gap-2">
                         <History className="h-4 w-4 text-muted-foreground" />
-                        Withdrawal History
+                        Recent Withdrawals
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -430,7 +432,7 @@ function WithdrawTabContent() {
                         </TableHeader>
                         <TableBody>
                              {recentWithdrawals.length > 0 ? (
-                                recentWithdrawals.map((w) => (
+                                recentWithdrawals.slice(0, 2).map((w) => (
                                 <TableRow key={w.id} onClick={() => router.push(`/dashboard/withdraw/${w.id}`)} className="cursor-pointer">
                                     <TableCell className="text-muted-foreground text-xs">{format(new Date(w.requestedAt), "PP")}</TableCell>
                                     <TableCell className="font-medium text-xs">${w.amount.toFixed(2)}</TableCell>
@@ -474,6 +476,11 @@ function WithdrawTabContent() {
                     </Table>
                     </div>
                 </CardContent>
+                <CardFooter className="p-2 border-t">
+                    <Button asChild variant="ghost" size="sm" className="w-full justify-center text-xs">
+                        <Link href="/dashboard/transactions">View All History <ChevronRight className="ml-1 h-4 w-4" /></Link>
+                    </Button>
+                </CardFooter>
             </Card>
 
             <Alert>
@@ -494,12 +501,12 @@ function WithdrawTabContent() {
 function DepositTabContent() {
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="p-4">
                 <CardTitle className="text-base flex items-center gap-2">
                     <ArrowDownToLine className="h-4 w-4 text-muted-foreground" />
                     Deposit Funds
                 </CardTitle>
-                 <CardDescription>
+                 <CardDescription className="text-xs">
                     Deposit functionality is coming soon.
                 </CardDescription>
             </CardHeader>
@@ -508,17 +515,22 @@ function DepositTabContent() {
                     Please check back later for deposit options.
                 </p>
             </CardContent>
-             <CardHeader className="border-t">
+            <CardHeader className="p-4 border-t">
                 <CardTitle className="text-base flex items-center gap-2">
                     <History className="h-4 w-4 text-muted-foreground" />
-                    Deposit History
+                    Recent Deposits
                 </CardTitle>
             </CardHeader>
-             <CardContent>
-                 <p className="text-center text-sm text-muted-foreground py-10">
+             <CardContent className="p-0">
+                 <p className="text-center text-sm text-muted-foreground py-10 px-4">
                     No deposit history available.
                 </p>
             </CardContent>
+             <CardFooter className="p-2 border-t">
+                <Button asChild variant="ghost" size="sm" className="w-full justify-center text-xs">
+                    <Link href="/dashboard/transactions">View All History <ChevronRight className="ml-1 h-4 w-4" /></Link>
+                </Button>
+            </CardFooter>
         </Card>
     )
 }
