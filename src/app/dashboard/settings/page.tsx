@@ -7,19 +7,20 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useToast } from "@/hooks/use-toast";
-
+import Link from "next/link";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, PlusCircle, Wallet, Verified, ShieldAlert } from "lucide-react";
+import { Loader2, Trash2, PlusCircle, ChevronRight, Copy } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
     Dialog,
@@ -34,7 +35,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPaymentMethods, addUserPaymentMethod, deleteUserPaymentMethod } from "@/app/admin/actions";
 import type { PaymentMethod, UserPaymentMethod } from "@/types";
-import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
 
 const addMethodSchema = z.object({
   paymentMethodId: z.string().min(1, "Please select a method type."),
@@ -186,12 +188,46 @@ function PaymentMethodsList({ methods, onMethodDeleted }: { methods: UserPayment
     )
 }
 
-function ProfileInfoItem({ label, children }: { label: string; children: React.ReactNode }) {
+function ProfileCard() {
+    const { user } = useAuthContext();
+    const { toast } = useToast();
+    
+    if (!user || !user.profile) return null;
+
+    const { profile } = user;
+    
+    const handleCopy = () => {
+        navigator.clipboard.writeText(String(profile.clientId));
+        toast({ title: 'Copied!', description: 'Client ID copied to clipboard.' });
+    }
+
     return (
-        <div>
-            <Label className="text-xs text-muted-foreground">{label}</Label>
-            <div className="text-sm font-medium">{children}</div>
-        </div>
+        <Card>
+            <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16">
+                        <AvatarFallback className="text-xl bg-primary/20 text-primary font-bold">
+                            {profile.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-grow space-y-1">
+                        <h2 className="font-bold text-lg">{profile.name}</h2>
+                        <div className="flex items-center gap-2">
+                           <p className="text-xs text-muted-foreground">Client ID: {profile.clientId}</p>
+                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
+                               <Copy className="h-3 w-3" />
+                           </Button>
+                        </div>
+                        <Badge variant="secondary">{profile.tier}</Badge>
+                    </div>
+                    <Button variant="ghost" size="icon" asChild>
+                        <Link href="/dashboard/profile">
+                            <ChevronRight className="h-5 w-5" />
+                        </Link>
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
     )
 }
 
@@ -207,84 +243,41 @@ export default function SettingsPage() {
 
   if (isLoading || !user?.profile) {
     return (
-        <div className="flex items-center justify-center h-full">
+        <div className="flex items-center justify-center h-full min-h-[calc(100vh-theme(spacing.14))]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
   }
 
-  const { profile, paymentMethods } = user;
+  const { paymentMethods } = user;
 
   return (
     <div className="max-w-md mx-auto w-full px-4 py-4 space-y-4">
-        <PageHeader title="My Profile" description="Manage your account details and settings." />
+        <PageHeader title="Settings" description="Manage your account details and settings." />
+        
+        <ProfileCard />
         
         <Card>
-            <CardHeader>
-                <CardTitle className="text-base">Profile Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-                 <ProfileInfoItem label="Client ID">
-                   {profile.clientId}
-                </ProfileInfoItem>
-                <Separator/>
-                <ProfileInfoItem label="Name">
-                   {profile.name}
-                </ProfileInfoItem>
-                <Separator/>
-                <ProfileInfoItem label="Email">
-                    <div className="flex items-center gap-2">
-                        <span>{profile.email}</span>
-                        {user.emailVerified ? (
-                            <Badge variant="default" className="bg-green-600 hover:bg-green-700"><Verified className="mr-1 h-3 w-3" /> Verified</Badge>
-                        ) : (
-                             <Badge variant="destructive"><ShieldAlert className="mr-1 h-3 w-3" /> Not Verified</Badge>
-                        )}
-                    </div>
-                </ProfileInfoItem>
-                <Separator/>
-                <ProfileInfoItem label="Phone">
-                    <div className="flex items-center gap-2">
-                         <span>{profile.phoneNumber || "Not set"}</span>
-                         {profile.phoneNumber && (
-                             profile.phoneNumberVerified ? (
-                                <Badge variant="default" className="bg-green-600 hover:bg-green-700"><Verified className="mr-1 h-3 w-3" /> Verified</Badge>
-                            ) : (
-                                <Button size="sm" variant="secondary" disabled>Verify</Button>
-                            )
-                         )}
-                    </div>
-                </ProfileInfoItem>
-                <Separator/>
-                <ProfileInfoItem label="Level">
-                    <div>
-                        <Badge variant="secondary">{profile.tier}</Badge>
-                    </div>
-                </ProfileInfoItem>
-            </CardContent>
-        </Card>
-        
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between p-4">
                 <div>
                     <CardTitle className="text-base">Payment Methods</CardTitle>
                     <CardDescription className="text-xs">Your saved withdrawal accounts.</CardDescription>
                 </div>
                 <AddPaymentMethodDialog adminMethods={adminMethods} onMethodAdded={refetchUserData}/>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
                 <PaymentMethodsList methods={paymentMethods || []} onMethodDeleted={refetchUserData} />
             </CardContent>
         </Card>
 
          <Card>
-            <CardHeader>
+            <CardHeader className="p-4">
                 <CardTitle className="text-base">Change Password</CardTitle>
                 <CardDescription className="text-xs">
                    Update your account password.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="p-4 pt-0 space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="current-password">Current Password</Label>
                     <Input id="current-password" type="password" />

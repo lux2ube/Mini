@@ -18,6 +18,7 @@ import {
     Check,
     Store,
     ShoppingBag,
+    User,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -197,10 +198,11 @@ export default function DashboardLayout({
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <Link href="/dashboard/settings"><DropdownMenuItem>Settings</DropdownMenuItem></Link>
+                                    <Link href="/dashboard/profile"><DropdownMenuItem><User />Profile</DropdownMenuItem></Link>
+                                    <Link href="/dashboard/settings"><DropdownMenuItem><Settings />Settings</DropdownMenuItem></Link>
                                     <DropdownMenuItem>Support</DropdownMenuItem>
                                     <DropdownMenuSeparator />
-                                    <Link href="/"><DropdownMenuItem>Logout</DropdownMenuItem></Link>
+                                    <Link href="/"><DropdownMenuItem><LogOut/>Logout</DropdownMenuItem></Link>
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
