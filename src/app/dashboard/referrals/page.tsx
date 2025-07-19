@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Copy } from "lucide-react";
+import { Loader2, Copy, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthContext } from '@/hooks/useAuthContext';
@@ -78,7 +78,10 @@ export default function ReferralsPage() {
                     <CardTitle className="text-base">Your Invite Link</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 flex items-center gap-2">
-                    <Input readOnly value={referralLink || ''} className="text-xs" />
+                    <div className="relative flex-grow">
+                        <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input readOnly value={referralLink || ''} className="text-xs pl-10" />
+                    </div>
                     <Button variant="outline" size="icon" onClick={() => copyToClipboard(referralLink || '')}>
                         <Copy className="h-4 w-4" />
                     </Button>

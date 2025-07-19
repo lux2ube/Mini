@@ -123,12 +123,15 @@ export default function TransactionsPage() {
                     <CardTitle className="text-base">Filters</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 p-4 pt-0">
-                    <Input
-                        placeholder="Search transactions..."
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
-                        className="h-9"
-                    />
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            placeholder="Search transactions..."
+                            value={filters.search}
+                            onChange={(e) => handleFilterChange('search', e.target.value)}
+                            className="h-9 pl-10"
+                        />
+                    </div>
 
                     <Select value={filters.account} onValueChange={(value) => handleFilterChange('account', value)}>
                         <SelectTrigger className="h-9"><SelectValue placeholder="All Accounts" /></SelectTrigger>

@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, ChevronRight, Copy } from "lucide-react";
+import { Loader2, ChevronRight, Copy, Lock } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -114,15 +114,24 @@ export default function SettingsPage() {
             <CardContent className="p-4 pt-0 space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="current-password">Current Password</Label>
-                    <Input id="current-password" type="password" />
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="current-password" type="password" className="pl-10" />
+                    </div>
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="new-password">New Password</Label>
-                    <Input id="new-password" type="password" />
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="new-password" type="password" className="pl-10" />
+                    </div>
                 </div>
                  <div className="space-y-2">
                     <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <Input id="confirm-password" type="password" />
+                    <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input id="confirm-password" type="password" className="pl-10" />
+                    </div>
                 </div>
                 <Button className="w-full" size="sm">Update Password</Button>
             </CardContent>

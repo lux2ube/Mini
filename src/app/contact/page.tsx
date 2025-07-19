@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, User, FileText } from "lucide-react";
 
 export default function ContactPage() {
   return (
@@ -52,20 +52,32 @@ export default function ContactPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="first-name">First Name</Label>
-                            <Input id="first-name" placeholder="John" />
+                            <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input id="first-name" placeholder="John" className="pl-10" />
+                            </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="last-name">Last Name</Label>
-                            <Input id="last-name" placeholder="Doe" />
+                            <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input id="last-name" placeholder="Doe" className="pl-10" />
+                            </div>
                         </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="john.doe@example.com" />
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="email" type="email" placeholder="john.doe@example.com" className="pl-10" />
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="message">Message</Label>
-                        <Textarea id="message" placeholder="Your message..." />
+                         <div className="relative">
+                            <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Textarea id="message" placeholder="Your message..." className="pl-10" />
+                        </div>
                     </div>
                     <Button type="submit" className="w-full">Send Message</Button>
                  </form>

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { Loader2, User, KeyRound, Copy, ShieldCheck, Diamond, Star } from "lucide-react";
+import { Loader2, User, KeyRound, Copy, ShieldCheck, Diamond, Star, Lock } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
     Card,
@@ -134,7 +134,10 @@ export default function ProfilePage() {
                                     <FormItem>
                                         <FormLabel>Full Name</FormLabel>
                                         <FormControl>
-                                            <Input placeholder="Your full name" {...field} />
+                                            <div className="relative">
+                                                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input placeholder="Your full name" {...field} className="pl-10" />
+                                            </div>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -164,7 +167,10 @@ export default function ProfilePage() {
                     <div>
                         <Label>Your Referral Code</Label>
                         <div className="flex items-center gap-2">
-                            <Input readOnly value={profile.referralCode || 'N/A'} className="font-mono text-sm" />
+                             <div className="relative flex-grow">
+                                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input readOnly value={profile.referralCode || 'N/A'} className="font-mono text-sm pl-10" />
+                            </div>
                             <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(profile.referralCode)}>
                                 <Copy className="h-4 w-4" />
                             </Button>
@@ -198,7 +204,10 @@ export default function ProfilePage() {
                                     <FormItem>
                                         <FormLabel>Current Password</FormLabel>
                                         <FormControl>
-                                            <Input type="password" {...field} />
+                                            <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input type="password" {...field} className="pl-10" />
+                                            </div>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -211,7 +220,10 @@ export default function ProfilePage() {
                                     <FormItem>
                                         <FormLabel>New Password</FormLabel>
                                         <FormControl>
-                                            <Input type="password" {...field} />
+                                             <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input type="password" {...field} className="pl-10" />
+                                            </div>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -224,7 +236,10 @@ export default function ProfilePage() {
                                     <FormItem>
                                         <FormLabel>Confirm New Password</FormLabel>
                                         <FormControl>
-                                            <Input type="password" {...field} />
+                                             <div className="relative">
+                                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input type="password" {...field} className="pl-10" />
+                                            </div>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>

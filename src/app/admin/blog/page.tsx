@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -39,7 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { getAllBlogPosts, addBlogPost, updateBlogPost, deleteBlogPost } from "../actions";
-import { PlusCircle, Loader2, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Loader2, Edit, Trash2, Type, Link as LinkIcon, Tag, AlignLeft, FileText } from "lucide-react";
 import type { BlogPost } from "@/types";
 
 const formSchema = z.object({
@@ -102,19 +101,64 @@ function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuc
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                  <FormField control={form.control} name="title" render={({ field }) => (
-                    <FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                             <div className="relative">
+                                <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input {...field} className="pl-10" />
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
                 )}/>
                 <FormField control={form.control} name="excerpt" render={({ field }) => (
-                    <FormItem><FormLabel>Excerpt</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel>Excerpt</FormLabel>
+                        <FormControl>
+                             <div className="relative">
+                                <AlignLeft className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Textarea {...field} className="pl-10" />
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
                 )}/>
                 <FormField control={form.control} name="content" render={({ field }) => (
-                    <FormItem><FormLabel>Content (Markdown)</FormLabel><FormControl><Textarea className="min-h-48" {...field} /></FormControl><FormMessage /></FormItem>
+                     <FormItem>
+                        <FormLabel>Content (Markdown)</FormLabel>
+                        <FormControl>
+                             <div className="relative">
+                                <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Textarea className="min-h-48 pl-10" {...field} />
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
                 )}/>
                 <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                    <FormItem><FormLabel>Featured Image URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel>Featured Image URL</FormLabel>
+                        <FormControl>
+                            <div className="relative">
+                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input {...field} className="pl-10" />
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
                 )}/>
                  <FormField control={form.control} name="tags" render={({ field }) => (
-                    <FormItem><FormLabel>Tags (comma-separated)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel>Tags (comma-separated)</FormLabel>
+                        <FormControl>
+                             <div className="relative">
+                                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input {...field} className="pl-10" />
+                            </div>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
                 )}/>
                 <FormField control={form.control} name="status" render={({ field }) => (
                     <FormItem><FormLabel>Status</FormLabel>

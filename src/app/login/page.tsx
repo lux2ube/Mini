@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { auth, db, googleProvider, appleProvider } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, signInWithPopup, UserCredential } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail, Lock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { generateReferralCode } from '@/lib/referral';
 import { logUserActivity } from '../admin/actions';
@@ -146,27 +146,35 @@ export default function LoginPage() {
 
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                     <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="m@example.com" 
-                        required 
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        disabled={isLoading || isSocialLoading}
-                    />
+                        <Label htmlFor="email">Email</Label>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                                id="email" 
+                                type="email" 
+                                placeholder="m@example.com" 
+                                required 
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={isLoading || isSocialLoading}
+                                className="pl-10"
+                            />
+                        </div>
                     </div>
                     <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input 
-                        id="password" 
-                        type="password" 
-                        required 
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        disabled={isLoading || isSocialLoading}
-                    />
+                        <Label htmlFor="password">Password</Label>
+                         <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                                id="password" 
+                                type="password" 
+                                required 
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                disabled={isLoading || isSocialLoading}
+                                className="pl-10"
+                            />
+                        </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading || isSocialLoading}>
                     {isLoading ? <Loader2 className="animate-spin" /> : "Login with Email"}

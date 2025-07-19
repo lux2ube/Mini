@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { auth, db } from '@/lib/firebase/config';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timestamp, getDoc } from "firebase/firestore"; 
-import { Loader2 } from 'lucide-react';
+import { Loader2, User, Mail, Lock, KeyRound } from 'lucide-react';
 import { generateReferralCode } from '@/lib/referral';
 import { logUserActivity } from '../admin/actions';
 
@@ -52,8 +52,6 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Step 2: Handle referral lookup *before* the main transaction.
-      // This is the key fix: it prevents an invalid query from ever reaching the transaction.
       const finalReferralCode = (referralCode || referralCodeFromUrl || '').trim();
       let referrerProfile: { uid: string, data: any } | null = null;
       
@@ -68,7 +66,6 @@ export default function RegisterPage() {
         }
       }
 
-      // Step 3: Create user profile and handle referrals in a simplified, robust transaction.
       await runTransaction(db, async (transaction) => {
         const counterRef = doc(db, 'counters', 'userCounter');
         const counterSnap = await transaction.get(counterRef);
@@ -93,7 +90,6 @@ export default function RegisterPage() {
         };
         transaction.set(newUserDocRef, newUserProfile);
         
-        // If a valid referrer was found before the transaction, update their document.
         if (referrerProfile) {
           const referrerDocRef = doc(db, "users", referrerProfile.uid);
           const currentReferrals = referrerProfile.data.referrals || [];
@@ -105,14 +101,11 @@ export default function RegisterPage() {
           });
         }
         
-        // Update the counter.
         transaction.set(counterRef, { lastId: newClientId }, { merge: true });
       });
       
-      // Step 4: Log activity and redirect.
       await logUserActivity(user.uid, 'signup', { method: 'email', referralCode: finalReferralCode || null });
 
-      // Dispatch event to force refetch of user data in layout to prevent "New User" issue.
       window.dispatchEvent(new CustomEvent('refetchUser'));
 
       toast({ type: "success", title: "Success", description: "Account created successfully. Redirecting..." });
@@ -142,23 +135,38 @@ export default function RegisterPage() {
                 <form onSubmit={handleRegister} className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} />
+                         <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} className="pl-10"/>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10"/>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="password">Password</Label>
-                        <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+                         <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10"/>
+                        </div>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="confirm-password">Confirm Password</Label>
-                        <Input id="confirm-password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                         <div className="relative">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="confirm-password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10"/>
+                        </div>
                     </div>
                      <div className="space-y-2">
                         <Label htmlFor="referral-code">Referral Code (Optional)</Label>
-                        <Input id="referral-code" type="text" placeholder="e.g. JOH123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} />
+                        <div className="relative">
+                            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="referral-code" type="text" placeholder="e.g. JOH123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="pl-10"/>
+                        </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading ? <Loader2 className="animate-spin" /> : "Create Account"}

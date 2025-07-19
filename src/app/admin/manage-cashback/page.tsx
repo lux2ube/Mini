@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, XCircle, UserCheck } from 'lucide-react';
+import { Loader2, Search, XCircle, UserCheck, Edit, DollarSign } from 'lucide-react';
 import { addCashbackTransaction } from '../actions';
 import type { TradingAccount } from '@/types';
 import { useAdminData } from '@/hooks/useAdminData';
@@ -167,7 +167,12 @@ export default function ManageCashbackPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Trade Details</FormLabel>
-                                        <FormControl><Input placeholder="e.g., 5.0 lots EUR/USD" {...field} /></FormControl>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <Edit className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input placeholder="e.g., 5.0 lots EUR/USD" {...field} className="pl-10" />
+                                            </div>
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}
@@ -179,7 +184,12 @@ export default function ManageCashbackPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Cashback Amount ($)</FormLabel>
-                                        <FormControl><Input type="number" placeholder="e.g., 25.50" {...field} /></FormControl>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input type="number" placeholder="e.g., 25.50" {...field} className="pl-10" />
+                                            </div>
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}

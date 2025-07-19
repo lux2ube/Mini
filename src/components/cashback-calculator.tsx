@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useTransition } from "react";
-import { Loader2, DollarSign } from "lucide-react";
+import { Loader2, DollarSign, ListTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -78,25 +79,33 @@ export function CashbackCalculator() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
                 <Label htmlFor="amount">Transaction Amount</Label>
-                <Input
-                    id="amount"
-                    type="number"
-                    placeholder="e.g., 125.50"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    disabled={isPending}
-                />
+                <div className="relative">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        id="amount"
+                        type="number"
+                        placeholder="e.g., 125.50"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        disabled={isPending}
+                        className="pl-10"
+                    />
+                </div>
             </div>
             <div className="space-y-2">
                 <Label htmlFor="mcc">Merchant Category Code (MCC)</Label>
-                <Input
-                    id="mcc"
-                    type="text"
-                    placeholder="e.g., 5812 (Restaurants)"
-                    value={mcc}
-                    onChange={(e) => setMcc(e.target.value)}
-                    disabled={isPending}
-                />
+                 <div className="relative">
+                    <ListTree className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        id="mcc"
+                        type="text"
+                        placeholder="e.g., 5812 (Restaurants)"
+                        value={mcc}
+                        onChange={(e) => setMcc(e.target.value)}
+                        disabled={isPending}
+                        className="pl-10"
+                    />
+                </div>
             </div>
         </div>
          <Button onClick={onSubmit} disabled={isPending} className="bg-accent hover:bg-accent/90 text-accent-foreground mt-2">

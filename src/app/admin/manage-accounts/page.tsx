@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Timestamp } from 'firebase/firestore';
 import {
@@ -57,12 +57,16 @@ function RejectAccountDialog({ accountId, onSuccess }: { accountId: string, onSu
             </AlertDialogHeader>
             <div className="space-y-2">
                 <Label htmlFor="reason">Rejection Reason</Label>
-                <Textarea 
-                    id="reason" 
-                    value={reason} 
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="e.g., Account number does not match our records."
-                />
+                <div className="relative">
+                    <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Textarea 
+                        id="reason" 
+                        value={reason} 
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="e.g., Account number does not match our records."
+                        className="pl-10"
+                    />
+                </div>
             </div>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>

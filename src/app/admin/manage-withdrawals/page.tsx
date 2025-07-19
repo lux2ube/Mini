@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, XCircle, Copy, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Copy, AlertTriangle, MessageSquare, Hash } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import {
@@ -61,12 +61,16 @@ function RejectWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: str
             </AlertDialogHeader>
             <div className="space-y-2">
                 <Label htmlFor="reason">Rejection Reason</Label>
-                <Textarea 
-                    id="reason" 
-                    value={reason} 
-                    onChange={(e) => setReason(e.target.value)}
-                    placeholder="e.g., Insufficient trading activity."
-                />
+                <div className="relative">
+                    <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Textarea 
+                        id="reason" 
+                        value={reason} 
+                        onChange={(e) => setReason(e.target.value)}
+                        placeholder="e.g., Insufficient trading activity."
+                        className="pl-10"
+                    />
+                </div>
             </div>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -110,12 +114,16 @@ function ApproveWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: st
             </AlertDialogHeader>
             <div className="space-y-2">
                 <Label htmlFor="txid">Transaction ID / Reference</Label>
-                <Input 
-                    id="txid" 
-                    value={txId} 
-                    onChange={(e) => setTxId(e.target.value)}
-                    placeholder="0x..."
-                />
+                <div className="relative">
+                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        id="txid" 
+                        value={txId} 
+                        onChange={(e) => setTxId(e.target.value)}
+                        placeholder="0x..."
+                        className="pl-10"
+                    />
+                </div>
             </div>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>

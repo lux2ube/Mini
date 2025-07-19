@@ -18,7 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import type { Product } from "@/types";
-import { Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { placeOrder } from "@/app/admin/actions";
@@ -155,7 +155,10 @@ export default function ProductDetailPage() {
                                             <FormItem>
                                                 <FormLabel>Phone Number</FormLabel>
                                                 <FormControl>
-                                                    <Input type="tel" placeholder="e.g., +1 555-123-4567" {...field} />
+                                                    <div className="relative">
+                                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <Input type="tel" placeholder="e.g., +1 555-123-4567" {...field} className="pl-10" />
+                                                    </div>
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
