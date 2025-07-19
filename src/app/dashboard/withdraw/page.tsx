@@ -73,6 +73,8 @@ export default function WithdrawPage() {
     
     const form = useForm<FormValues>({
         resolver: zodResolver(withdrawalSchema),
+        mode: "onSubmit",
+        reValidateMode: "onChange",
         defaultValues: {
             amount: 0,
             withdrawalType: 'payment_method',
