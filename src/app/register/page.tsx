@@ -52,20 +52,23 @@ export default function RegisterPage() {
       const user = userCredential.user;
       
       const newReferralCode = generateReferralCode(name);
+      
+      // Use the value from the form input state for the transaction
+      const finalReferralCode = referralCode;
 
       // 2. Handle referral logic and new user creation within a transaction
       await runTransaction(db, async (transaction) => {
         let referrerProfile: { uid: string, data: any } | null = null;
         
         // Find the referrer if a code is provided
-        if (referralCode) {
-          const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCode));
+        if (finalReferralCode) {
+          const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode));
           const referrerSnapshot = await transaction.get(referrerQuery);
           if (!referrerSnapshot.empty) {
             const doc = referrerSnapshot.docs[0];
             referrerProfile = { uid: doc.id, data: doc.data() };
           } else {
-            console.warn("Referral code not found:", referralCode);
+            console.warn("Referral code not found:", finalReferralCode);
           }
         }
         
@@ -108,7 +111,7 @@ export default function RegisterPage() {
       });
       
       // 5. Log the signup event
-      await logUserActivity(user.uid, 'signup', { method: 'email', referralCode: referralCode || null });
+      await logUserActivity(user.uid, 'signup', { method: 'email', referralCode: finalReferralCode || null });
 
       toast({ type: "success", title: "Success", description: "Account created successfully." });
       router.push('/dashboard');
