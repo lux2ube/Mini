@@ -204,26 +204,35 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
   });
 }
 
-export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected') {
+export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected', reason?: string) {
   try {
     const accountRef = doc(db, 'tradingAccounts', accountId);
     
-    // Use a transaction to ensure atomicity
     await runTransaction(db, async (transaction) => {
         const accountSnap = await transaction.get(accountRef);
         if (!accountSnap.exists()) throw new Error("Account not found");
         const accountData = accountSnap.data() as TradingAccount;
 
-        transaction.update(accountRef, { status });
+        const updateData: { status: 'Approved' | 'Rejected', rejectionReason?: string } = { status };
+        let message = `Your trading account ${accountData.accountNumber} has been ${status.toLowerCase()}.`;
 
-        const message = `Your trading account ${accountData.accountNumber} has been ${status.toLowerCase()}.`;
+        if (status === 'Rejected') {
+            if (!reason) throw new Error("Rejection reason is required.");
+            updateData.rejectionReason = reason;
+            message += ` Reason: ${reason}`;
+        } else {
+             updateData.rejectionReason = ""; // Clear reason on approval
+        }
+
+        transaction.update(accountRef, updateData);
         await createNotification(transaction, accountData.userId, message, 'account', '/dashboard/my-accounts');
     });
 
     return { success: true, message: `Account status updated to ${status}.` };
   } catch (error) {
     console.error("Error updating account status:", error);
-    return { success: false, message: 'Failed to update account status.' };
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return { success: false, message: `Failed to update account status: ${errorMessage}` };
   }
 }
 
@@ -321,6 +330,7 @@ export async function approveWithdrawal(withdrawalId: string, txId: string) {
                 status: 'Completed',
                 completedAt: serverTimestamp(),
                 txId: txId,
+                rejectionReason: "", // Clear reason on approval
             });
 
             const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has been completed.`;
@@ -334,7 +344,7 @@ export async function approveWithdrawal(withdrawalId: string, txId: string) {
     }
 }
 
-export async function rejectWithdrawal(withdrawalId: string) {
+export async function rejectWithdrawal(withdrawalId: string, reason: string) {
      try {
         const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
         
@@ -343,16 +353,19 @@ export async function rejectWithdrawal(withdrawalId: string) {
             if (!withdrawalSnap.exists()) throw new Error("Withdrawal not found");
             const withdrawalData = withdrawalSnap.data() as Withdrawal;
 
-            transaction.update(withdrawalRef, { status: 'Failed' });
+            if (!reason) throw new Error("Rejection reason is required.");
 
-            const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has failed. Please contact support.`;
+            transaction.update(withdrawalRef, { status: 'Failed', rejectionReason: reason });
+
+            const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has failed. Reason: ${reason}`;
             await createNotification(transaction, withdrawalData.userId, message, 'withdrawal', '/dashboard/withdraw');
         });
 
         return { success: true, message: `Withdrawal status updated to Failed.` };
     } catch (error) {
         console.error("Error rejecting withdrawal:", error);
-        return { success: false, message: 'Failed to reject withdrawal.' };
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+        return { success: false, message: `Failed to reject withdrawal: ${errorMessage}` };
     }
 }
 

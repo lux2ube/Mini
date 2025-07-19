@@ -12,6 +12,69 @@ import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Timestamp } from 'firebase/firestore';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+
+function RejectAccountDialog({ accountId, onSuccess }: { accountId: string, onSuccess: () => void }) {
+    const [reason, setReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const handleSubmit = async () => {
+        if (!reason.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Rejection reason cannot be empty.' });
+            return;
+        }
+        setIsSubmitting(true);
+        const result = await updateTradingAccountStatus(accountId, 'Rejected', reason);
+        if (result.success) {
+            toast({ title: 'Success', description: result.message });
+            onSuccess();
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+        setIsSubmitting(false);
+    }
+
+    return (
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Reject Trading Account</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Please provide a reason for rejecting this account. The user will be notified.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+                <Label htmlFor="reason">Rejection Reason</Label>
+                <Textarea 
+                    id="reason" 
+                    value={reason} 
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="e.g., Account number does not match our records."
+                />
+            </div>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirm Rejection
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    )
+}
+
 
 export default function ManageAccountsPage() {
     const [accounts, setAccounts] = useState<TradingAccount[]>([]);
@@ -37,12 +100,11 @@ export default function ManageAccountsPage() {
         fetchAccounts();
     }, []);
 
-    const handleStatusUpdate = async (accountId: string, status: 'Approved' | 'Rejected') => {
+    const handleApprove = async (accountId: string) => {
         const originalAccounts = [...accounts];
-        // Optimistic update
-        setAccounts(accounts.map(acc => acc.id === accountId ? { ...acc, status } : acc));
+        setAccounts(accounts.map(acc => acc.id === accountId ? { ...acc, status: 'Approved' } : acc));
 
-        const result = await updateTradingAccountStatus(accountId, status);
+        const result = await updateTradingAccountStatus(accountId, 'Approved');
         if (!result.success) {
             toast({ variant: 'destructive', title: 'Error', description: result.message });
             setAccounts(originalAccounts); // Revert on failure
@@ -79,6 +141,7 @@ export default function ManageAccountsPage() {
                                         <TableHead>Broker</TableHead>
                                         <TableHead>Account #</TableHead>
                                         <TableHead>Status</TableHead>
+                                        <TableHead>Reason</TableHead>
                                         <TableHead>Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -89,13 +152,19 @@ export default function ManageAccountsPage() {
                                             <TableCell>{account.broker}</TableCell>
                                             <TableCell>{account.accountNumber}</TableCell>
                                             <TableCell><Badge variant={getStatusVariant(account.status)}>{account.status}</Badge></TableCell>
+                                            <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{account.rejectionReason}</TableCell>
                                             <TableCell className="space-x-2">
-                                                <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 hover:text-green-600" onClick={() => handleStatusUpdate(account.id, 'Approved')} disabled={account.status === 'Approved'}>
+                                                <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 hover:text-green-600" onClick={() => handleApprove(account.id)} disabled={account.status !== 'Pending'}>
                                                     <CheckCircle className="h-4 w-4" />
                                                 </Button>
-                                                <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 hover:text-red-600" onClick={() => handleStatusUpdate(account.id, 'Rejected')} disabled={account.status === 'Rejected'}>
-                                                    <XCircle className="h-4 w-4" />
-                                                </Button>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 hover:text-red-600" disabled={account.status !== 'Pending'}>
+                                                            <XCircle className="h-4 w-4" />
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <RejectAccountDialog accountId={account.id} onSuccess={fetchAccounts} />
+                                                </AlertDialog>
                                             </TableCell>
                                         </TableRow>
                                     ))}

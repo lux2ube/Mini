@@ -27,6 +27,57 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
+
+
+function RejectWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: string, onSuccess: () => void }) {
+    const [reason, setReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const handleSubmit = async () => {
+        if (!reason.trim()) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Rejection reason cannot be empty.' });
+            return;
+        }
+        setIsSubmitting(true);
+        const result = await rejectWithdrawal(withdrawalId, reason);
+        if (result.success) {
+            toast({ title: 'Success', description: result.message });
+            onSuccess();
+        } else {
+            toast({ variant: 'destructive', title: 'Error', description: result.message });
+        }
+        setIsSubmitting(false);
+    }
+
+    return (
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Reject Withdrawal</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Please provide a reason for rejecting this withdrawal. The user will be notified.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+                <Label htmlFor="reason">Rejection Reason</Label>
+                <Textarea 
+                    id="reason" 
+                    value={reason} 
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="e.g., Insufficient trading activity."
+                />
+            </div>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Confirm Reject
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    )
+}
 
 function ApproveWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: string, onSuccess: () => void }) {
     const [txId, setTxId] = useState('');
@@ -128,16 +179,6 @@ export default function ManageWithdrawalsPage() {
         fetchWithdrawals();
     }, []);
 
-    const handleReject = async (withdrawalId: string) => {
-        const result = await rejectWithdrawal(withdrawalId);
-        if (result.success) {
-            toast({ title: 'Success', description: result.message });
-            fetchWithdrawals();
-        } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
-        }
-    };
-
     const getStatusVariant = (status: string) => {
         switch (status) {
             case 'Completed': return 'default';
@@ -168,6 +209,7 @@ export default function ManageWithdrawalsPage() {
                                         <TableHead>Method</TableHead>
                                         <TableHead>Details</TableHead>
                                         <TableHead>Status</TableHead>
+                                        <TableHead>Reason</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -199,6 +241,7 @@ export default function ManageWithdrawalsPage() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell><Badge variant={getStatusVariant(w.status)}>{w.status}</Badge></TableCell>
+                                                <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{w.rejectionReason}</TableCell>
                                                 <TableCell className="text-right space-x-2">
                                                     {w.status === 'Processing' && (
                                                         <>
@@ -216,16 +259,7 @@ export default function ManageWithdrawalsPage() {
                                                                     <XCircle className="h-4 w-4" />
                                                                 </Button>
                                                             </AlertDialogTrigger>
-                                                            <AlertDialogContent>
-                                                                <AlertDialogHeader>
-                                                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                                    <AlertDialogDescription>This will mark the withdrawal as failed. This action cannot be undone.</AlertDialogDescription>
-                                                                </AlertDialogHeader>
-                                                                <AlertDialogFooter>
-                                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                                    <AlertDialogAction onClick={() => handleReject(w.id)}>Confirm Reject</AlertDialogAction>
-                                                                </AlertDialogFooter>
-                                                            </AlertDialogContent>
+                                                            <RejectWithdrawalDialog withdrawalId={w.id} onSuccess={fetchWithdrawals} />
                                                         </AlertDialog>
                                                         </>
                                                     )}

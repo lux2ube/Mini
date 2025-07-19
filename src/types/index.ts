@@ -146,6 +146,7 @@ export interface TradingAccount {
     accountNumber: string;
     status: 'Pending' | 'Approved' | 'Rejected';
     createdAt: Date;
+    rejectionReason?: string;
 }
 
 /**
@@ -208,6 +209,7 @@ export interface Withdrawal {
     requestedAt: Date;
     completedAt?: Date;
     txId?: string; // Transaction ID from the blockchain or internal reference
+    rejectionReason?: string;
     // New field for security check
     previousWithdrawalDetails?: Record<string, any> | null;
 }
