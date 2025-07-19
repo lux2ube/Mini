@@ -11,15 +11,14 @@ import {
 import { Badge } from "@/components/ui/badge"
 import type { TradingAccount } from "@/types"
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert"
-import { XCircle } from "lucide-react"
+import { XCircle, ChevronRight, Briefcase } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface AccountCardProps {
     account: TradingAccount;
-    isSelected?: boolean;
 }
 
-export function AccountCard({ account, isSelected }: AccountCardProps) {
+export function AccountCard({ account }: AccountCardProps) {
   const getStatusVariant = (status: string) => {
     switch (status) {
       case 'Approved': return 'default';
@@ -30,21 +29,19 @@ export function AccountCard({ account, isSelected }: AccountCardProps) {
   }
 
   return (
-    <Card className={cn("w-40 h-28", isSelected && "border-primary ring-2 ring-primary")}>
-      <CardHeader className="p-2 pb-0">
-        <div className="flex justify-between items-start">
-            <CardTitle className="text-sm truncate">Acc: {account.accountNumber}</CardTitle>
-            <Badge variant={getStatusVariant(account.status)} className="text-xs">{account.status}</Badge>
+    <Card className="hover:bg-muted/50 transition-colors">
+      <CardContent className="p-4 flex items-center gap-4">
+        <div className="p-3 bg-primary/10 rounded-lg">
+            <Briefcase className="w-6 h-6 text-primary" />
         </div>
-        <CardDescription className="text-xs truncate">{account.broker}</CardDescription>
-      </CardHeader>
-       <CardContent className="p-2">
-        {account.status === 'Rejected' && account.rejectionReason && (
-          <Alert variant="destructive" className="p-1 text-xs mt-1">
-              <XCircle className="h-3 w-3" />
-              <AlertTitle className="text-xs font-bold">Rejected</AlertTitle>
-          </Alert>
-        )}
+        <div className="flex-grow">
+          <p className="font-semibold">{account.broker}</p>
+          <p className="text-sm text-muted-foreground">{account.accountNumber}</p>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+           <Badge variant={getStatusVariant(account.status)}>{account.status}</Badge>
+           <ChevronRight className="h-5 w-5 text-muted-foreground" />
+        </div>
       </CardContent>
     </Card>
   )

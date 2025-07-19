@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { AccountCard } from "@/components/user/AccountCard";
@@ -9,14 +9,25 @@ import type { TradingAccount, CashbackTransaction } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
-import { Loader2, PlusCircle, CalendarIcon, Search, X } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { format } from "date-fns";
-import { cn } from "@/lib/utils";
 
 export default function MyAccountsPage() {
     const { user } = useAuthContext();
@@ -24,7 +35,6 @@ export default function MyAccountsPage() {
     const [accounts, setAccounts] = useState<TradingAccount[]>([]);
     const [transactions, setTransactions] = useState<CashbackTransaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [selectedAccountId, setSelectedAccountId] = useState<string | 'all'>('all');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -33,6 +43,7 @@ export default function MyAccountsPage() {
                 return;
             }
             
+            setIsLoading(true);
             try {
                 const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
                 const accountsSnapshot = await getDocs(accountsQuery);
@@ -43,6 +54,8 @@ export default function MyAccountsPage() {
                 fetchedAccounts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
                 setAccounts(fetchedAccounts);
 
+                // Fetch all transactions for the user to pass to detail pages if needed,
+                // or to show a summary here.
                 const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid));
                 const transactionsSnapshot = await getDocs(transactionsQuery);
                 const userTransactions = transactionsSnapshot.docs.map(doc => {
@@ -51,6 +64,7 @@ export default function MyAccountsPage() {
                 });
                 userTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
                 setTransactions(userTransactions);
+                
             } catch (error) {
                 console.error("Error fetching data: ", error);
             } finally {
@@ -62,18 +76,6 @@ export default function MyAccountsPage() {
             fetchData();
         }
     }, [user]);
-
-    const filteredTransactions = useMemo(() => {
-        if (selectedAccountId === 'all') {
-            return transactions;
-        }
-        return transactions.filter(tx => tx.accountId === selectedAccountId);
-    }, [transactions, selectedAccountId]);
-
-    const selectedAccount = useMemo(() => {
-        if (selectedAccountId === 'all') return null;
-        return accounts.find(acc => acc.id === selectedAccountId);
-    }, [accounts, selectedAccountId]);
     
     if (isLoading) {
         return (
@@ -83,8 +85,10 @@ export default function MyAccountsPage() {
         );
     }
 
+    const totalEarned = transactions.reduce((sum, tx) => sum + tx.cashbackAmount, 0);
+
     return (
-        <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
+        <div className="container mx-auto px-4 py-4 max-w-2xl space-y-4">
             <div className="flex justify-between items-center">
                 <PageHeader
                     title="My Accounts"
@@ -93,43 +97,41 @@ export default function MyAccountsPage() {
                 <Button asChild variant="outline" size="sm">
                     <Link href="/dashboard/brokers">
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Link New
+                        Link New Account
                     </Link>
                 </Button>
             </div>
             
-            <Carousel opts={{ align: "start", slidesToScroll: "auto" }} className="w-full">
-                <CarouselContent className="-ml-2">
-                    <CarouselItem className="pl-2 basis-auto">
-                        <div onClick={() => setSelectedAccountId('all')} className="cursor-pointer">
-                            <Card className={cn("w-40 h-28 flex flex-col justify-center items-center text-center", selectedAccountId === 'all' && "border-primary ring-2 ring-primary")}>
-                                <CardHeader className="p-2">
-                                    <CardTitle className="text-base">All Accounts</CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-2">
-                                     <p className="text-xs text-muted-foreground">{accounts.length} linked</p>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </CarouselItem>
-                    {accounts.map((account) => (
-                        <CarouselItem key={account.id} className="pl-2 basis-auto">
-                             <div onClick={() => setSelectedAccountId(account.id)} className="cursor-pointer">
-                                <AccountCard 
-                                    account={account} 
-                                    isSelected={selectedAccountId === account.id}
-                                />
-                             </div>
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-            </Carousel>
-            
             <Card>
-                <CardHeader className="p-4">
-                    <CardTitle className="text-base">Cashback History</CardTitle>
-                    <CardDescription className="text-xs">
-                        {selectedAccount ? `Showing transactions for ${selectedAccount.accountNumber}` : 'Showing transactions for all accounts'}
+                <CardHeader>
+                    <CardTitle>Accounts Overview</CardTitle>
+                    <CardDescription>
+                       You have {accounts.length} linked accounts. Total cashback earned: ${totalEarned.toFixed(2)}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {accounts.length > 0 ? (
+                        accounts.map(account => (
+                            <Link key={account.id} href={`/dashboard/my-accounts/${account.id}`} className="block">
+                                <AccountCard account={account} />
+                            </Link>
+                        ))
+                    ) : (
+                         <div className="text-center py-10 border rounded-lg">
+                            <p className="text-muted-foreground">You haven&apos;t linked any accounts yet.</p>
+                            <Button asChild size="sm" className="mt-4">
+                                <Link href="/dashboard/brokers">Link Your First Account</Link>
+                            </Button>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Recent Cashback History</CardTitle>
+                    <CardDescription>
+                        Showing the last 5 transactions from all accounts.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -137,30 +139,24 @@ export default function MyAccountsPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="text-xs">Date</TableHead>
-                                    <TableHead className="text-xs">Account</TableHead>
-                                    <TableHead className="text-right text-xs">Cashback</TableHead>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Account</TableHead>
+                                    <TableHead className="text-right">Cashback</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {isLoading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-24">
-                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : filteredTransactions.length > 0 ? (
-                                    filteredTransactions.map(tx => (
+                                {transactions.length > 0 ? (
+                                    transactions.slice(0, 5).map(tx => (
                                         <TableRow key={tx.id}>
-                                            <TableCell className="font-medium whitespace-nowrap text-xs">{format(tx.date, "PP")}</TableCell>
-                                            <TableCell className="whitespace-nowrap text-xs">{tx.accountNumber}</TableCell>
-                                            <TableCell className="text-right font-semibold text-primary whitespace-nowrap text-xs">${tx.cashbackAmount.toFixed(2)}</TableCell>
+                                            <TableCell className="font-medium whitespace-nowrap">{format(tx.date, "PP")}</TableCell>
+                                            <TableCell>{tx.accountNumber}</TableCell>
+                                            <TableCell className="text-right font-semibold text-primary">${tx.cashbackAmount.toFixed(2)}</TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={3} className="text-center h-24 text-xs">
-                                            No transactions found for this selection.
+                                        <TableCell colSpan={3} className="text-center h-24">
+                                            No transactions found.
                                         </TableCell>
                                     </TableRow>
                                 )}
