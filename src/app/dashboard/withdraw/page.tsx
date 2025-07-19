@@ -136,12 +136,19 @@ export default function WithdrawPage() {
     }, [adminPaymentMethods, selectedMethodId]);
     
     useEffect(() => {
-        const defaultDetails = selectedMethod?.fields.reduce((acc, field) => {
+        const newDefaultDetails = selectedMethod?.fields.reduce((acc, field) => {
             acc[field.name] = '';
             return acc;
         }, {} as Record<string, string>) || {};
-        form.setValue('details', defaultDetails);
-    }, [selectedMethod, form]);
+
+        form.reset({
+            ...form.getValues(),
+            details: newDefaultDetails,
+        });
+
+    // We only want this to run when the selected method changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedMethod]);
 
 
     async function onSubmit(values: FormValues) {
