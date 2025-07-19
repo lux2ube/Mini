@@ -102,7 +102,7 @@ export default function SecurityLogsPage() {
                                             </TableCell>
                                             <TableCell className="font-mono text-xs">{log.userId}</TableCell>
                                             <TableCell>
-                                                <div className="text-xs">{log.geo?.country || 'Unknown'}</div>
+                                                <div className="text-xs">{log.geo?.city}, {log.geo?.country || 'Unknown'}</div>
                                                 <div className="text-xs text-muted-foreground font-mono">{log.ipAddress}</div>
                                             </TableCell>
                                             <TableCell className="text-xs text-muted-foreground truncate max-w-xs">{log.userAgent}</TableCell>
