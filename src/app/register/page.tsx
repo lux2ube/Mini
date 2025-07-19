@@ -53,7 +53,7 @@ export default function RegisterPage() {
       
       const newReferralCode = generateReferralCode(name);
       
-      // Use the value from the form input state for the transaction
+      // Use the final state value for the transaction
       const finalReferralCode = referralCode;
 
       // 2. Handle referral logic and new user creation within a transaction

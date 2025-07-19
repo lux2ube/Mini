@@ -29,14 +29,15 @@ export default function ManageUsersPage() {
 
                 // Enrich users with referrer names
                 const enriched = fetchedUsers.map(user => {
-                    const referrer = fetchedUsers.find(u => u.uid === user.referredBy);
+                    if (!user) return null; // Defensive check
+                    const referrer = fetchedUsers.find(u => u && u.uid === user.referredBy);
                     return {
                         ...user,
                         referredByName: referrer ? referrer.name : '-'
                     };
-                });
+                }).filter(Boolean) as EnrichedUser[]; // Filter out any nulls
 
-                enriched.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+                enriched.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
                 setUsers(enriched);
             } catch (error) {
                 console.error("Failed to fetch users:", error);
@@ -52,17 +53,20 @@ export default function ManageUsersPage() {
     const filteredUsers = useMemo(() => {
         if (!searchQuery) return users;
         const lowerCaseQuery = searchQuery.toLowerCase();
-        return users.filter(user =>
-            user.name.toLowerCase().includes(lowerCaseQuery) ||
-            user.email.toLowerCase().includes(lowerCaseQuery) ||
-            (user.clientId && String(user.clientId).includes(lowerCaseQuery)) ||
-            (user.referralCode && user.referralCode.toLowerCase().includes(lowerCaseQuery))
-        );
+        return users.filter(user => {
+            if (!user) return false;
+            const nameMatch = user.name?.toLowerCase().includes(lowerCaseQuery) || false;
+            const emailMatch = user.email?.toLowerCase().includes(lowerCaseQuery) || false;
+            const clientIdMatch = user.clientId && String(user.clientId).includes(lowerCaseQuery);
+            const referralCodeMatch = user.referralCode && user.referralCode.toLowerCase().includes(lowerCaseQuery);
+            return nameMatch || emailMatch || clientIdMatch || referralCodeMatch;
+        });
     }, [searchQuery, users]);
 
-    const getSafeDate = (date: Date) => {
+    const getSafeDate = (date: Date | undefined) => {
         try {
-            return format(date, 'PP');
+            if (date) return format(date, 'PP');
+            return '-';
         } catch {
             return '-';
         }
@@ -105,13 +109,13 @@ export default function ManageUsersPage() {
                                 <TableBody>
                                     {filteredUsers.map(user => (
                                         <TableRow key={user.uid}>
-                                            <TableCell className="font-mono text-xs">{user.clientId}</TableCell>
-                                            <TableCell className="font-medium">{user.name}</TableCell>
-                                            <TableCell>{user.email}</TableCell>
+                                            <TableCell className="font-mono text-xs">{user.clientId || 'N/A'}</TableCell>
+                                            <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
+                                            <TableCell>{user.email || 'N/A'}</TableCell>
                                             <TableCell>{getSafeDate(user.createdAt)}</TableCell>
                                             <TableCell>{user.referrals?.length || 0}</TableCell>
                                             <TableCell>{user.points || 0}</TableCell>
-                                            <TableCell>{user.referredByName}</TableCell>
+                                            <TableCell>{user.referredByName || '-'}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

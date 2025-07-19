@@ -18,17 +18,17 @@ export interface UserProfile {
     email: string;
     name: string;
     role: 'user' | 'admin';
-    clientId: number;
-    createdAt: Date;
+    clientId?: number;
+    createdAt?: Date;
     // New profile fields
     phoneNumber?: string;
     phoneNumberVerified?: boolean;
     // Referral fields
-    referralCode: string;
-    referredBy?: string; // UID of the user who referred this person
-    referrals: string[]; // Array of UIDs of users this person has referred
-    points: number;
-    tier: 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+    referralCode?: string;
+    referredBy?: string | null; // UID of the user who referred this person
+    referrals?: string[]; // Array of UIDs of users this person has referred
+    points?: number;
+    tier?: 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
 }
 
 /**
