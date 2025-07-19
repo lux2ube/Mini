@@ -72,9 +72,7 @@ export default function WithdrawPage() {
     const [userTradingAccounts, setUserTradingAccounts] = useState<TradingAccount[]>([]);
     
     const form = useForm<FormValues>({
-        resolver: zodResolver(withdrawalSchema),
-        mode: "onSubmit",
-        reValidateMode: "onChange",
+        // resolver is removed here to prevent instant validation
         defaultValues: {
             amount: 0,
             withdrawalType: 'payment_method',
@@ -145,13 +143,29 @@ export default function WithdrawPage() {
             }, {} as Record<string, string>);
             form.setValue('details', defaultDetails);
         }
-        form.trigger();
+        // No form.trigger() here to prevent premature validation
     }, [withdrawalType, selectedMethod, form]);
 
 
     async function onSubmit(values: FormValues) {
         if (!user) return;
-        if (values.amount > availableBalance) {
+        
+        // Manually trigger validation on submit
+        const isValid = await form.trigger();
+        if (!isValid) return;
+
+        const validationResult = withdrawalSchema.safeParse(values);
+        if (!validationResult.success) {
+            validationResult.error.errors.forEach(err => {
+                const path = err.path.join('.') as keyof FormValues;
+                form.setError(path, { type: 'manual', message: err.message });
+            });
+            return;
+        }
+
+        const validatedValues = validationResult.data;
+
+        if (validatedValues.amount > availableBalance) {
             form.setError("amount", { type: "manual", message: "Withdrawal amount cannot exceed available balance."});
             return;
         }
@@ -160,8 +174,8 @@ export default function WithdrawPage() {
         let finalDetails: Record<string, any> = {};
         let paymentMethodName = '';
 
-        if (values.withdrawalType === 'trading_account') {
-            const account = userTradingAccounts.find(a => a.id === values.tradingAccountId);
+        if (validatedValues.withdrawalType === 'trading_account') {
+            const account = userTradingAccounts.find(a => a.id === validatedValues.tradingAccountId);
             if (!account) {
                 toast({ variant: 'destructive', title: 'Error', description: 'Selected trading account is invalid.' });
                 return;
@@ -174,7 +188,7 @@ export default function WithdrawPage() {
                 return;
             }
              paymentMethodName = selectedMethod.name;
-             finalDetails = values.details;
+             finalDetails = validatedValues.details;
 
             const detailsSchema = z.object(
                 selectedMethod.fields.reduce((acc, field) => {
@@ -198,9 +212,9 @@ export default function WithdrawPage() {
                 }, {} as Record<string, z.ZodString | z.ZodAny>)
             );
 
-            const validationResult = detailsSchema.safeParse(values.details);
-            if(!validationResult.success) {
-                validationResult.error.errors.forEach(err => {
+            const detailsValidationResult = detailsSchema.safeParse(validatedValues.details);
+            if(!detailsValidationResult.success) {
+                detailsValidationResult.error.errors.forEach(err => {
                     form.setError(`details.${err.path[0]}`, { type: 'manual', message: err.message });
                 });
                 return;
@@ -212,7 +226,7 @@ export default function WithdrawPage() {
         
         payload = {
             userId: user.uid,
-            amount: values.amount,
+            amount: validatedValues.amount,
             status: 'Processing',
             paymentMethod: paymentMethodName,
             withdrawalDetails: finalDetails,
@@ -223,7 +237,7 @@ export default function WithdrawPage() {
                 ...payload,
                 requestedAt: serverTimestamp(),
             });
-            await logUserActivity(user.uid, 'withdrawal_request', { amount: values.amount, method: paymentMethodName });
+            await logUserActivity(user.uid, 'withdrawal_request', { amount: validatedValues.amount, method: paymentMethodName });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
             form.reset();
             fetchData();
