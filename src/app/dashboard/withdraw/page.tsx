@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/tooltip"
 import { getUserBalance, getPaymentMethods, logUserActivity } from "@/app/admin/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getClientSessionInfo } from "@/lib/device-info";
 
 
 const withdrawalSchema = z.object({
@@ -233,7 +234,10 @@ export default function WithdrawPage() {
                 ...payload,
                 requestedAt: serverTimestamp(),
             });
-            await logUserActivity(user.uid, 'withdrawal_request', { amount: values.amount, method: paymentMethodName });
+
+            const clientInfo = await getClientSessionInfo();
+            await logUserActivity(user.uid, 'withdrawal_request', clientInfo, { amount: values.amount, method: paymentMethodName });
+            
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
             form.reset(formDefaultValues); // Reset to initial defaults
             fetchData();

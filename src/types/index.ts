@@ -282,6 +282,17 @@ export interface DeviceInfo {
 }
 
 /**
+ * Represents geolocation information for a user.
+ */
+export interface GeoInfo {
+    ip: string;
+    country?: string;
+    region?: string;
+    city?: string;
+}
+
+
+/**
  * Represents a log of user activity for security and analytics.
  */
 export interface ActivityLog {

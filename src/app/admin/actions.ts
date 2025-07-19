@@ -4,49 +4,32 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
 export async function logUserActivity(
     userId: string, 
     event: ActivityLog['event'], 
+    clientInfo: { deviceInfo: DeviceInfo, geoInfo: GeoInfo },
     details?: Record<string, any>,
-    deviceInfo?: DeviceInfo,
 ) {
     try {
         const headersList = headers();
-        const ip = headersList.get('x-forwarded-for') ?? 'unknown';
         const userAgent = headersList.get('user-agent') ?? 'unknown';
-
-        let geo = {};
-        if (ip && ip !== 'unknown' && ip !== '127.0.0.1' && process.env.NEXT_PUBLIC_IPINFO_TOKEN) {
-            try {
-                const response = await fetch(`https://ipinfo.io/${ip}?token=${process.env.NEXT_PUBLIC_IPINFO_TOKEN}`);
-                const geoData = await response.json();
-                if (!geoData.error) {
-                    geo = {
-                        country: geoData.country,
-                        region: geoData.region,
-                        city: geoData.city,
-                    };
-                } else {
-                    console.warn("Could not fetch geo data from ipinfo.io (API Error):", ip, geoData.error);
-                }
-            } catch (geoError) {
-                console.warn("Could not fetch geo data for IP (Fetch Error):", ip, geoError);
-            }
-        }
-
 
         const logEntry: Omit<ActivityLog, 'id'> = {
             userId,
             event,
             timestamp: new Date(),
-            ipAddress: ip,
+            ipAddress: clientInfo.geoInfo.ip || 'unknown',
             userAgent,
-            geo,
-            device: deviceInfo,
+            geo: {
+                country: clientInfo.geoInfo.country,
+                region: clientInfo.geoInfo.region,
+                city: clientInfo.geoInfo.city,
+            },
+            device: clientInfo.deviceInfo,
             details,
         };
         await addDoc(collection(db, 'activityLogs'), logEntry);
@@ -615,8 +598,16 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             // 3. Create notification
             await createNotification(transaction, userId, `Your order for ${product.name} has been placed.`, 'store', '/dashboard/store/orders');
             
-            // 4. Log the activity
-            await logUserActivity(userId, 'store_purchase', { productId: productId, price: product.price });
+            // 4. Log the activity (This will be missing client-side info)
+            // Consider if a separate client-side triggered log is needed here
+            // For now, we log what we can server-side.
+            const headersList = headers();
+            const ip = headersList.get('x-forwarded-for') ?? 'unknown';
+            await logUserActivity(userId, 'store_purchase', {
+                 deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
+                 geoInfo: { ip }
+            }, { productId: productId, price: product.price });
+
 
             return { success: true, message: 'Order placed successfully!' };
         });
