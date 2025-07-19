@@ -72,7 +72,8 @@ export default function WithdrawPage() {
     const [userTradingAccounts, setUserTradingAccounts] = useState<TradingAccount[]>([]);
     
     const form = useForm<FormValues>({
-        // resolver is removed here to prevent instant validation
+        resolver: zodResolver(withdrawalSchema),
+        mode: "onBlur", // Validate on blur for a better user experience
         defaultValues: {
             amount: 0,
             withdrawalType: 'payment_method',
@@ -132,6 +133,7 @@ export default function WithdrawPage() {
     const selectedMethod = useMemo(() => adminPaymentMethods.find(m => m.id === selectedMethodId), [adminPaymentMethods, selectedMethodId]);
     
     useEffect(() => {
+        // Reset fields when type changes
         form.setValue('details', {});
         form.setValue('paymentMethodId', undefined);
         form.setValue('tradingAccountId', undefined);
@@ -143,17 +145,12 @@ export default function WithdrawPage() {
             }, {} as Record<string, string>);
             form.setValue('details', defaultDetails);
         }
-        // No form.trigger() here to prevent premature validation
     }, [withdrawalType, selectedMethod, form]);
 
 
     async function onSubmit(values: FormValues) {
         if (!user) return;
         
-        // Manually trigger validation on submit
-        const isValid = await form.trigger();
-        if (!isValid) return;
-
         const validationResult = withdrawalSchema.safeParse(values);
         if (!validationResult.success) {
             validationResult.error.errors.forEach(err => {
