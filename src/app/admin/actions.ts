@@ -21,17 +21,19 @@ export async function logUserActivity(
         let geo = {};
         if (ip && ip !== 'unknown' && ip !== '127.0.0.1') {
             try {
-                const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city`);
+                const response = await fetch(`https://ipinfo.io/${ip}?token=${process.env.IPINFO_TOKEN}`);
                 const geoData = await response.json();
-                if (geoData.status === 'success') {
+                if (!geoData.error) {
                     geo = {
                         country: geoData.country,
-                        region: geoData.regionName,
+                        region: geoData.region,
                         city: geoData.city,
                     };
+                } else {
+                    console.warn("Could not fetch geo data from ipinfo.io (API Error):", ip, geoData.error);
                 }
             } catch (geoError) {
-                console.warn("Could not fetch geo data for IP:", ip, geoError);
+                console.warn("Could not fetch geo data for IP (Fetch Error):", ip, geoError);
             }
         }
 
