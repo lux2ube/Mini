@@ -136,19 +136,18 @@ export default function WithdrawPage() {
     }, [adminPaymentMethods, selectedMethodId]);
     
     useEffect(() => {
-        if (!selectedMethod) return;
-
-        const newDefaultDetails = selectedMethod.fields.reduce((acc, field) => {
+        const currentValues = form.getValues();
+        const newDefaultDetails = selectedMethod?.fields.reduce((acc, field) => {
             acc[field.name] = '';
             return acc;
-        }, {} as Record<string, string>);
+        }, {} as Record<string, string>) || {};
 
         form.reset({
-            ...form.getValues(),
+            ...currentValues,
             details: newDefaultDetails,
         });
 
-    }, [selectedMethod, form]);
+    }, [selectedMethodId, selectedMethod, form]);
 
 
     async function onSubmit(values: FormValues) {
