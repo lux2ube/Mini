@@ -48,7 +48,7 @@ const withdrawalSchema = z.object({
     withdrawalType: z.enum(['payment_method', 'trading_account']),
     paymentMethodId: z.string().optional(),
     tradingAccountId: z.string().optional(),
-    details: z.record(z.any()),
+    details: z.record(z.string()),
 }).refine(data => {
     if (data.withdrawalType === 'payment_method') return !!data.paymentMethodId;
     if (data.withdrawalType === 'trading_account') return !!data.tradingAccountId;
@@ -136,18 +136,17 @@ export default function WithdrawPage() {
     }, [adminPaymentMethods, selectedMethodId]);
     
     useEffect(() => {
-        const currentValues = form.getValues();
-        const newDefaultDetails = selectedMethod?.fields.reduce((acc, field) => {
-            acc[field.name] = '';
-            return acc;
-        }, {} as Record<string, string>) || {};
-
-        form.reset({
-            ...currentValues,
-            details: newDefaultDetails,
-        });
-
-    }, [selectedMethodId, selectedMethod, form]);
+        if (selectedMethod) {
+            const newDetails = selectedMethod.fields.reduce((acc, field) => {
+                acc[field.name] = '';
+                return acc;
+            }, {} as Record<string, string>);
+            form.reset({
+                ...form.getValues(),
+                details: newDetails,
+            });
+        }
+    }, [selectedMethod, form]);
 
 
     async function onSubmit(values: FormValues) {
@@ -479,3 +478,5 @@ export default function WithdrawPage() {
         </div>
     );
 }
+
+    
