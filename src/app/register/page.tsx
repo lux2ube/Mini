@@ -53,15 +53,13 @@ export default function RegisterPage() {
       
       const newReferralCode = generateReferralCode(name);
       
-      // Use the referral code from the state, which can be from the URL or manually entered.
       const finalReferralCode = referralCode.trim();
 
       // 2. Handle referral logic and new user creation within a transaction
       await runTransaction(db, async (transaction) => {
         let referrerProfile: { uid: string, data: any } | null = null;
         
-        // Find the referrer if a code is provided and is a non-empty string
-        if (finalReferralCode && typeof finalReferralCode === 'string' && finalReferralCode.trim() !== '') {
+        if (finalReferralCode && typeof finalReferralCode === 'string' && finalReferralCode.length > 0) {
           const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode));
           const referrerSnapshot = await transaction.get(referrerQuery);
           if (!referrerSnapshot.empty) {
@@ -72,13 +70,11 @@ export default function RegisterPage() {
           }
         }
         
-        // Get the next client ID
         const counterRef = doc(db, 'counters', 'userCounter');
         const counterSnap = await transaction.get(counterRef);
         const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
         const newClientId = lastId + 1;
         
-        // Create the new user document
         const newUserDocRef = doc(db, "users", user.uid);
         const newUserProfile = { 
             uid: user.uid,
@@ -95,7 +91,6 @@ export default function RegisterPage() {
         };
         transaction.set(newUserDocRef, newUserProfile);
 
-        // Update the referrer's document if they exist
         if (referrerProfile) {
           const referrerDocRef = doc(db, "users", referrerProfile.uid);
           const currentReferrals = referrerProfile.data.referrals || [];
@@ -103,25 +98,26 @@ export default function RegisterPage() {
 
           transaction.update(referrerDocRef, {
             referrals: [...currentReferrals, user.uid],
-            points: currentPoints + 10, // Award 10 points for a successful referral
+            points: currentPoints + 10,
           });
         }
 
-        // Update the counter
         transaction.set(counterRef, { lastId: newClientId });
       });
       
-      // Log the signup event
       await logUserActivity(user.uid, 'signup', { method: 'email', referralCode: finalReferralCode || null });
 
-      // Manually trigger a refetch of user data in the layout
       window.dispatchEvent(new CustomEvent('refetchUser'));
 
       toast({ type: "success", title: "Success", description: "Account created successfully." });
       router.push('/dashboard');
     } catch (error: any) {
       console.error("Registration Error: ", error);
-      toast({ type: "error", title: "Error", description: error.message });
+      if (error.code === 'auth/email-already-in-use') {
+        toast({ type: "error", title: "Registration Failed", description: "This email address is already in use. Please log in." });
+      } else {
+        toast({ type: "error", title: "Error", description: error.message });
+      }
     } finally {
       setIsLoading(false);
     }
