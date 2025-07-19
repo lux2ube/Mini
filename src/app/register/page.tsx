@@ -60,9 +60,9 @@ export default function RegisterPage() {
       await runTransaction(db, async (transaction) => {
         let referrerProfile: { uid: string, data: any } | null = null;
         
-        // Find the referrer if a code is provided
-        if (finalReferralCode) {
-          const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode));
+        // Find the referrer if a code is provided and is a non-empty string
+        if (finalReferralCode && typeof finalReferralCode === 'string' && finalReferralCode.trim() !== '') {
+          const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode.trim()));
           const referrerSnapshot = await transaction.get(referrerQuery);
           if (!referrerSnapshot.empty) {
             const doc = referrerSnapshot.docs[0];
@@ -81,6 +81,7 @@ export default function RegisterPage() {
         // Create the new user document
         const newUserDocRef = doc(db, "users", user.uid);
         const newUserProfile = { 
+            uid: user.uid,
             name, 
             email, 
             role: "user",
