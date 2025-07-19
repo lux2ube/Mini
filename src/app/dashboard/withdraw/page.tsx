@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
     Card,
@@ -62,6 +63,7 @@ type FormValues = z.infer<typeof withdrawalSchema>;
 
 export default function WithdrawPage() {
     const { user } = useAuthContext();
+    const router = useRouter();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -91,7 +93,6 @@ export default function WithdrawPage() {
                 ]);
 
                 setAvailableBalance(balanceData.availableBalance);
-                setAdminPaymentMethods(adminMethodsData);
                 
                 // Pre-initialize all possible detail fields to prevent uncontrolled input errors
                 const allPossibleDetailFields = adminMethodsData.reduce((acc, method) => {
@@ -101,6 +102,7 @@ export default function WithdrawPage() {
                     return acc;
                 }, {} as Record<string, string>);
 
+                setAdminPaymentMethods(adminMethodsData);
                 setFormDefaultValues({
                     amount: 0,
                     withdrawalType: 'payment_method',
@@ -427,7 +429,7 @@ export default function WithdrawPage() {
                         <TableBody>
                              {recentWithdrawals.length > 0 ? (
                                 recentWithdrawals.map((w) => (
-                                <TableRow key={w.id}>
+                                <TableRow key={w.id} onClick={() => router.push(`/dashboard/withdraw/${w.id}`)} className="cursor-pointer">
                                     <TableCell className="text-muted-foreground text-xs">{format(new Date(w.requestedAt), "PP")}</TableCell>
                                     <TableCell className="font-medium text-xs">${w.amount.toFixed(2)}</TableCell>
                                     <TableCell>
@@ -438,7 +440,7 @@ export default function WithdrawPage() {
                                                     <Tooltip>
                                                         <TooltipTrigger asChild>
                                                             <button 
-                                                                onClick={() => copyToClipboard(w.txId!)}
+                                                                onClick={(e) => { e.stopPropagation(); copyToClipboard(w.txId!) }}
                                                                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                                                             >
                                                                 <span className="truncate max-w-[100px]">{w.txId}</span>

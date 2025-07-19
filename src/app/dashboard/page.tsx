@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronRight } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronRight, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
@@ -109,9 +109,9 @@ export default function UserDashboardPage() {
   const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/register?ref=${user?.profile?.referralCode}` : '';
 
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(referralLink);
-    toast({ title: 'Copied!', description: 'Referral link copied to clipboard.' });
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copied!', description: 'Referral link or code copied to clipboard.' });
   };
 
   useEffect(() => {
@@ -268,10 +268,22 @@ export default function UserDashboardPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-2">
+                                     <p className="text-xs font-medium">Your Invite Code</p>
+                                     <div className="flex items-center gap-2">
+                                        <div className="relative flex-grow">
+                                            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input readOnly value={user?.profile?.referralCode || 'N/A'} className="font-mono text-sm pl-10" />
+                                        </div>
+                                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(user?.profile?.referralCode || '')}>
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                                 <div className="space-y-2">
                                      <p className="text-xs font-medium">Your Invite Link</p>
                                      <div className="flex items-center gap-2">
                                         <Input readOnly value={referralLink} className="text-xs" />
-                                        <Button size="icon" variant="outline" onClick={copyToClipboard}>
+                                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(referralLink)}>
                                             <Copy className="h-4 w-4" />
                                         </Button>
                                     </div>
@@ -303,6 +315,4 @@ export default function UserDashboardPage() {
         </div>
     </div>
   );
-
-    
-
+}

@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import { cn } from '@/lib/utils';
 
 export default function TransactionsPage() {
     const { user } = useAuthContext();
+    const router = useRouter();
     const [transactions, setTransactions] = useState<CashbackTransaction[]>([]);
     const [accounts, setAccounts] = useState<TradingAccount[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -202,7 +204,7 @@ export default function TransactionsPage() {
                                     </TableRow>
                                 ) : filteredTransactions.length > 0 ? (
                                     filteredTransactions.map(tx => (
-                                        <TableRow key={tx.id}>
+                                        <TableRow key={tx.id} onClick={() => router.push(`/dashboard/transactions/${tx.id}`)} className="cursor-pointer">
                                             <TableCell className="font-medium whitespace-nowrap text-xs">{format(tx.date, "PP")}</TableCell>
                                             <TableCell className="whitespace-nowrap text-xs">{tx.accountNumber}</TableCell>
                                             <TableCell className="text-right font-semibold text-primary whitespace-nowrap text-xs">${tx.cashbackAmount.toFixed(2)}</TableCell>

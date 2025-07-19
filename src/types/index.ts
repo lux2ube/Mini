@@ -164,6 +164,9 @@ export interface CashbackTransaction {
     // Optional referral fields
     referralBonusTo?: string;
     referralBonusAmount?: number;
+    // Admin-provided details
+    transactionId?: string;
+    notes?: string;
 }
 
 /**
