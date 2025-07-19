@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2, Copy, Banknote, XCircle } from "lucide-react";
+import { Info, Loader2, Copy, Banknote, XCircle, Wallet } from "lucide-react";
 import type { Withdrawal, PaymentMethod } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
@@ -276,11 +276,15 @@ export default function WithdrawPage() {
                                              <FormItem>
                                                  <FormLabel>{customField.label}</FormLabel>
                                                  <FormControl>
-                                                    <Input 
-                                                        type={customField.type} 
-                                                        placeholder={customField.placeholder} 
-                                                        {...field}
-                                                    />
+                                                    <div className="relative">
+                                                        <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <Input 
+                                                            type={customField.type} 
+                                                            placeholder={customField.placeholder} 
+                                                            {...field}
+                                                            className="pl-10"
+                                                        />
+                                                    </div>
                                                  </FormControl>
                                                  <FormMessage />
                                              </FormItem>
