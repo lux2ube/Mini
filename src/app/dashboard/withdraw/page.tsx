@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2, Copy, Banknote, XCircle, Wallet, Briefcase } from "lucide-react";
+import { Info, Loader2, Copy, Banknote, XCircle, Wallet, Briefcase, History, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 import type { Withdrawal, PaymentMethod, TradingAccount } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
@@ -43,6 +43,7 @@ import {
 import { getUserBalance, getPaymentMethods, logUserActivity } from "@/app/admin/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getClientSessionInfo } from "@/lib/device-info";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 const withdrawalSchema = z.object({
@@ -62,7 +63,8 @@ const withdrawalSchema = z.object({
 
 type FormValues = z.infer<typeof withdrawalSchema>;
 
-export default function WithdrawPage() {
+
+function WithdrawTabContent() {
     const { user } = useAuthContext();
     const router = useRouter();
     const { toast } = useToast();
@@ -95,7 +97,6 @@ export default function WithdrawPage() {
 
                 setAvailableBalance(balanceData.availableBalance);
                 
-                // Pre-initialize all possible detail fields to prevent uncontrolled input errors
                 const allPossibleDetailFields = adminMethodsData.reduce((acc, method) => {
                     method.fields.forEach(field => {
                         acc[field.name] = '';
@@ -145,7 +146,7 @@ export default function WithdrawPage() {
 
     const form = useForm<FormValues>({
         resolver: zodResolver(withdrawalSchema),
-        values: formDefaultValues, // Use state for default values
+        values: formDefaultValues,
         mode: "onBlur",
     });
 
@@ -177,7 +178,6 @@ export default function WithdrawPage() {
                 return;
             }
              paymentMethodName = selectedMethod.name;
-             // Filter only the details relevant to the selected method
              finalDetails = selectedMethod.fields.reduce((acc, field) => {
                  acc[field.name] = values.details[field.name];
                  return acc;
@@ -239,7 +239,7 @@ export default function WithdrawPage() {
             await logUserActivity(user.uid, 'withdrawal_request', clientInfo, { amount: values.amount, method: paymentMethodName });
             
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
-            form.reset(formDefaultValues); // Reset to initial defaults
+            form.reset(formDefaultValues);
             fetchData();
         } catch (error) {
             console.error('Error submitting withdrawal: ', error);
@@ -272,12 +272,7 @@ export default function WithdrawPage() {
     }
     
     return (
-        <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
-            <PageHeader
-                title="Withdraw Funds"
-                description="Request a withdrawal of your cashback."
-            />
-
+        <div className="space-y-4">
             <Card>
                 <CardHeader className="p-4">
                     <CardTitle className="text-2xl">${availableBalance.toFixed(2)}</CardTitle>
@@ -418,7 +413,10 @@ export default function WithdrawPage() {
 
             <Card>
                 <CardHeader className="p-4">
-                    <CardTitle className="text-base">Recent Withdrawals</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2">
+                        <History className="h-4 w-4 text-muted-foreground" />
+                        Withdrawal History
+                    </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                    <div className="overflow-x-auto">
@@ -491,4 +489,59 @@ export default function WithdrawPage() {
             </Alert>
         </div>
     );
+}
+
+function DepositTabContent() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                    <ArrowDownToLine className="h-4 w-4 text-muted-foreground" />
+                    Deposit Funds
+                </CardTitle>
+                 <CardDescription>
+                    Deposit functionality is coming soon.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-center text-sm text-muted-foreground py-10">
+                    Please check back later for deposit options.
+                </p>
+            </CardContent>
+             <CardHeader className="border-t">
+                <CardTitle className="text-base flex items-center gap-2">
+                    <History className="h-4 w-4 text-muted-foreground" />
+                    Deposit History
+                </CardTitle>
+            </CardHeader>
+             <CardContent>
+                 <p className="text-center text-sm text-muted-foreground py-10">
+                    No deposit history available.
+                </p>
+            </CardContent>
+        </Card>
+    )
+}
+
+export default function WalletPage() {
+    return (
+        <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
+            <PageHeader
+                title="Wallet"
+                description="Manage your deposits and withdrawals."
+            />
+            <Tabs defaultValue="withdraw" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="deposit">Deposit</TabsTrigger>
+                    <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
+                </TabsList>
+                <TabsContent value="deposit" className="mt-4">
+                    <DepositTabContent />
+                </TabsContent>
+                <TabsContent value="withdraw" className="mt-4">
+                    <WithdrawTabContent />
+                </TabsContent>
+            </Tabs>
+        </div>
+    )
 }

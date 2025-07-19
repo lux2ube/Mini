@@ -94,7 +94,7 @@ function PromoBanner() {
 const quickAccessLinks = [
     { href: "/dashboard/store", icon: Store, label: "Store" },
     { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
-    { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
+    { href: "/dashboard/withdraw", icon: Wallet, label: "Wallet" },
     { href: "/dashboard/my-accounts", icon: Users, label: "Accounts" },
     { href: "/dashboard/transactions", icon: ReceiptText, label: "History" },
     { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
