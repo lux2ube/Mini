@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { z } from "zod";
@@ -27,11 +28,11 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2, Copy, Wallet, Repeat, Briefcase, Banknote, PlusCircle } from "lucide-react";
-import type { Withdrawal, UserPaymentMethod, TradingAccount, PaymentMethod } from "@/types";
+import { Info, Loader2, Copy, Banknote } from "lucide-react";
+import type { Withdrawal, PaymentMethod } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, serverTimestamp, Timestamp } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import {
@@ -46,7 +47,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const withdrawalSchema = z.object({
     amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
-    userPaymentMethodId: z.string().min(1, "Please select a payment method."),
+    paymentMethodId: z.string().min(1, "Please select a payment method."),
+    details: z.record(z.any()), // Will be validated dynamically
 });
 
 type FormValues = z.infer<typeof withdrawalSchema>;
@@ -65,7 +67,8 @@ export default function WithdrawPage() {
         resolver: zodResolver(withdrawalSchema),
         defaultValues: {
             amount: 0,
-            userPaymentMethodId: '',
+            paymentMethodId: '',
+            details: {},
         }
     });
 
@@ -109,11 +112,43 @@ export default function WithdrawPage() {
             fetchData();
         }
     }, [user]);
+
+    const selectedMethodId = form.watch("paymentMethodId");
+    const selectedMethod = useMemo(() => adminPaymentMethods.find(m => m.id === selectedMethodId), [adminPaymentMethods, selectedMethodId]);
     
-    const userPaymentMethods = useMemo(() => user?.paymentMethods || [], [user]);
+    // Dynamically update validation schema when selected method changes
+    useEffect(() => {
+        if (selectedMethod) {
+            const newSchema = withdrawalSchema.extend({
+                details: z.object(
+                    selectedMethod.fields.reduce((acc, field) => {
+                        let fieldValidation: z.ZodType<any> = z.string();
+                        if (field.validation.required) {
+                            fieldValidation = fieldValidation.min(1, `${field.label} is required.`);
+                        }
+                        if (field.validation.minLength) {
+                            fieldValidation = fieldValidation.min(field.validation.minLength, `${field.label} must be at least ${field.validation.minLength} characters.`);
+                        }
+                         if (field.validation.regex) {
+                            try {
+                                const regex = new RegExp(field.validation.regex);
+                                fieldValidation = fieldValidation.regex(regex, field.validation.regexErrorMessage || `Invalid ${field.label}`);
+                            } catch (e) {
+                                console.error("Invalid regex in payment method config:", e);
+                            }
+                        }
+                        acc[field.name] = fieldValidation;
+                        return acc;
+                    }, {} as Record<string, z.ZodType<any>>)
+                ),
+            });
+            form.trigger('details'); // Re-validate details
+        }
+    }, [selectedMethod, form]);
+
 
     async function onSubmit(values: FormValues) {
-        if (!user) return;
+        if (!user || !selectedMethod) return;
         if (values.amount > availableBalance) {
             form.setError("amount", { type: "manual", message: "Withdrawal amount cannot exceed available balance."});
             return;
@@ -121,19 +156,12 @@ export default function WithdrawPage() {
 
         setIsLoading(true);
         
-        const selectedSavedMethod = userPaymentMethods.find(pm => pm.id === values.userPaymentMethodId);
-        if (!selectedSavedMethod) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Invalid payment method selected.' });
-            setIsLoading(false);
-            return;
-        }
-        
         let payload: Omit<Withdrawal, 'id' | 'requestedAt'> = {
             userId: user.uid,
             amount: values.amount,
             status: 'Processing',
-            paymentMethod: selectedSavedMethod.methodName,
-            withdrawalDetails: selectedSavedMethod.details,
+            paymentMethod: selectedMethod.name,
+            withdrawalDetails: values.details,
         };
 
         try {
@@ -141,7 +169,7 @@ export default function WithdrawPage() {
                 ...payload,
                 requestedAt: serverTimestamp(),
             });
-            await logUserActivity(user.uid, 'withdrawal_request', { amount: values.amount, method: selectedSavedMethod.methodName });
+            await logUserActivity(user.uid, 'withdrawal_request', { amount: values.amount, method: selectedMethod.name });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
             form.reset();
             fetchData();
@@ -175,56 +203,6 @@ export default function WithdrawPage() {
         );
     }
     
-    const renderPaymentMethodSelector = () => {
-         const allOptions = adminPaymentMethods.map(adminMethod => {
-            const userMethod = userPaymentMethods.find(um => um.paymentMethodId === adminMethod.id);
-            return { adminMethod, userMethod };
-        });
-
-        return (
-            <FormField
-                control={form.control}
-                name="userPaymentMethodId"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Payment Method</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a withdrawal method" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {allOptions.map(({ adminMethod, userMethod }) => 
-                                    userMethod ? (
-                                        <SelectItem key={userMethod.id} value={userMethod.id}>
-                                            <div className="flex flex-col">
-                                                <span className="text-xs">{userMethod.methodName}</span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {Object.entries(userMethod.details)
-                                                        .map(([, value]) => `${value}`)
-                                                        .join(', ')}
-                                                </span>
-                                            </div>
-                                        </SelectItem>
-                                    ) : (
-                                        <div key={adminMethod.id} className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-xs text-muted-foreground opacity-70">
-                                            <span className="flex-grow">{adminMethod.name}</span>
-                                            <Button asChild variant="secondary" size="sm" className="h-6">
-                                                <Link href="/dashboard/settings">Add</Link>
-                                            </Button>
-                                        </div>
-                                    )
-                                )}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-        )
-    };
-    
     return (
         <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
             <PageHeader
@@ -246,7 +224,51 @@ export default function WithdrawPage() {
                 <CardContent className="p-4 pt-0">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            {renderPaymentMethodSelector()}
+                            <FormField
+                                control={form.control}
+                                name="paymentMethodId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Withdrawal Method</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="Select a method" /></SelectTrigger></FormControl>
+                                            <SelectContent>
+                                                {adminPaymentMethods.map(method => (
+                                                    <SelectItem key={method.id} value={method.id}>
+                                                        {method.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {selectedMethod && selectedMethod.fields.map(customField => {
+                                 const fieldName = `details.${customField.name}` as const;
+                                 return (
+                                     <FormField
+                                         key={customField.name}
+                                         control={form.control}
+                                         name={fieldName}
+                                         render={({ field }) => (
+                                             <FormItem>
+                                                 <FormLabel>{customField.label}</FormLabel>
+                                                 <FormControl>
+                                                    <Input 
+                                                        type={customField.type} 
+                                                        placeholder={customField.placeholder} 
+                                                        {...field}
+                                                    />
+                                                 </FormControl>
+                                                 <FormMessage />
+                                             </FormItem>
+                                         )}
+                                     />
+                                 )
+                            })}
+                            
                             <FormField
                                 control={form.control}
                                 name="amount"
@@ -264,7 +286,7 @@ export default function WithdrawPage() {
                                     </FormItem>
                                 )}
                             />
-                            <Button type="submit" disabled={isLoading} className="w-full">
+                            <Button type="submit" disabled={isLoading || !selectedMethodId} className="w-full">
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Submit Request
                             </Button>

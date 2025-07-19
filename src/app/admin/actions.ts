@@ -4,7 +4,7 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod, UserPaymentMethod, ActivityLog, BlogPost } from '@/types';
+import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod, ActivityLog, BlogPost } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
@@ -277,16 +277,34 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 // Withdrawal Management
 export async function getWithdrawals(): Promise<Withdrawal[]> {
     const withdrawalsSnapshot = await getDocs(query(collection(db, 'withdrawals')));
+    const allUsersSnapshot = await getDocs(collection(db, 'users'));
+    const allWithdrawalsSnapshot = await getDocs(query(collection(db, 'withdrawals'), orderBy('requestedAt', 'desc')));
+
+    const allUsers = allUsersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as UserProfile }));
+    const allWithdrawals = allWithdrawalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Withdrawal }));
+
     const withdrawals = withdrawalsSnapshot.docs.map(doc => {
-        const data = doc.data();
+        const data = doc.data() as Withdrawal;
+
+        // Find the most recent *completed* withdrawal for this user and payment method type,
+        // excluding the current withdrawal itself.
+        const previousWithdrawal = allWithdrawals.find(w => 
+            w.userId === data.userId && 
+            w.paymentMethod === data.paymentMethod && 
+            w.status === 'Completed' &&
+            w.id !== doc.id
+        );
+
         return {
             id: doc.id,
             ...data,
-            requestedAt: data.requestedAt instanceof Timestamp ? data.requestedAt.toDate() : new Date(),
+            requestedAt: (data.requestedAt as Timestamp).toDate(),
             completedAt: data.completedAt instanceof Timestamp ? data.completedAt.toDate() : undefined,
-        } as Withdrawal
+            previousWithdrawalDetails: previousWithdrawal?.withdrawalDetails ?? null,
+        } as Withdrawal;
     });
-    withdrawals.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+
+    withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
     return withdrawals;
 }
 
@@ -608,50 +626,6 @@ export async function deletePaymentMethod(id: string) {
         return { success: false, message: 'Failed to delete payment method.' };
     }
 }
-
-// User: Payment Method Management
-export async function getUserPaymentMethods(userId: string): Promise<UserPaymentMethod[]> {
-    const q = query(collection(db, 'userPaymentMethods'), where('userId', '==', userId));
-    const snapshot = await getDocs(q);
-
-    const methods = snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: (data.createdAt as Timestamp).toDate(),
-        } as UserPaymentMethod
-    });
-    
-    // Perform sorting in-memory to avoid composite index
-    methods.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-
-    return methods;
-}
-
-export async function addUserPaymentMethod(data: Omit<UserPaymentMethod, 'id' | 'createdAt'>) {
-    try {
-        await addDoc(collection(db, 'userPaymentMethods'), {
-            ...data,
-            createdAt: serverTimestamp(),
-        });
-        return { success: true, message: 'Payment method saved.' };
-    } catch (error) {
-        console.error("Error adding user payment method:", error);
-        return { success: false, message: 'Failed to save payment method.' };
-    }
-}
-
-export async function deleteUserPaymentMethod(id: string) {
-    try {
-        await deleteDoc(doc(db, 'userPaymentMethods', id));
-        return { success: true, message: 'Payment method deleted.' };
-    } catch (error) {
-        console.error("Error deleting user payment method:", error);
-        return { success: false, message: 'Failed to delete payment method.' };
-    }
-}
-
 
 // Blog Post Management
 function convertTimestamps(docData: any) {

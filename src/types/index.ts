@@ -194,19 +194,6 @@ export interface PaymentMethod {
     type: 'crypto' | 'internal_transfer' | 'trading_account';
 }
 
-/**
- * Represents a payment method saved by a user.
- */
-export interface UserPaymentMethod {
-    id: string; // Document ID
-    userId: string;
-    paymentMethodId: string; // Reference to the admin-defined PaymentMethod
-    methodName: string; // e.g., "USDT (TRC20)"
-    methodType: PaymentMethod['type'];
-    details: Record<string, any>; // e.g., { walletAddress: '0x123...' }
-    createdAt: Date;
-}
-
 
 /**
  * Represents a withdrawal request document in the 'withdrawals' collection.
@@ -221,8 +208,8 @@ export interface Withdrawal {
     requestedAt: Date;
     completedAt?: Date;
     txId?: string; // Transaction ID from the blockchain or internal reference
-    // DEPRECATED - use withdrawalDetails
-    walletAddress?: string;
+    // New field for security check
+    previousWithdrawalDetails?: Record<string, any> | null;
 }
 
 

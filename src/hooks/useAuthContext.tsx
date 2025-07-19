@@ -5,13 +5,11 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
-import type { UserProfile, UserPaymentMethod } from '@/types';
-import { getUserPaymentMethods } from '@/app/admin/actions';
+import type { UserProfile } from '@/types';
 
-// Extend the user object to include the profile and payment methods
+// Extend the user object to include the profile
 export interface AppUser extends FirebaseAuthUser {
     profile?: UserProfile;
-    paymentMethods?: UserPaymentMethod[];
 }
 
 interface AuthContextType {
@@ -44,12 +42,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             ? { uid: firebaseUser.uid, ...userDocSnap.data() } as UserProfile
             : undefined;
 
-        const userPaymentMethods = await getUserPaymentMethods(firebaseUser.uid);
-
         setUser({ 
             ...firebaseUser, 
             profile: userProfile,
-            paymentMethods: userPaymentMethods,
         });
 
     } catch (error) {
