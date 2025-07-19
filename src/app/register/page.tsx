@@ -62,7 +62,7 @@ export default function RegisterPage() {
         
         // Find the referrer if a code is provided and is a non-empty string
         if (finalReferralCode && typeof finalReferralCode === 'string' && finalReferralCode.trim() !== '') {
-          const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode.trim()));
+          const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode));
           const referrerSnapshot = await transaction.get(referrerQuery);
           if (!referrerSnapshot.empty) {
             const doc = referrerSnapshot.docs[0];
