@@ -42,24 +42,24 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast({ type: "error", title: "Error", description: "Passwords do not match." });
+      toast({ variant: "destructive", title: "Error", description: "Passwords do not match." });
       return;
     }
     setIsLoading(true);
 
     try {
-      // Step 1: Create user in Firebase Auth. This is the first and most critical step.
+      // Step 1: Create user in Firebase Auth.
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Step 2: Handle referral lookup separately *before* the main transaction.
-      // This simplifies the transaction and makes it more reliable.
+      // Step 2: Handle referral lookup *before* the main transaction.
+      // This is the key fix: it prevents an invalid query from ever reaching the transaction.
       const finalReferralCode = (referralCode || referralCodeFromUrl || '').trim();
       let referrerProfile: { uid: string, data: any } | null = null;
       
       if (finalReferralCode) {
         const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode));
-        const referrerSnapshot = await getDocs(referrerQuery); // Use getDocs, not transaction.get
+        const referrerSnapshot = await getDocs(referrerQuery);
         if (!referrerSnapshot.empty) {
           const doc = referrerSnapshot.docs[0];
           referrerProfile = { uid: doc.id, data: doc.data() };
@@ -68,8 +68,7 @@ export default function RegisterPage() {
         }
       }
 
-      // Step 3: Create user profile and handle referrals in a transaction.
-      // This is now much more focused and less prone to failure.
+      // Step 3: Create user profile and handle referrals in a simplified, robust transaction.
       await runTransaction(db, async (transaction) => {
         const counterRef = doc(db, 'counters', 'userCounter');
         const counterSnap = await transaction.get(counterRef);
@@ -94,7 +93,7 @@ export default function RegisterPage() {
         };
         transaction.set(newUserDocRef, newUserProfile);
         
-        // If a referrer was found, update their document
+        // If a valid referrer was found before the transaction, update their document.
         if (referrerProfile) {
           const referrerDocRef = doc(db, "users", referrerProfile.uid);
           const currentReferrals = referrerProfile.data.referrals || [];
@@ -106,7 +105,7 @@ export default function RegisterPage() {
           });
         }
         
-        // Finally, update the counter
+        // Update the counter.
         transaction.set(counterRef, { lastId: newClientId }, { merge: true });
       });
       
