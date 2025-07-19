@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronRight, KeyRound } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronRight, KeyRound, ReceiptText, Settings, Store } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
@@ -89,6 +89,30 @@ function PromoBanner() {
     }
 
     return <div ref={bannerContainerRef} className="my-4 w-full flex justify-center"></div>;
+}
+
+const quickAccessLinks = [
+    { href: "/dashboard/my-accounts", icon: Users, label: "Accounts" },
+    { href: "/dashboard/transactions", icon: ReceiptText, label: "History" },
+    { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
+    { href: "/dashboard/settings", icon: Settings, label: "Settings" },
+];
+
+function QuickAccessGrid() {
+    return (
+        <div className="grid grid-cols-4 gap-2 text-center">
+            {quickAccessLinks.map(link => (
+                 <Link href={link.href} key={link.href}>
+                    <div className="flex flex-col items-center justify-center p-2 space-y-1 rounded-lg hover:bg-muted transition-colors">
+                       <div className="p-2 bg-primary/10 rounded-full">
+                         <link.icon className="h-5 w-5 text-primary" />
+                       </div>
+                       <p className="text-xs text-muted-foreground">{link.label}</p>
+                    </div>
+                </Link>
+            ))}
+        </div>
+    )
 }
 
 
@@ -213,6 +237,8 @@ export default function UserDashboardPage() {
                             <Link href="/dashboard/withdraw">Withdraw</Link>
                         </Button>
                     </div>
+
+                    <QuickAccessGrid />
 
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold mt-4">List Brokers</h2>
