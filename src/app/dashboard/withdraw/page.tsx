@@ -70,7 +70,8 @@ export default function WithdrawPage() {
     const [recentWithdrawals, setRecentWithdrawals] = useState<Withdrawal[]>([]);
     const [adminPaymentMethods, setAdminPaymentMethods] = useState<PaymentMethod[]>([]);
     const [userTradingAccounts, setUserTradingAccounts] = useState<TradingAccount[]>([]);
-    const [formDefaultValues, setFormDefaultValues] = useState<Partial<FormValues>>({
+    
+    const [formDefaultValues, setFormDefaultValues] = useState<FormValues>({
         amount: 0,
         withdrawalType: 'payment_method',
         details: {},
@@ -91,7 +92,7 @@ export default function WithdrawPage() {
 
                 setAvailableBalance(balanceData.availableBalance);
                 setAdminPaymentMethods(adminMethodsData);
-
+                
                 // Pre-initialize all possible detail fields to prevent uncontrolled input errors
                 const allPossibleDetailFields = adminMethodsData.reduce((acc, method) => {
                     method.fields.forEach(field => {
@@ -103,6 +104,8 @@ export default function WithdrawPage() {
                 setFormDefaultValues({
                     amount: 0,
                     withdrawalType: 'payment_method',
+                    paymentMethodId: undefined,
+                    tradingAccountId: undefined,
                     details: allPossibleDetailFields,
                 });
 
@@ -282,7 +285,7 @@ export default function WithdrawPage() {
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <form key={JSON.stringify(formDefaultValues)} onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                             <FormField
                                 control={form.control}
                                 name="withdrawalType"
