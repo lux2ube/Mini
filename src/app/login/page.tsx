@@ -49,21 +49,26 @@ export default function LoginPage() {
     // If user signs in via social and doesn't exist, create them
     if (isNewUser) {
         const newUserProfile = { 
+            uid: user.uid,
             name: user.displayName || "New User", 
             email: user.email!, 
-            role: "user",
+            role: "user" as const,
             createdAt: Timestamp.now(),
             referralCode: generateReferralCode(user.displayName || "user"),
             referredBy: null,
             referrals: [],
             points: 0,
-            tier: 'Bronze',
+            tier: 'Bronze' as const,
         };
         await setDoc(userDocRef, newUserProfile);
+         // Log activity
+        await logUserActivity(user.uid, 'signup', { method: userCredential.providerId || 'social' });
+    } else {
+        await logUserActivity(user.uid, 'login', { method: userCredential.providerId || 'email' });
     }
     
-    // Log activity
-    await logUserActivity(user.uid, isNewUser ? 'signup' : 'login', { method: userCredential.providerId || 'email' });
+    // Dispatch event to force refetch of user data in layout
+    window.dispatchEvent(new CustomEvent('refetchUser'));
 
     toast({
         type: "success",

@@ -53,8 +53,7 @@ export default function RegisterPage() {
       
       const newReferralCode = generateReferralCode(name);
       
-      // Use the final state value for the transaction
-      const finalReferralCode = referralCode;
+      const finalReferralCode = referralCodeFromUrl || '';
 
       // 2. Handle referral logic and new user creation within a transaction
       await runTransaction(db, async (transaction) => {
@@ -111,8 +110,11 @@ export default function RegisterPage() {
         transaction.set(counterRef, { lastId: newClientId });
       });
       
-      // 5. Log the signup event
+      // Log the signup event
       await logUserActivity(user.uid, 'signup', { method: 'email', referralCode: finalReferralCode || null });
+
+      // Manually trigger a refetch of user data in the layout
+      window.dispatchEvent(new CustomEvent('refetchUser'));
 
       toast({ type: "success", title: "Success", description: "Account created successfully." });
       router.push('/dashboard');
