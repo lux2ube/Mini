@@ -20,9 +20,9 @@ export async function logUserActivity(
         const userAgent = headersList.get('user-agent') ?? 'unknown';
 
         let geo = {};
-        if (ip && ip !== 'unknown' && ip !== '127.0.0.1' && process.env.IPINFO_TOKEN) {
+        if (ip && ip !== 'unknown' && ip !== '127.0.0.1' && process.env.NEXT_PUBLIC_IPINFO_TOKEN) {
             try {
-                const response = await fetch(`https://ipinfo.io/${ip}?token=${process.env.IPINFO_TOKEN}`);
+                const response = await fetch(`https://ipinfo.io/${ip}?token=${process.env.NEXT_PUBLIC_IPINFO_TOKEN}`);
                 const geoData = await response.json();
                 if (!geoData.error) {
                     geo = {
