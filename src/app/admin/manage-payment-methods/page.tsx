@@ -17,7 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { getPaymentMethods, addPaymentMethod, updatePaymentMethod, deletePaymentMethod } from "../actions";
-import { PlusCircle, Loader2, Edit, Trash2, GripVertical, Info } from "lucide-react";
+import { PlusCircle, Loader2, Edit, Trash2, GripVertical, Info, Wallet, Briefcase, Type } from "lucide-react";
 import type { PaymentMethod, PaymentMethodField } from "@/types";
 import {
   Table,
@@ -117,7 +117,12 @@ function PaymentMethodForm({ method, onSuccess, onCancel }: { method?: PaymentMe
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>Method Name</FormLabel><FormControl><Input placeholder="e.g., USDT (TRC20)" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>Method Name</FormLabel>
+                          <div className="relative">
+                              <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="e.g., USDT (TRC20)" {...field} className="pl-10" />
+                          </div>
+                        <FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="type" render={({ field }) => (
                         <FormItem><FormLabel>Type</FormLabel>
