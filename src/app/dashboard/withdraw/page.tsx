@@ -1,11 +1,10 @@
 
-
 "use client";
 
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
@@ -72,7 +71,7 @@ export default function WithdrawPage() {
         }
     });
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         if (user) {
             setIsFetching(true);
             try {
@@ -105,55 +104,32 @@ export default function WithdrawPage() {
                 setIsFetching(false);
             }
         }
-    };
+    }, [user, toast]);
 
     useEffect(() => {
         if (user) {
             fetchData();
         }
-    }, [user]);
+    }, [user, fetchData]);
 
     const selectedMethodId = form.watch("paymentMethodId");
     const selectedMethod = useMemo(() => adminPaymentMethods.find(m => m.id === selectedMethodId), [adminPaymentMethods, selectedMethodId]);
     
     // Dynamically update validation schema and default values when selected method changes
     useEffect(() => {
+        // When the selected method changes, we clear out the details to avoid carrying over old values
+        form.setValue('details', {});
+        
         if (selectedMethod) {
-            // Set default values for the new fields to empty strings to avoid uncontrolled -> controlled error
+            // Set initial values for the new fields to empty strings to avoid uncontrolled -> controlled error
             const defaultDetails = selectedMethod.fields.reduce((acc, field) => {
                 acc[field.name] = '';
                 return acc;
             }, {} as Record<string, string>);
             form.setValue('details', defaultDetails);
-
-            const newSchema = withdrawalSchema.extend({
-                details: z.object(
-                    selectedMethod.fields.reduce((acc, field) => {
-                        let fieldValidation: z.ZodString = z.string();
-                        if (field.validation.required) {
-                            fieldValidation = fieldValidation.min(1, `${field.label} is required.`);
-                        }
-                        if (field.validation.minLength) {
-                            fieldValidation = fieldValidation.min(field.validation.minLength, `${field.label} must be at least ${field.validation.minLength} characters.`);
-                        }
-                         if (field.validation.regex) {
-                            try {
-                                const regex = new RegExp(field.validation.regex);
-                                fieldValidation = fieldValidation.regex(regex, field.validation.regexErrorMessage || `Invalid ${field.label}`);
-                            } catch (e) {
-                                console.error("Invalid regex in payment method config:", e);
-                            }
-                        }
-                        acc[field.name] = fieldValidation;
-                        return acc;
-                    }, {} as Record<string, z.ZodString>)
-                ),
-            });
-            // Re-validate details after setting new defaults
+    
+            // We then trigger validation to ensure the form state is updated with the new required fields
             form.trigger('details');
-        } else {
-            // Clear details if no method is selected
-            form.setValue('details', {});
         }
     }, [selectedMethod, form]);
 
@@ -164,6 +140,38 @@ export default function WithdrawPage() {
             form.setError("amount", { type: "manual", message: "Withdrawal amount cannot exceed available balance."});
             return;
         }
+
+        // Manually trigger validation for details based on the selected method
+        const detailsSchema = z.object(
+            selectedMethod.fields.reduce((acc, field) => {
+                let fieldValidation: z.ZodString | z.ZodAny = z.string();
+                if (field.validation.required) {
+                    fieldValidation = fieldValidation.min(1, `${field.label} is required.`);
+                }
+                if (field.validation.minLength) {
+                    fieldValidation = fieldValidation.min(field.validation.minLength, `${field.label} must be at least ${field.validation.minLength} characters.`);
+                }
+                 if (field.validation.regex) {
+                    try {
+                        const regex = new RegExp(field.validation.regex);
+                        fieldValidation = fieldValidation.regex(regex, field.validation.regexErrorMessage || `Invalid ${field.label}`);
+                    } catch (e) {
+                        console.error("Invalid regex in payment method config:", e);
+                    }
+                }
+                acc[field.name] = fieldValidation;
+                return acc;
+            }, {} as Record<string, z.ZodString | z.ZodAny>)
+        );
+
+        const validationResult = detailsSchema.safeParse(values.details);
+        if(!validationResult.success) {
+            validationResult.error.errors.forEach(err => {
+                form.setError(`details.${err.path[0]}`, { type: 'manual', message: err.message });
+            });
+            return;
+        }
+
 
         setIsLoading(true);
         
@@ -263,6 +271,7 @@ export default function WithdrawPage() {
                                          key={customField.name}
                                          control={form.control}
                                          name={fieldName}
+                                         defaultValue=""
                                          render={({ field }) => (
                                              <FormItem>
                                                  <FormLabel>{customField.label}</FormLabel>
