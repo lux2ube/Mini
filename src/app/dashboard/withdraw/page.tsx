@@ -70,15 +70,10 @@ export default function WithdrawPage() {
     const [recentWithdrawals, setRecentWithdrawals] = useState<Withdrawal[]>([]);
     const [adminPaymentMethods, setAdminPaymentMethods] = useState<PaymentMethod[]>([]);
     const [userTradingAccounts, setUserTradingAccounts] = useState<TradingAccount[]>([]);
-    
-    const form = useForm<FormValues>({
-        resolver: zodResolver(withdrawalSchema),
-        mode: "onBlur",
-        defaultValues: {
-            amount: 0,
-            withdrawalType: 'payment_method',
-            details: {},
-        }
+    const [formDefaultValues, setFormDefaultValues] = useState<Partial<FormValues>>({
+        amount: 0,
+        withdrawalType: 'payment_method',
+        details: {},
     });
     
     const cryptoPaymentMethods = useMemo(() => adminPaymentMethods.filter(m => m.type === 'crypto' && m.isEnabled), [adminPaymentMethods]);
@@ -96,6 +91,20 @@ export default function WithdrawPage() {
 
                 setAvailableBalance(balanceData.availableBalance);
                 setAdminPaymentMethods(adminMethodsData);
+
+                // Pre-initialize all possible detail fields to prevent uncontrolled input errors
+                const allPossibleDetailFields = adminMethodsData.reduce((acc, method) => {
+                    method.fields.forEach(field => {
+                        acc[field.name] = '';
+                    });
+                    return acc;
+                }, {} as Record<string, string>);
+
+                setFormDefaultValues({
+                    amount: 0,
+                    withdrawalType: 'payment_method',
+                    details: allPossibleDetailFields,
+                });
 
                 const withdrawals: Withdrawal[] = withdrawalsSnapshot.docs.map(doc => {
                     const data = doc.data();
@@ -128,25 +137,18 @@ export default function WithdrawPage() {
         }
     }, [user, fetchData]);
 
+    const form = useForm<FormValues>({
+        resolver: zodResolver(withdrawalSchema),
+        values: formDefaultValues, // Use state for default values
+        mode: "onBlur",
+    });
+
     const withdrawalType = form.watch("withdrawalType");
     const selectedMethodId = form.watch("paymentMethodId");
     
     const selectedMethod = useMemo(() => {
         return adminPaymentMethods.find(m => m.id === selectedMethodId);
     }, [adminPaymentMethods, selectedMethodId]);
-    
-    useEffect(() => {
-        if (selectedMethod) {
-            const newDetails = selectedMethod.fields.reduce((acc, field) => {
-                acc[field.name] = '';
-                return acc;
-            }, {} as Record<string, string>);
-            form.reset({
-                ...form.getValues(),
-                details: newDetails,
-            });
-        }
-    }, [selectedMethod, form]);
 
 
     async function onSubmit(values: FormValues) {
@@ -169,7 +171,11 @@ export default function WithdrawPage() {
                 return;
             }
              paymentMethodName = selectedMethod.name;
-             finalDetails = values.details;
+             // Filter only the details relevant to the selected method
+             finalDetails = selectedMethod.fields.reduce((acc, field) => {
+                 acc[field.name] = values.details[field.name];
+                 return acc;
+             }, {} as Record<string, any>);
 
             const detailsSchema = z.object(
                 selectedMethod.fields.reduce((acc, field) => {
@@ -193,7 +199,7 @@ export default function WithdrawPage() {
                 }, {} as Record<string, z.ZodString | z.ZodAny>)
             );
 
-            const detailsValidationResult = detailsSchema.safeParse(values.details);
+            const detailsValidationResult = detailsSchema.safeParse(finalDetails);
             if(!detailsValidationResult.success) {
                 detailsValidationResult.error.errors.forEach(err => {
                     form.setError(`details.${err.path[0]}`, { type: 'manual', message: err.message });
@@ -224,7 +230,7 @@ export default function WithdrawPage() {
             });
             await logUserActivity(user.uid, 'withdrawal_request', { amount: values.amount, method: paymentMethodName });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
-            form.reset();
+            form.reset(formDefaultValues); // Reset to initial defaults
             fetchData();
         } catch (error) {
             console.error('Error submitting withdrawal: ', error);
@@ -287,7 +293,6 @@ export default function WithdrawPage() {
                                             field.onChange(value);
                                             form.setValue('paymentMethodId', undefined);
                                             form.setValue('tradingAccountId', undefined);
-                                            form.setValue('details', {});
                                         }} defaultValue={field.value}>
                                             <FormControl><SelectTrigger><div className="relative pl-10 w-full text-left"><Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue/></div></SelectTrigger></FormControl>
                                             <SelectContent>
@@ -478,5 +483,3 @@ export default function WithdrawPage() {
         </div>
     );
 }
-
-    
