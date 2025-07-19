@@ -130,10 +130,12 @@ export default function WithdrawPage() {
 
     const withdrawalType = form.watch("withdrawalType");
     const selectedMethodId = form.watch("paymentMethodId");
-    const selectedMethod = useMemo(() => adminPaymentMethods.find(m => m.id === selectedMethodId), [adminPaymentMethods, selectedMethodId]);
+    
+    const selectedMethod = useMemo(() => {
+        return adminPaymentMethods.find(m => m.id === selectedMethodId);
+    }, [adminPaymentMethods, selectedMethodId]);
     
     useEffect(() => {
-        // Reset fields when type changes
         form.setValue('details', {});
         form.setValue('paymentMethodId', undefined);
         form.setValue('tradingAccountId', undefined);
