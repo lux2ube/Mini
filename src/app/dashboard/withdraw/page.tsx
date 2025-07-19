@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2, Copy, Banknote } from "lucide-react";
+import { Info, Loader2, Copy, Banknote, XCircle } from "lucide-react";
 import type { Withdrawal, PaymentMethod } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
@@ -356,6 +356,12 @@ export default function WithdrawPage() {
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
+                                            )}
+                                             {w.status === 'Failed' && w.rejectionReason && (
+                                                <div className="flex items-start gap-1.5 text-xs text-destructive pt-1">
+                                                    <XCircle className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                                                    <p>{w.rejectionReason}</p>
+                                                </div>
                                             )}
                                         </div>
                                     </TableCell>
