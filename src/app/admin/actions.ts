@@ -4,14 +4,15 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import type { TradingAccount, UserProfile, Withdrawal, CashbackTransaction, Broker, BannerSettings, Notification, ProductCategory, Product, Order, PaymentMethod, ActivityLog, BlogPost } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
 export async function logUserActivity(
     userId: string, 
     event: ActivityLog['event'], 
-    details?: Record<string, any>
+    details?: Record<string, any>,
+    deviceInfo?: DeviceInfo,
 ) {
     try {
         const headersList = headers();
@@ -19,7 +20,7 @@ export async function logUserActivity(
         const userAgent = headersList.get('user-agent') ?? 'unknown';
 
         let geo = {};
-        if (ip && ip !== 'unknown' && ip !== '127.0.0.1') {
+        if (ip && ip !== 'unknown' && ip !== '127.0.0.1' && process.env.IPINFO_TOKEN) {
             try {
                 const response = await fetch(`https://ipinfo.io/${ip}?token=${process.env.IPINFO_TOKEN}`);
                 const geoData = await response.json();
@@ -45,6 +46,7 @@ export async function logUserActivity(
             ipAddress: ip,
             userAgent,
             geo,
+            device: deviceInfo,
             details,
         };
         await addDoc(collection(db, 'activityLogs'), logEntry);

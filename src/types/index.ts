@@ -1,6 +1,5 @@
 
 
-
 import type { Timestamp } from "firebase/firestore";
 
 /**
@@ -274,6 +273,15 @@ export interface Order {
 }
 
 /**
+ * Represents device information collected from the client.
+ */
+export interface DeviceInfo {
+    device: string;
+    os: string;
+    browser: string;
+}
+
+/**
  * Represents a log of user activity for security and analytics.
  */
 export interface ActivityLog {
@@ -288,6 +296,7 @@ export interface ActivityLog {
         region?: string;
         city?: string;
     };
+    device?: DeviceInfo;
     details?: Record<string, any>; // For event-specific data, e.g., { amount: 100, method: 'USDT' }
 }
 

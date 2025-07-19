@@ -18,6 +18,7 @@ import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timesta
 import { Loader2, User, Mail, Lock, KeyRound } from 'lucide-react';
 import { generateReferralCode } from '@/lib/referral';
 import { logUserActivity } from '../admin/actions';
+import { getDeviceInfo } from '@/lib/device-info';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -104,7 +105,8 @@ export default function RegisterPage() {
         transaction.set(counterRef, { lastId: newClientId }, { merge: true });
       });
       
-      await logUserActivity(user.uid, 'signup', { method: 'email', referralCode: finalReferralCode || null });
+      const deviceInfo = getDeviceInfo();
+      await logUserActivity(user.uid, 'signup', { method: 'email', referralCode: finalReferralCode || null }, deviceInfo);
 
       window.dispatchEvent(new CustomEvent('refetchUser'));
 
