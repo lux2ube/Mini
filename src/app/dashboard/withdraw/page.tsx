@@ -94,7 +94,7 @@ export default function WithdrawPage() {
                     } as Withdrawal;
                 });
                 
-                withdrawals.sort((a, b) => b.requestedAt.getTime() - a.createdAt.getTime());
+                withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
                 setRecentWithdrawals(withdrawals);
 
             } catch (error) {
