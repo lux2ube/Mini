@@ -55,7 +55,7 @@ const withdrawalSchema = z.object({
     return false;
 }, {
     message: "Please select a destination.",
-    path: ["paymentMethodId"], // You can choose which field to show the error on
+    path: ["paymentMethodId"],
 });
 
 type FormValues = z.infer<typeof withdrawalSchema>;
@@ -73,7 +73,7 @@ export default function WithdrawPage() {
     
     const form = useForm<FormValues>({
         resolver: zodResolver(withdrawalSchema),
-        mode: "onBlur", // Validate on blur for a better user experience
+        mode: "onBlur",
         defaultValues: {
             amount: 0,
             withdrawalType: 'payment_method',
@@ -136,45 +136,22 @@ export default function WithdrawPage() {
     }, [adminPaymentMethods, selectedMethodId]);
     
     useEffect(() => {
-        form.setValue('details', {});
-        form.setValue('paymentMethodId', undefined);
-        form.setValue('tradingAccountId', undefined);
-
-        if (withdrawalType === 'payment_method' && selectedMethod) {
-            const defaultDetails = selectedMethod.fields.reduce((acc, field) => {
-                acc[field.name] = '';
-                return acc;
-            }, {} as Record<string, string>);
-            form.setValue('details', defaultDetails);
-        }
-    }, [withdrawalType, selectedMethod, form]);
+        const defaultDetails = selectedMethod?.fields.reduce((acc, field) => {
+            acc[field.name] = '';
+            return acc;
+        }, {} as Record<string, string>) || {};
+        form.setValue('details', defaultDetails);
+    }, [selectedMethod, form]);
 
 
     async function onSubmit(values: FormValues) {
         if (!user) return;
         
-        const validationResult = withdrawalSchema.safeParse(values);
-        if (!validationResult.success) {
-            validationResult.error.errors.forEach(err => {
-                const path = err.path.join('.') as keyof FormValues;
-                form.setError(path, { type: 'manual', message: err.message });
-            });
-            return;
-        }
-
-        const validatedValues = validationResult.data;
-
-        if (validatedValues.amount > availableBalance) {
-            form.setError("amount", { type: "manual", message: "Withdrawal amount cannot exceed available balance."});
-            return;
-        }
-
-        let payload: Omit<Withdrawal, 'id' | 'requestedAt'>;
         let finalDetails: Record<string, any> = {};
         let paymentMethodName = '';
 
-        if (validatedValues.withdrawalType === 'trading_account') {
-            const account = userTradingAccounts.find(a => a.id === validatedValues.tradingAccountId);
+        if (values.withdrawalType === 'trading_account') {
+            const account = userTradingAccounts.find(a => a.id === values.tradingAccountId);
             if (!account) {
                 toast({ variant: 'destructive', title: 'Error', description: 'Selected trading account is invalid.' });
                 return;
@@ -187,7 +164,7 @@ export default function WithdrawPage() {
                 return;
             }
              paymentMethodName = selectedMethod.name;
-             finalDetails = validatedValues.details;
+             finalDetails = values.details;
 
             const detailsSchema = z.object(
                 selectedMethod.fields.reduce((acc, field) => {
@@ -211,7 +188,7 @@ export default function WithdrawPage() {
                 }, {} as Record<string, z.ZodString | z.ZodAny>)
             );
 
-            const detailsValidationResult = detailsSchema.safeParse(validatedValues.details);
+            const detailsValidationResult = detailsSchema.safeParse(values.details);
             if(!detailsValidationResult.success) {
                 detailsValidationResult.error.errors.forEach(err => {
                     form.setError(`details.${err.path[0]}`, { type: 'manual', message: err.message });
@@ -219,13 +196,17 @@ export default function WithdrawPage() {
                 return;
             }
         }
-
+        
+        if (values.amount > availableBalance) {
+            form.setError("amount", { type: "manual", message: "Withdrawal amount cannot exceed available balance."});
+            return;
+        }
 
         setIsLoading(true);
         
-        payload = {
+        const payload: Omit<Withdrawal, 'id' | 'requestedAt'> = {
             userId: user.uid,
-            amount: validatedValues.amount,
+            amount: values.amount,
             status: 'Processing',
             paymentMethod: paymentMethodName,
             withdrawalDetails: finalDetails,
@@ -236,7 +217,7 @@ export default function WithdrawPage() {
                 ...payload,
                 requestedAt: serverTimestamp(),
             });
-            await logUserActivity(user.uid, 'withdrawal_request', { amount: validatedValues.amount, method: paymentMethodName });
+            await logUserActivity(user.uid, 'withdrawal_request', { amount: values.amount, method: paymentMethodName });
             toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
             form.reset();
             fetchData();
@@ -297,8 +278,13 @@ export default function WithdrawPage() {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Withdrawal Type</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                        <Select onValueChange={(value) => {
+                                            field.onChange(value);
+                                            form.setValue('paymentMethodId', undefined);
+                                            form.setValue('tradingAccountId', undefined);
+                                            form.setValue('details', {});
+                                        }} defaultValue={field.value}>
+                                            <FormControl><SelectTrigger><div className="relative pl-10 w-full text-left"><Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue/></div></SelectTrigger></FormControl>
                                             <SelectContent>
                                                 <SelectItem value="payment_method">Crypto</SelectItem>
                                                 <SelectItem value="trading_account">Trading Account</SelectItem>
@@ -317,7 +303,7 @@ export default function WithdrawPage() {
                                         <FormItem>
                                             <FormLabel>Withdrawal Method</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder="Select a method" /></SelectTrigger></FormControl>
+                                                <FormControl><SelectTrigger><div className="relative pl-10 w-full text-left"><Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="Select a method" /></div></SelectTrigger></FormControl>
                                                 <SelectContent>
                                                     {cryptoPaymentMethods.map(method => (
                                                         <SelectItem key={method.id} value={method.id}>
@@ -340,7 +326,7 @@ export default function WithdrawPage() {
                                         <FormItem>
                                             <FormLabel>Trading Account</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl><SelectTrigger><SelectValue placeholder="Select an account" /></SelectTrigger></FormControl>
+                                                <FormControl><SelectTrigger><div className="relative pl-10 w-full text-left"><Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="Select an account" /></div></SelectTrigger></FormControl>
                                                 <SelectContent>
                                                     {userTradingAccounts.map(acc => (
                                                         <SelectItem key={acc.id} value={acc.id}>
