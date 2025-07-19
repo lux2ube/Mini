@@ -10,9 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { getProducts, getCategories } from '@/app/admin/actions';
-import type { Product, ProductCategory } from '@/types';
+import type { Product, ProductCategory, Order } from '@/types';
 import { Loader2, ShoppingCart } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthContext } from '@/hooks/useAuthContext';
+import { db } from '@/lib/firebase/config';
+import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 function ProductCard({ product }: { product: Product }) {
     return (
@@ -54,6 +58,104 @@ function StoreSkeleton() {
             </div>
         </div>
     )
+}
+
+function MyOrdersList() {
+    const { user } = useAuthContext();
+    const [orders, setOrders] = useState<Order[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchOrders = async () => {
+            if (!user) return;
+            setIsLoading(true);
+            try {
+                const q = query(
+                    collection(db, 'orders'),
+                    where('userId', '==', user.uid)
+                );
+                const querySnapshot = await getDocs(q);
+                const userOrders = querySnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        createdAt: (data.createdAt as Timestamp).toDate(),
+                    } as Order;
+                });
+                userOrders.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+                setOrders(userOrders);
+            } catch (error) {
+                console.error("Error fetching orders:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if(user) {
+            fetchOrders();
+        }
+    }, [user]);
+
+    const getStatusVariant = (status: Order['status']) => {
+        switch (status) {
+            case 'Delivered': return 'default';
+            case 'Pending': return 'secondary';
+            case 'Shipped': return 'outline';
+            case 'Cancelled': return 'destructive';
+            default: return 'outline';
+        }
+    }
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full min-h-48">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            {orders.length > 0 ? (
+                orders.map(order => (
+                    <Card key={order.id}>
+                        <CardHeader className="p-4">
+                            <div className="flex justify-between items-center">
+                                <CardTitle className="text-sm">Order ID: {order.id.slice(0, 8)}...</CardTitle>
+                                <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
+                            </div>
+                            <CardDescription className="text-xs">
+                                {format(order.createdAt, 'PPp')}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <div className="flex items-center gap-4">
+                                <Image 
+                                    src={order.productImage} 
+                                    alt={order.productName} 
+                                    width={48} 
+                                    height={48}
+                                    className="rounded-md border aspect-square object-contain"
+                                />
+                                <div className="flex-grow">
+                                    <p className="font-semibold text-sm">{order.productName}</p>
+                                    <p className="text-xs text-muted-foreground">Qty: 1</p>
+                                </div>
+                                <p className="font-semibold text-base">${order.price.toFixed(2)}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))
+            ) : (
+                <Card>
+                    <CardContent className="p-10 text-center">
+                        <p className="text-muted-foreground text-sm">You haven't placed any orders yet.</p>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+    );
 }
 
 export default function StorePage() {
@@ -109,23 +211,36 @@ export default function StorePage() {
 
     return (
         <div className="container mx-auto px-4 py-6 space-y-6">
-            <PageHeader title="Store" description="Spend your cashback on awesome products." />
-            
-            <Tabs defaultValue={categories[0]?.id || 'all'} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
-                    <TabsTrigger value="all">All</TabsTrigger>
-                    {categories.map(cat => (
-                        <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
-                    ))}
-                </TabsList>
-                <TabsContent value="all" className="mt-6">
-                    {renderGrid(products)}
+             <Tabs defaultValue="store" className="w-full">
+                <div className="flex justify-between items-center">
+                    <PageHeader title="Store" description="Spend your cashback on awesome products." />
+                    <TabsList>
+                        <TabsTrigger value="store">Store</TabsTrigger>
+                        <TabsTrigger value="orders">My Orders</TabsTrigger>
+                    </TabsList>
+                </div>
+                
+                <TabsContent value="store" className="space-y-6">
+                     <Tabs defaultValue={categories[0]?.id || 'all'} className="w-full">
+                        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
+                            <TabsTrigger value="all">All</TabsTrigger>
+                            {categories.map(cat => (
+                                <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                        <TabsContent value="all" className="mt-6">
+                            {renderGrid(products)}
+                        </TabsContent>
+                        {productsByCategory.map(category => (
+                            <TabsContent key={category.id} value={category.id} className="mt-6">
+                            {renderGrid(category.products)}
+                            </TabsContent>
+                        ))}
+                    </Tabs>
                 </TabsContent>
-                {productsByCategory.map(category => (
-                    <TabsContent key={category.id} value={category.id} className="mt-6">
-                       {renderGrid(category.products)}
-                    </TabsContent>
-                ))}
+                 <TabsContent value="orders">
+                    <MyOrdersList />
+                </TabsContent>
             </Tabs>
         </div>
     );
