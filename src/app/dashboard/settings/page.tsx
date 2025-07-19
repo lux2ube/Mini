@@ -192,7 +192,9 @@ function ProfileCard() {
     const { user } = useAuthContext();
     const { toast } = useToast();
     
-    if (!user || !user.profile) return null;
+    if (!user || !user.profile) {
+      return null;
+    }
 
     const { profile } = user;
     
@@ -234,7 +236,7 @@ function ProfileCard() {
                 </div>
             </CardContent>
         </Card>
-    )
+    );
 }
 
 export default function SettingsPage() {
