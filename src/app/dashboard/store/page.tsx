@@ -224,7 +224,7 @@ export default function StorePage() {
                 <TabsContent value="store" className="space-y-6">
                      <Tabs defaultValue={categories[0]?.id || 'all'} className="w-full">
                         <ScrollArea className="w-full whitespace-nowrap rounded-md">
-                            <TabsList className="inline-flex h-auto p-1">
+                            <TabsList className="w-full justify-start p-1 h-auto">
                                 <TabsTrigger value="all">All</TabsTrigger>
                                 {categories.map(cat => (
                                     <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
