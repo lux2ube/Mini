@@ -18,12 +18,31 @@ export async function logUserActivity(
         const ip = headersList.get('x-forwarded-for') ?? 'unknown';
         const userAgent = headersList.get('user-agent') ?? 'unknown';
 
+        let geo = {};
+        if (ip && ip !== 'unknown' && ip !== '127.0.0.1') {
+            try {
+                const response = await fetch(`http://ip-api.com/json/${ip}?fields=status,message,country,countryCode,region,regionName,city`);
+                const geoData = await response.json();
+                if (geoData.status === 'success') {
+                    geo = {
+                        country: geoData.country,
+                        region: geoData.regionName,
+                        city: geoData.city,
+                    };
+                }
+            } catch (geoError) {
+                console.warn("Could not fetch geo data for IP:", ip, geoError);
+            }
+        }
+
+
         const logEntry: Omit<ActivityLog, 'id'> = {
             userId,
             event,
-            timestamp: new Date(), // Use client-side date for now
+            timestamp: new Date(),
             ipAddress: ip,
             userAgent,
+            geo,
             details,
         };
         await addDoc(collection(db, 'activityLogs'), logEntry);

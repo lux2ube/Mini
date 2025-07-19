@@ -276,8 +276,8 @@ export interface ActivityLog {
     userId: string;
     event: 'login' | 'signup' | 'withdrawal_request' | 'store_purchase';
     timestamp: Date;
-    ipAddress?: string;
-    userAgent?: string;
+    ipAddress: string;
+    userAgent: string;
     geo?: {
         country?: string;
         region?: string;

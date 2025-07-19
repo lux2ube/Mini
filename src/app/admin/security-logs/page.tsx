@@ -42,7 +42,8 @@ export default function SecurityLogsPage() {
         return logs.filter(log =>
             log.userId.toLowerCase().includes(lowerCaseQuery) ||
             log.event.toLowerCase().includes(lowerCaseQuery) ||
-            (log.ipAddress && log.ipAddress.toLowerCase().includes(lowerCaseQuery))
+            (log.ipAddress && log.ipAddress.toLowerCase().includes(lowerCaseQuery)) ||
+            (log.geo?.country && log.geo.country.toLowerCase().includes(lowerCaseQuery))
         );
     }, [searchQuery, logs]);
 
@@ -68,7 +69,7 @@ export default function SecurityLogsPage() {
                     <div className="relative max-w-sm">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Search by User ID, event, or IP..."
+                            placeholder="Search by User ID, event, IP, or country..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10"
@@ -86,7 +87,7 @@ export default function SecurityLogsPage() {
                                         <TableHead>Timestamp</TableHead>
                                         <TableHead>Event</TableHead>
                                         <TableHead>User ID</TableHead>
-                                        <TableHead>IP Address</TableHead>
+                                        <TableHead>Location</TableHead>
                                         <TableHead>User Agent</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -100,7 +101,10 @@ export default function SecurityLogsPage() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="font-mono text-xs">{log.userId}</TableCell>
-                                            <TableCell className="font-mono text-xs">{log.ipAddress}</TableCell>
+                                            <TableCell>
+                                                <div className="text-xs">{log.geo?.country || 'Unknown'}</div>
+                                                <div className="text-xs text-muted-foreground font-mono">{log.ipAddress}</div>
+                                            </TableCell>
                                             <TableCell className="text-xs text-muted-foreground truncate max-w-xs">{log.userAgent}</TableCell>
                                         </TableRow>
                                     ))}
