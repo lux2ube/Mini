@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronRight, KeyRound, ReceiptText, Settings, Store } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronRight, KeyRound, ReceiptText, Settings, Store, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
@@ -92,9 +92,13 @@ function PromoBanner() {
 }
 
 const quickAccessLinks = [
+    { href: "/dashboard/store", icon: Store, label: "Store" },
+    { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
+    { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },
     { href: "/dashboard/my-accounts", icon: Users, label: "Accounts" },
     { href: "/dashboard/transactions", icon: ReceiptText, label: "History" },
     { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
+    { href: "/dashboard/store/orders", icon: ShoppingBag, label: "Orders" },
     { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
