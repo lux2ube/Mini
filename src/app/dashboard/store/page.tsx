@@ -17,6 +17,7 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 function ProductCard({ product }: { product: Product }) {
     return (
@@ -222,12 +223,15 @@ export default function StorePage() {
                 
                 <TabsContent value="store" className="space-y-6">
                      <Tabs defaultValue={categories[0]?.id || 'all'} className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-6">
-                            <TabsTrigger value="all">All</TabsTrigger>
-                            {categories.map(cat => (
-                                <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
-                            ))}
-                        </TabsList>
+                        <ScrollArea className="w-full whitespace-nowrap rounded-md">
+                            <TabsList className="inline-flex h-auto p-1">
+                                <TabsTrigger value="all">All</TabsTrigger>
+                                {categories.map(cat => (
+                                    <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
+                                ))}
+                            </TabsList>
+                            <ScrollBar orientation="horizontal" />
+                        </ScrollArea>
                         <TabsContent value="all" className="mt-6">
                             {renderGrid(products)}
                         </TabsContent>
