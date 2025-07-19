@@ -478,7 +478,7 @@ function WithdrawTabContent() {
                 </CardContent>
                 <CardFooter className="p-2 border-t">
                     <Button asChild variant="ghost" size="sm" className="w-full justify-center text-xs">
-                        <Link href="/dashboard/transactions">View All History <ChevronRight className="ml-1 h-4 w-4" /></Link>
+                        <Link href="/dashboard/wallet/history">View All History <ChevronRight className="ml-1 h-4 w-4" /></Link>
                     </Button>
                 </CardFooter>
             </Card>
@@ -528,7 +528,7 @@ function DepositTabContent() {
             </CardContent>
              <CardFooter className="p-2 border-t">
                 <Button asChild variant="ghost" size="sm" className="w-full justify-center text-xs">
-                    <Link href="/dashboard/transactions">View All History <ChevronRight className="ml-1 h-4 w-4" /></Link>
+                    <Link href="/dashboard/wallet/history">View All History <ChevronRight className="ml-1 h-4 w-4" /></Link>
                 </Button>
             </CardFooter>
         </Card>

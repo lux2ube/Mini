@@ -20,7 +20,7 @@ import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { cn } from '@/lib/utils';
 
-export default function TransactionsPage() {
+export default function CashbackTransactionsPage() {
     const { user } = useAuthContext();
     const router = useRouter();
     const [transactions, setTransactions] = useState<CashbackTransaction[]>([]);
@@ -116,7 +116,7 @@ export default function TransactionsPage() {
     return (
         <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
             <PageHeader
-                title="Transaction History"
+                title="Cashback History"
                 description="View your cashback earnings."
             />
 

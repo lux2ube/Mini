@@ -19,6 +19,7 @@ import {
     Store,
     ShoppingBag,
     User,
+    History,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -49,7 +50,7 @@ const navLinks = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/dashboard/my-accounts", icon: Users, label: "My Accounts" },
     { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
-    { href: "/dashboard/transactions", icon: ReceiptText, label: "Transactions" },
+    { href: "/dashboard/wallet/history", icon: History, label: "History" },
     { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
     { href: "/dashboard/store", icon: Store, label: "Store" },
     { href: "/dashboard/store/orders", icon: ShoppingBag, label: "My Orders"},
