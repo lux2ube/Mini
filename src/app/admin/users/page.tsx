@@ -59,7 +59,8 @@ export default function ManageUsersPage() {
             const emailMatch = user.email?.toLowerCase().includes(lowerCaseQuery) || false;
             const clientIdMatch = user.clientId && String(user.clientId).includes(lowerCaseQuery);
             const referralCodeMatch = user.referralCode && user.referralCode.toLowerCase().includes(lowerCaseQuery);
-            return nameMatch || emailMatch || clientIdMatch || referralCodeMatch;
+            const uidMatch = user.uid?.toLowerCase().includes(lowerCaseQuery) || false;
+            return nameMatch || emailMatch || clientIdMatch || referralCodeMatch || uidMatch;
         });
     }, [searchQuery, users]);
 
@@ -83,7 +84,7 @@ export default function ManageUsersPage() {
                         Found {filteredUsers.length} of {users.length} users.
                     </CardDescription>
                     <Input 
-                        placeholder="Search by name, email, referral code, or client ID..."
+                        placeholder="Search by name, email, UID, code, or client ID..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="max-w-sm"
@@ -97,6 +98,7 @@ export default function ManageUsersPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead>User ID</TableHead>
                                         <TableHead>Client ID</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Email</TableHead>
@@ -109,6 +111,7 @@ export default function ManageUsersPage() {
                                 <TableBody>
                                     {filteredUsers.map(user => (
                                         <TableRow key={user.uid}>
+                                            <TableCell className="font-mono text-xs truncate max-w-xs">{user.uid}</TableCell>
                                             <TableCell className="font-mono text-xs">{user.clientId || 'N/A'}</TableCell>
                                             <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                                             <TableCell>{user.email || 'N/A'}</TableCell>
