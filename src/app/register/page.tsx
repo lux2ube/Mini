@@ -53,14 +53,14 @@ export default function RegisterPage() {
       
       const newReferralCode = generateReferralCode(name);
 
-      // 2. Handle referral logic within a transaction
+      // 2. Handle referral logic and new user creation within a transaction
       await runTransaction(db, async (transaction) => {
         let referrerProfile: { uid: string, data: any } | null = null;
         
         // Find the referrer if a code is provided
         if (referralCode) {
           const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCode));
-          const referrerSnapshot = await getDocs(referrerQuery);
+          const referrerSnapshot = await transaction.get(referrerQuery);
           if (!referrerSnapshot.empty) {
             const doc = referrerSnapshot.docs[0];
             referrerProfile = { uid: doc.id, data: doc.data() };
@@ -69,12 +69,19 @@ export default function RegisterPage() {
           }
         }
         
-        // 3. Create the new user document
+        // Get the next client ID
+        const counterRef = doc(db, 'counters', 'userCounter');
+        const counterSnap = await transaction.get(counterRef);
+        const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
+        const newClientId = lastId + 1;
+        
+        // Create the new user document
         const newUserDocRef = doc(db, "users", user.uid);
         const newUserProfile = { 
             name, 
             email, 
             role: "user",
+            clientId: newClientId,
             createdAt: Timestamp.now(),
             referralCode: newReferralCode,
             referredBy: referrerProfile ? referrerProfile.uid : null,
@@ -84,7 +91,7 @@ export default function RegisterPage() {
         };
         transaction.set(newUserDocRef, newUserProfile);
 
-        // 4. Update the referrer's document if they exist
+        // Update the referrer's document if they exist
         if (referrerProfile) {
           const referrerDocRef = doc(db, "users", referrerProfile.uid);
           const currentReferrals = referrerProfile.data.referrals || [];
@@ -95,6 +102,9 @@ export default function RegisterPage() {
             points: currentPoints + 10, // Award 10 points for a successful referral
           });
         }
+
+        // Update the counter
+        transaction.set(counterRef, { lastId: newClientId });
       });
       
       // 5. Log the signup event

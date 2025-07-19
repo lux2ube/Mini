@@ -18,6 +18,7 @@ export interface UserProfile {
     email: string;
     name: string;
     role: 'user' | 'admin';
+    clientId: number;
     createdAt: Date;
     // New profile fields
     phoneNumber?: string;

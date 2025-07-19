@@ -224,6 +224,10 @@ export default function SettingsPage() {
                 <CardTitle className="text-base">Profile Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
+                 <ProfileInfoItem label="Client ID">
+                   {profile.clientId}
+                </ProfileInfoItem>
+                <Separator/>
                 <ProfileInfoItem label="Name">
                    {profile.name}
                 </ProfileInfoItem>

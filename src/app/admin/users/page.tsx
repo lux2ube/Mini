@@ -55,6 +55,7 @@ export default function ManageUsersPage() {
         return users.filter(user =>
             user.name.toLowerCase().includes(lowerCaseQuery) ||
             user.email.toLowerCase().includes(lowerCaseQuery) ||
+            (user.clientId && String(user.clientId).includes(lowerCaseQuery)) ||
             (user.referralCode && user.referralCode.toLowerCase().includes(lowerCaseQuery))
         );
     }, [searchQuery, users]);
@@ -78,7 +79,7 @@ export default function ManageUsersPage() {
                         Found {filteredUsers.length} of {users.length} users.
                     </CardDescription>
                     <Input 
-                        placeholder="Search by name, email, referral code..."
+                        placeholder="Search by name, email, referral code, or client ID..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="max-w-sm"
@@ -92,6 +93,7 @@ export default function ManageUsersPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
+                                        <TableHead>Client ID</TableHead>
                                         <TableHead>Name</TableHead>
                                         <TableHead>Email</TableHead>
                                         <TableHead>Joined</TableHead>
@@ -103,6 +105,7 @@ export default function ManageUsersPage() {
                                 <TableBody>
                                     {filteredUsers.map(user => (
                                         <TableRow key={user.uid}>
+                                            <TableCell className="font-mono text-xs">{user.clientId}</TableCell>
                                             <TableCell className="font-medium">{user.name}</TableCell>
                                             <TableCell>{user.email}</TableCell>
                                             <TableCell>{getSafeDate(user.createdAt)}</TableCell>
