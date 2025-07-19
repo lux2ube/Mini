@@ -240,6 +240,18 @@ export async function getUsers(): Promise<UserProfile[]> {
   });
 }
 
+export async function updateUserProfile(userId: string, data: { name: string }) {
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, { name: data.name });
+        return { success: true, message: 'Profile updated successfully.' };
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message: `Failed to update profile: ${errorMessage}` };
+    }
+}
+
 // Cashback Management
 export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id' | 'date'>) {
     try {
@@ -728,5 +740,3 @@ export async function deleteBlogPost(id: string) {
         return { success: false, message: 'Failed to delete blog post.' };
     }
 }
-
-    
