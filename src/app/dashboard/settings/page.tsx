@@ -1,141 +1,95 @@
 
 "use client";
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { useToast } from "@/hooks/use-toast";
-import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, ChevronRight, Copy, Lock } from "lucide-react";
+import { Loader2, ChevronRight, ShieldCheck, UserCheck, Lock, Activity } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 
-
-function ProfileCard() {
-    const { user } = useAuthContext();
-    const { toast } = useToast();
-    
-    if (!user || !user.profile) {
-      return (
-          <Card>
-              <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                      <div className="h-16 w-16 bg-muted rounded-full animate-pulse"></div>
-                      <div className="flex-grow space-y-2">
-                           <div className="h-5 w-3/4 bg-muted rounded animate-pulse"></div>
-                           <div className="h-3 w-1/2 bg-muted rounded animate-pulse"></div>
-                      </div>
-                  </div>
-              </CardContent>
-          </Card>
-      );
-    }
-
-    const { profile } = user;
-    
-    const handleCopy = () => {
-        if (profile.clientId) {
-            navigator.clipboard.writeText(String(profile.clientId));
-            toast({ title: 'Copied!', description: 'Client ID copied to clipboard.' });
-        }
-    }
-
+function SettingsItem({ href, icon: Icon, title, description }: { href: string, icon: React.ElementType, title: string, description: string }) {
     return (
-        <Card>
-            <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16">
-                        <AvatarFallback className="text-xl bg-primary/20 text-primary font-bold">
-                            {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-grow space-y-1">
-                        <h2 className="font-bold text-lg">{profile.name}</h2>
-                        {profile.clientId ? (
-                            <div className="flex items-center gap-2">
-                               <p className="text-xs text-muted-foreground">Client ID: {profile.clientId}</p>
-                               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleCopy}>
-                                   <Copy className="h-3 w-3" />
-                               </Button>
-                            </div>
-                        ) : (
-                             <p className="text-xs text-muted-foreground">Client ID: Not Assigned</p>
-                        )}
-                        {profile.tier && <Badge variant="secondary">{profile.tier}</Badge>}
+        <Link href={href}>
+            <Card className="hover:bg-muted/50 transition-colors">
+                <CardContent className="p-4 flex items-center gap-4">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                        <Icon className="h-6 w-6 text-primary" />
                     </div>
-                    <Button variant="ghost" size="icon" asChild>
-                        <Link href="/dashboard/profile">
-                            <ChevronRight className="h-5 w-5" />
-                        </Link>
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+                    <div className="flex-grow">
+                        <h3 className="font-semibold">{title}</h3>
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                </CardContent>
+            </Card>
+        </Link>
     );
 }
 
 export default function SettingsPage() {
-  const { user, isLoading } = useAuthContext();
-  
-  if (isLoading || !user?.profile) {
+    const { user, isLoading } = useAuthContext();
+
+    if (isLoading || !user?.profile) {
+        return (
+            <div className="flex items-center justify-center h-full min-h-[calc(100vh-theme(spacing.14))]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    const { profile } = user;
+    const isVerified = profile.isVerified ?? false;
+
     return (
-        <div className="flex items-center justify-center h-full min-h-[calc(100vh-theme(spacing.14))]">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
+            <PageHeader title="Settings" description="Manage your account, security, and verification." />
+
+            <Link href="/dashboard/profile">
+                 <Card className="hover:bg-muted/50 transition-colors">
+                    <CardContent className="p-4 flex items-center gap-4">
+                        <Avatar className="h-16 w-16">
+                            <AvatarFallback className="text-2xl bg-primary/20 text-primary font-bold">
+                                {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-grow space-y-1">
+                            <h2 className="font-bold text-lg">{profile.name}</h2>
+                            <div className="flex items-center gap-2">
+                                <Badge variant={isVerified ? "default" : "secondary"}>
+                                    <ShieldCheck className="mr-1.5 h-3 w-3" />
+                                    {isVerified ? "Verified" : "Not Verified"}
+                                 </Badge>
+                                 <Badge variant="outline">{profile.tier || 'Bronze'}</Badge>
+                            </div>
+                            <p className="text-xs text-muted-foreground font-mono pt-1">UID: {profile.uid.slice(0, 12)}...</p>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                    </CardContent>
+                </Card>
+            </Link>
+
+            <div className="space-y-3">
+               <SettingsItem 
+                    href="/dashboard/settings/verification"
+                    icon={UserCheck}
+                    title="Verification Center"
+                    description="Complete KYC, email, and phone verification."
+               />
+               <SettingsItem 
+                    href="/dashboard/settings/security"
+                    icon={Lock}
+                    title="Security Center"
+                    description="Manage password and two-factor authentication."
+               />
+                <SettingsItem 
+                    href="/dashboard/settings/activity-logs"
+                    icon={Activity}
+                    title="Activity Logs"
+                    description="Review your recent account activity."
+               />
+            </div>
         </div>
     );
-  }
-
-  return (
-    <div className="max-w-md mx-auto w-full px-4 py-4 space-y-4">
-        <PageHeader title="Settings" description="Manage your account details and settings." />
-        
-        <ProfileCard />
-        
-         <Card>
-            <CardHeader className="p-4">
-                <CardTitle className="text-base">Change Password</CardTitle>
-                <CardDescription className="text-xs">
-                   For security, you can update your password here.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-0 space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="current-password">Current Password</Label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="current-password" type="password" className="pl-10" />
-                    </div>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="new-password">New Password</Label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="new-password" type="password" className="pl-10" />
-                    </div>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input id="confirm-password" type="password" className="pl-10" />
-                    </div>
-                </div>
-                <Button className="w-full" size="sm">Update Password</Button>
-            </CardContent>
-        </Card>
-    </div>
-  );
 }

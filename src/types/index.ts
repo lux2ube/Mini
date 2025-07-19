@@ -1,5 +1,6 @@
 
 
+
 import type { Timestamp } from "firebase/firestore";
 
 /**
@@ -20,6 +21,7 @@ export interface UserProfile {
     role: 'user' | 'admin';
     clientId?: number;
     createdAt?: Date;
+    isVerified?: boolean;
     // New profile fields
     phoneNumber?: string;
     phoneNumberVerified?: boolean;
