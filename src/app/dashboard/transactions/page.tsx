@@ -1,0 +1,142 @@
+
+"use client";
+
+import { useEffect, useState, useMemo } from "react";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { db } from "@/lib/firebase/config";
+import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
+import type { CashbackTransaction } from "@/types";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { format } from "date-fns";
+import { Input } from "@/components/ui/input";
+
+export default function TransactionsPage() {
+    const { user } = useAuthContext();
+    const [transactions, setTransactions] = useState<CashbackTransaction[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [filter, setFilter] = useState('');
+
+    useEffect(() => {
+        const fetchTransactions = async () => {
+            if (!user) {
+                setIsLoading(false);
+                return;
+            }
+            
+            setIsLoading(true);
+            try {
+                const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid));
+                const transactionsSnapshot = await getDocs(transactionsQuery);
+                const userTransactions = transactionsSnapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return { id: doc.id, ...data, date: (data.date as Timestamp).toDate() } as CashbackTransaction;
+                });
+                userTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+                setTransactions(userTransactions);
+                
+            } catch (error) {
+                console.error("Error fetching transactions: ", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (user) {
+            fetchTransactions();
+        }
+    }, [user]);
+
+    const filteredTransactions = useMemo(() => {
+        if (!filter) return transactions;
+        const lowerCaseFilter = filter.toLowerCase();
+        return transactions.filter(tx => 
+            tx.broker.toLowerCase().includes(lowerCaseFilter) ||
+            tx.accountNumber.toLowerCase().includes(lowerCaseFilter) ||
+            tx.tradeDetails.toLowerCase().includes(lowerCaseFilter)
+        );
+    }, [transactions, filter]);
+
+    const totalEarned = useMemo(() => {
+        return transactions.reduce((sum, tx) => sum + tx.cashbackAmount, 0);
+    }, [transactions]);
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[calc(100vh_-_theme(spacing.12))]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
+    return (
+        <div className="container mx-auto px-4 py-4 max-w-4xl space-y-6">
+            <PageHeader
+                title="Transactions"
+                description="A complete history of all cashback you've earned."
+            />
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Total Earned</CardTitle>
+                    <CardDescription className="text-3xl font-bold text-primary">${totalEarned.toFixed(2)}</CardDescription>
+                </CardHeader>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Transaction History</CardTitle>
+                    <Input 
+                        placeholder="Filter by broker, account #, or details..."
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                        className="max-w-sm"
+                    />
+                </CardHeader>
+                <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Broker</TableHead>
+                                    <TableHead>Account #</TableHead>
+                                    <TableHead>Details</TableHead>
+                                    <TableHead className="text-right">Amount</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredTransactions.length > 0 ? (
+                                    filteredTransactions.map(tx => (
+                                        <TableRow key={tx.id}>
+                                            <TableCell className="whitespace-nowrap">{format(tx.date, "PP")}</TableCell>
+                                            <TableCell>{tx.broker}</TableCell>
+                                            <TableCell>{tx.accountNumber}</TableCell>
+                                            <TableCell>{tx.tradeDetails}</TableCell>
+                                            <TableCell className="text-right font-semibold text-primary">${tx.cashbackAmount.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center h-24">
+                                            No transactions found.
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

@@ -49,8 +49,8 @@ import { cn } from "@/lib/utils";
 const navLinks = [
     { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/dashboard/my-accounts", icon: Users, label: "My Accounts" },
+    { href: "/dashboard/transactions", icon: History, label: "Transactions" },
     { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
-    { href: "/dashboard/wallet/history", icon: History, label: "Wallet History" },
     { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
     { href: "/dashboard/store", icon: Store, label: "Store" },
     { href: "/dashboard/withdraw", icon: Landmark, label: "Withdraw" },

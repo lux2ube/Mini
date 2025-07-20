@@ -96,7 +96,7 @@ const quickAccessLinks = [
     { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
     { href: "/dashboard/withdraw", icon: Wallet, label: "Wallet" },
     { href: "/dashboard/my-accounts", icon: Users, label: "Accounts" },
-    { href: "/dashboard/wallet/history", icon: History, label: "History" },
+    { href: "/dashboard/transactions", icon: History, label: "History" },
     { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
     { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
