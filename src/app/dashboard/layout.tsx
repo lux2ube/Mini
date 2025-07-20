@@ -15,6 +15,7 @@ import {
     Lock,
     Activity,
     ChevronRight,
+    Home,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -189,6 +190,9 @@ export default function DashboardLayout({
                         </Link>
                         
                         <div className="ml-auto flex items-center gap-2">
+                            <Button asChild variant="ghost" size="icon" className="h-9 w-9">
+                                <Link href="/dashboard"><Home className="h-5 w-5" /></Link>
+                            </Button>
                             <Button asChild variant="ghost" size="icon" className="h-9 w-9">
                                 <Link href="/dashboard/store"><Store className="h-5 w-5" /></Link>
                             </Button>
