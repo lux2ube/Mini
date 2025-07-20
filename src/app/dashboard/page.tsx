@@ -116,7 +116,7 @@ export default function UserDashboardPage() {
           const [balanceData, accountsSnapshot, transactionsSnapshot] = await Promise.all([
             getUserBalance(user.uid),
             getDocs(query(collection(db, "tradingAccounts"), where("userId", "==", user.uid))),
-            getDocs(query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid), orderBy("date", "desc"), limit(5)))
+            getDocs(query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid)))
           ]);
           
           const linkedAccounts = accountsSnapshot.docs.map(doc => {
@@ -128,10 +128,12 @@ export default function UserDashboardPage() {
             } as TradingAccount;
           });
 
-          const recentTransactions = transactionsSnapshot.docs.map(doc => {
+          const allTransactions = transactionsSnapshot.docs.map(doc => {
               const data = doc.data();
               return { id: doc.id, ...data, date: (data.date as Timestamp).toDate() } as CashbackTransaction;
           });
+          
+          allTransactions.sort((a,b) => b.date.getTime() - a.date.getTime());
           
           setStats({
             ...balanceData,
@@ -139,7 +141,7 @@ export default function UserDashboardPage() {
             totalReferrals: user.profile?.referrals?.length || 0,
             referralPoints: user.profile?.points || 0,
           });
-          setTransactions(recentTransactions);
+          setTransactions(allTransactions.slice(0, 5));
 
         } catch (error) {
             console.error("Error fetching dashboard stats:", error);
@@ -207,54 +209,6 @@ export default function UserDashboardPage() {
                         </CardContent>
                     </Card>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <Button asChild>
-                            <Link href="/dashboard/brokers">Get Cashback</Link>
-                        </Button>
-                        <Button asChild>
-                            <Link href="/dashboard/withdraw">Withdraw</Link>
-                        </Button>
-                    </div>
-
-                    <div className="space-y-4">
-                        <h2 className="text-lg font-semibold mt-4">List Brokers</h2>
-                        <Card>
-                          <CardContent className="p-0">
-                            <Table>
-                               <TableHeader>
-                                  <TableRow>
-                                    <TableHead className="text-xs">Account</TableHead>
-                                    <TableHead className="text-xs">Broker</TableHead>
-                                    <TableHead className="text-right text-xs">Status</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {stats.linkedAccounts.length > 0 ? (
-                                    stats.linkedAccounts.map(account => (
-                                      <TableRow key={account.id}>
-                                        <TableCell className="font-medium text-xs">{account.accountNumber}</TableCell>
-                                        <TableCell className="text-xs">{account.broker}</TableCell>
-                                        <TableCell className="text-right text-xs">{account.status}</TableCell>
-                                      </TableRow>
-                                    ))
-                                  ) : (
-                                    <TableRow>
-                                      <TableCell colSpan={3} className="text-center text-muted-foreground py-4 text-xs">
-                                        No linked accounts.
-                                      </TableCell>
-                                    </TableRow>
-                                  )}
-                                </TableBody>
-                            </Table>
-                          </CardContent>
-                          <CardHeader className="p-2 border-t">
-                             <Button asChild variant="ghost" size="sm" className="w-full justify-center">
-                                <Link href="/dashboard/my-accounts">View All Accounts <ChevronRight className="ml-2 h-4 w-4" /></Link>
-                              </Button>
-                          </CardHeader>
-                        </Card>
-                    </div>
-
                     <div className="space-y-4">
                          <h2 className="text-lg font-semibold mt-4">Recent Transactions</h2>
                          <Card>
@@ -316,3 +270,4 @@ export default function UserDashboardPage() {
     </div>
   );
 }
+
