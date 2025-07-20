@@ -186,7 +186,8 @@ export default function ProductDetailPage() {
                     <div className="container mx-auto max-w-2xl">
                          <DialogTrigger asChild>
                             <Button size="lg" className="w-full h-12 text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90" disabled={product.stock <= 0}>
-                                {product.stock > 0 ? 'Proceed to Purchase' : 'Out of Stock'}
+                                 <ShoppingCart className="mr-2 h-5 w-5" />
+                                {product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
                             </Button>
                         </DialogTrigger>
                     </div>
