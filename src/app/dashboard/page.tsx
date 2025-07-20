@@ -2,16 +2,16 @@
 "use client";
 
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronRight, KeyRound, History, Settings, Store, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getCountFromServer, getDocs, Timestamp } from "firebase/firestore";
+import { collection, query, where, getCountFromServer, getDocs, Timestamp, orderBy, limit } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
-import type { BannerSettings, TradingAccount } from "@/types";
+import type { BannerSettings, TradingAccount, CashbackTransaction } from "@/types";
 import { getBannerSettings, getUserBalance } from "../admin/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { format } from "date-fns";
 
 
 interface DashboardStats {
@@ -91,30 +92,6 @@ function PromoBanner() {
     return <div ref={bannerContainerRef} className="my-4 w-full flex justify-center"></div>;
 }
 
-const quickAccessLinks = [
-    { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
-    { href: "/dashboard/withdraw", icon: Wallet, label: "Wallet" },
-    { href: "/dashboard/my-accounts", icon: Users, label: "Accounts" },
-    { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
-];
-
-function QuickAccessGrid() {
-    return (
-        <div className="grid grid-cols-4 gap-2 text-center">
-            {quickAccessLinks.map((link) => (
-                 <Link href={link.href} key={link.href}>
-                    <div className="flex flex-col items-center justify-center p-2 space-y-1 rounded-lg hover:bg-muted transition-colors aspect-square">
-                       <div className="p-3 bg-primary/10 rounded-full">
-                         <link.icon className="h-5 w-5 text-primary" />
-                       </div>
-                       <p className="text-xs text-muted-foreground">{link.label}</p>
-                    </div>
-                </Link>
-            ))}
-        </div>
-    )
-}
-
 
 export default function UserDashboardPage() {
   const { user } = useAuthContext();
@@ -128,25 +105,20 @@ export default function UserDashboardPage() {
     totalReferrals: 0,
     referralPoints: 0,
   });
+  const [transactions, setTransactions] = useState<CashbackTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  const referralLink = typeof window !== 'undefined' ? `${window.location.origin}/register?ref=${user?.profile?.referralCode}` : '';
-
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({ title: 'Copied!', description: 'Referral link or code copied to clipboard.' });
-  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       if (user) {
         setIsLoading(true);
         try {
-          const balanceData = await getUserBalance(user.uid);
+          const [balanceData, accountsSnapshot, transactionsSnapshot] = await Promise.all([
+            getUserBalance(user.uid),
+            getDocs(query(collection(db, "tradingAccounts"), where("userId", "==", user.uid))),
+            getDocs(query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid), orderBy("date", "desc"), limit(5)))
+          ]);
           
-          const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", user.uid));
-          const accountsSnapshot = await getDocs(accountsQuery);
           const linkedAccounts = accountsSnapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -155,6 +127,11 @@ export default function UserDashboardPage() {
               createdAt: (data.createdAt as Timestamp).toDate(),
             } as TradingAccount;
           });
+
+          const recentTransactions = transactionsSnapshot.docs.map(doc => {
+              const data = doc.data();
+              return { id: doc.id, ...data, date: (data.date as Timestamp).toDate() } as CashbackTransaction;
+          });
           
           setStats({
             ...balanceData,
@@ -162,6 +139,7 @@ export default function UserDashboardPage() {
             totalReferrals: user.profile?.referrals?.length || 0,
             referralPoints: user.profile?.points || 0,
           });
+          setTransactions(recentTransactions);
 
         } catch (error) {
             console.error("Error fetching dashboard stats:", error);
@@ -238,8 +216,6 @@ export default function UserDashboardPage() {
                         </Button>
                     </div>
 
-                    <QuickAccessGrid />
-
                     <div className="space-y-4">
                         <h2 className="text-lg font-semibold mt-4">List Brokers</h2>
                         <Card>
@@ -280,46 +256,44 @@ export default function UserDashboardPage() {
                     </div>
 
                     <div className="space-y-4">
-                         <h2 className="text-lg font-semibold mt-4">Referrals</h2>
+                         <h2 className="text-lg font-semibold mt-4">Recent Transactions</h2>
                          <Card>
-                            <CardContent className="p-4 space-y-4">
-                                <div className="grid grid-cols-2 gap-4 text-center">
-                                    <div>
-                                        <p className="text-xl font-bold">{stats.totalReferrals}</p>
-                                        <p className="text-xs text-muted-foreground">Total Referrals</p>
-                                    </div>
-                                     <div>
-                                        <p className="text-xl font-bold">{stats.referralPoints}</p>
-                                        <p className="text-xs text-muted-foreground">Referral Points</p>
-                                    </div>
-                                </div>
-                                <div className="space-y-2">
-                                     <p className="text-xs font-medium">Your Invite Code</p>
-                                     <div className="flex items-center gap-2">
-                                        <div className="relative flex-grow">
-                                            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input readOnly value={user?.profile?.referralCode || 'N/A'} className="font-mono text-sm pl-10" />
-                                        </div>
-                                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(user?.profile?.referralCode || '')}>
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
-                                 <div className="space-y-2">
-                                     <p className="text-xs font-medium">Your Invite Link</p>
-                                     <div className="flex items-center gap-2">
-                                        <Input readOnly value={referralLink} className="text-xs" />
-                                        <Button size="icon" variant="outline" onClick={() => copyToClipboard(referralLink)}>
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </div>
+                            <CardContent className="p-0">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="text-xs">Date</TableHead>
+                                            <TableHead className="text-xs">Broker/Account</TableHead>
+                                            <TableHead className="text-right text-xs">Amount</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {transactions.length > 0 ? (
+                                            transactions.map(tx => (
+                                                <TableRow key={tx.id}>
+                                                    <TableCell className="text-muted-foreground text-xs">{format(tx.date, "PP")}</TableCell>
+                                                    <TableCell>
+                                                        <div className="font-medium text-xs">{tx.broker}</div>
+                                                        <div className="text-xs text-muted-foreground">{tx.accountNumber}</div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-semibold text-primary text-xs">${tx.cashbackAmount.toFixed(2)}</TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={3} className="h-24 text-center text-xs text-muted-foreground">
+                                                    No transactions yet.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
                             </CardContent>
-                             <CardHeader className="p-2 border-t">
+                             <CardFooter className="p-2 border-t">
                                 <Button asChild variant="ghost" size="sm" className="w-full justify-center">
-                                    <Link href="/dashboard/referrals">View Referrals Details <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                                    <Link href="/dashboard/transactions">View All Transactions <ChevronRight className="ml-2 h-4 w-4" /></Link>
                                 </Button>
-                             </CardHeader>
+                             </CardFooter>
                          </Card>
                     </div>
 
