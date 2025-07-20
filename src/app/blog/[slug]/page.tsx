@@ -1,4 +1,5 @@
 
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -28,11 +29,11 @@ export default async function PostPage({ params }: { params: { slug: string } })
                 </div>
                 <h1 className="text-3xl md:text-4xl font-extrabold font-headline leading-tight mb-2">{post.title}</h1>
                 <div className="text-sm text-muted-foreground">
-                    <span>Published on {format(post.createdAt, 'PP')} by {post.authorName}</span>
+                    <span>نشر في {format(post.createdAt, 'PP')} بواسطة {post.authorName}</span>
                 </div>
                  <div className="mt-2">
                     {post.tags.map(tag => (
-                        <Badge key={tag} variant="secondary" className="mr-1">{tag}</Badge>
+                        <Badge key={tag} variant="secondary" className="ml-1">{tag}</Badge>
                     ))}
                 </div>
             </header>

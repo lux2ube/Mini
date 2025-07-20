@@ -33,16 +33,16 @@ function RejectAccountDialog({ accountId, onSuccess }: { accountId: string, onSu
 
     const handleSubmit = async () => {
         if (!reason.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Rejection reason cannot be empty.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: 'سبب الرفض لا يمكن أن يكون فارغاً.' });
             return;
         }
         setIsSubmitting(true);
         const result = await updateTradingAccountStatus(accountId, 'Rejected', reason);
         if (result.success) {
-            toast({ title: 'Success', description: result.message });
+            toast({ title: 'نجاح', description: result.message });
             onSuccess();
         } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
+            toast({ variant: 'destructive', title: 'خطأ', description: result.message });
         }
         setIsSubmitting(false);
     }
@@ -50,29 +50,29 @@ function RejectAccountDialog({ accountId, onSuccess }: { accountId: string, onSu
     return (
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Reject Trading Account</AlertDialogTitle>
+                <AlertDialogTitle>رفض حساب التداول</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Please provide a reason for rejecting this account. The user will be notified.
+                    يرجى تقديم سبب لرفض هذا الحساب. سيتم إخطار المستخدم.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2">
-                <Label htmlFor="reason">Rejection Reason</Label>
+                <Label htmlFor="reason">سبب الرفض</Label>
                 <div className="relative">
-                    <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Textarea 
                         id="reason" 
                         value={reason} 
                         onChange={(e) => setReason(e.target.value)}
-                        placeholder="e.g., Account number does not match our records."
-                        className="pl-10"
+                        placeholder="مثال: رقم الحساب لا يتطابق مع سجلاتنا."
+                        className="pr-10"
                     />
                 </div>
             </div>
             <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
                 <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Confirm Rejection
+                    {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                    تأكيد الرفض
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -94,7 +94,7 @@ export default function ManageAccountsPage() {
             setAccounts(fetchedAccounts);
         } catch (error) {
             console.error("Failed to fetch accounts:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch trading accounts.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: 'تعذر جلب حسابات التداول.' });
         } finally {
             setIsLoading(false);
         }
@@ -110,10 +110,10 @@ export default function ManageAccountsPage() {
 
         const result = await updateTradingAccountStatus(accountId, 'Approved');
         if (!result.success) {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
+            toast({ variant: 'destructive', title: 'خطأ', description: result.message });
             setAccounts(originalAccounts); // Revert on failure
         } else {
-            toast({ title: 'Success', description: result.message });
+            toast({ title: 'نجاح', description: result.message });
         }
     };
 
@@ -125,13 +125,22 @@ export default function ManageAccountsPage() {
             default: return 'outline';
         }
     }
+    
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'Approved': return 'مقبول';
+            case 'Pending': return 'معلق';
+            case 'Rejected': return 'مرفوض';
+            default: return status;
+        }
+    }
 
     return (
         <div className="container mx-auto space-y-6">
-            <PageHeader title="Manage Trading Accounts" description="Approve or reject user-submitted trading accounts." />
+            <PageHeader title="إدارة حسابات التداول" description="الموافقة على أو رفض حسابات التداول المقدمة من المستخدمين." />
             <Card>
                 <CardHeader>
-                    <CardTitle>All Accounts</CardTitle>
+                    <CardTitle>جميع الحسابات</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
@@ -141,12 +150,12 @@ export default function ManageAccountsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>User ID</TableHead>
-                                        <TableHead>Broker</TableHead>
-                                        <TableHead>Account #</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Reason</TableHead>
-                                        <TableHead>Actions</TableHead>
+                                        <TableHead>معرف المستخدم</TableHead>
+                                        <TableHead>الوسيط</TableHead>
+                                        <TableHead>رقم الحساب</TableHead>
+                                        <TableHead>الحالة</TableHead>
+                                        <TableHead>السبب</TableHead>
+                                        <TableHead>الإجراءات</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -155,7 +164,7 @@ export default function ManageAccountsPage() {
                                             <TableCell className="text-xs text-muted-foreground truncate" style={{ maxWidth: '100px' }}>{account.userId}</TableCell>
                                             <TableCell>{account.broker}</TableCell>
                                             <TableCell>{account.accountNumber}</TableCell>
-                                            <TableCell><Badge variant={getStatusVariant(account.status)}>{account.status}</Badge></TableCell>
+                                            <TableCell><Badge variant={getStatusVariant(account.status)}>{getStatusText(account.status)}</Badge></TableCell>
                                             <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{account.rejectionReason}</TableCell>
                                             <TableCell className="space-x-2">
                                                 <Button size="icon" variant="outline" className="h-8 w-8 text-green-600 hover:text-green-600" onClick={() => handleApprove(account.id)} disabled={account.status !== 'Pending'}>

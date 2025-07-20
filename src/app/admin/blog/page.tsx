@@ -42,10 +42,10 @@ import { PlusCircle, Loader2, Edit, Trash2, Type, Link as LinkIcon, Tag, AlignLe
 import type { BlogPost } from "@/types";
 
 const formSchema = z.object({
-  title: z.string().min(3, "Title must be at least 3 characters."),
-  excerpt: z.string().min(10, "Excerpt must be at least 10 characters.").max(200, "Excerpt must be 200 characters or less."),
-  content: z.string().min(50, "Content must be at least 50 characters."),
-  imageUrl: z.string().url("Must be a valid image URL."),
+  title: z.string().min(3, "يجب أن يكون العنوان 3 أحرف على الأقل."),
+  excerpt: z.string().min(10, "يجب أن يكون المقتطف 10 أحرف على الأقل.").max(200, "يجب أن يكون المقتطف 200 حرف أو أقل."),
+  content: z.string().min(50, "يجب أن يكون المحتوى 50 حرفًا على الأقل."),
+  imageUrl: z.string().url("يجب أن يكون عنوان URL صالحًا للصورة."),
   status: z.enum(['draft', 'published']),
   tags: z.string().optional(),
 });
@@ -89,10 +89,10 @@ function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuc
             : await addBlogPost(payload);
 
         if (result.success) {
-            toast({ type: "success", title: "Success", description: result.message });
+            toast({ type: "success", title: "نجاح", description: result.message });
             onSuccess();
         } else {
-            toast({ type: "error", title: "Error", description: result.message });
+            toast({ type: "error", title: "خطأ", description: result.message });
         }
         setIsSubmitting(false);
     };
@@ -102,11 +102,11 @@ function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuc
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                  <FormField control={form.control} name="title" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Title</FormLabel>
+                        <FormLabel>العنوان</FormLabel>
                         <FormControl>
                              <div className="relative">
-                                <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input {...field} className="pl-10" />
+                                <Type className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input {...field} className="pr-10" />
                             </div>
                         </FormControl>
                         <FormMessage />
@@ -114,11 +114,11 @@ function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuc
                 )}/>
                 <FormField control={form.control} name="excerpt" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Excerpt</FormLabel>
+                        <FormLabel>مقتطف</FormLabel>
                         <FormControl>
                              <div className="relative">
-                                <AlignLeft className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Textarea {...field} className="pl-10" />
+                                <AlignLeft className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Textarea {...field} className="pr-10" />
                             </div>
                         </FormControl>
                         <FormMessage />
@@ -126,11 +126,11 @@ function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuc
                 )}/>
                 <FormField control={form.control} name="content" render={({ field }) => (
                      <FormItem>
-                        <FormLabel>Content (Markdown)</FormLabel>
+                        <FormLabel>المحتوى (ماركداون)</FormLabel>
                         <FormControl>
                              <div className="relative">
-                                <FileText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                <Textarea className="min-h-48 pl-10" {...field} />
+                                <FileText className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
+                                <Textarea className="min-h-48 pr-10" {...field} />
                             </div>
                         </FormControl>
                         <FormMessage />
@@ -138,11 +138,11 @@ function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuc
                 )}/>
                 <FormField control={form.control} name="imageUrl" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Featured Image URL</FormLabel>
+                        <FormLabel>رابط الصورة البارزة</FormLabel>
                         <FormControl>
                             <div className="relative">
-                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input {...field} className="pl-10" />
+                                <LinkIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input {...field} className="pr-10" />
                             </div>
                         </FormControl>
                         <FormMessage />
@@ -150,31 +150,31 @@ function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuc
                 )}/>
                  <FormField control={form.control} name="tags" render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Tags (comma-separated)</FormLabel>
+                        <FormLabel>الوسوم (مفصولة بفواصل)</FormLabel>
                         <FormControl>
                              <div className="relative">
-                                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input {...field} className="pl-10" />
+                                <Tag className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input {...field} className="pr-10" />
                             </div>
                         </FormControl>
                         <FormMessage />
                     </FormItem>
                 )}/>
                 <FormField control={form.control} name="status" render={({ field }) => (
-                    <FormItem><FormLabel>Status</FormLabel>
+                    <FormItem><FormLabel>الحالة</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent><SelectItem value="draft">Draft</SelectItem><SelectItem value="published">Published</SelectItem></SelectContent>
+                            <SelectContent><SelectItem value="draft">مسودة</SelectItem><SelectItem value="published">منشور</SelectItem></SelectContent>
                         </Select>
                         <FormMessage />
                     </FormItem>
                 )}/>
 
                 <DialogFooter>
-                    <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+                    <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
                     <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {post ? "Save Changes" : "Create Post"}
+                        {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                        {post ? "حفظ التغييرات" : "إنشاء مقال"}
                     </Button>
                 </DialogFooter>
             </form>
@@ -195,7 +195,7 @@ export default function ManageBlogPage() {
             const data = await getAllBlogPosts();
             setPosts(data);
         } catch (error) {
-            toast({ type: "error", title: "Error", description: "Could not fetch blog posts." });
+            toast({ type: "error", title: "خطأ", description: "تعذر جلب المقالات." });
         } finally {
             setIsLoading(false);
         }
@@ -208,10 +208,10 @@ export default function ManageBlogPage() {
     const handleDelete = async (id: string) => {
         const result = await deleteBlogPost(id);
         if (result.success) {
-            toast({ type: "success", title: "Success", description: result.message });
+            toast({ type: "success", title: "نجاح", description: result.message });
             fetchPosts();
         } else {
-            toast({ type: "error", title: "Error", description: result.message });
+            toast({ type: "error", title: "خطأ", description: result.message });
         }
     };
 
@@ -240,17 +240,17 @@ export default function ManageBlogPage() {
         <div className="container mx-auto space-y-6">
             <div className="flex justify-between items-start">
                 <PageHeader
-                    title="Manage Blog"
-                    description="Create, edit, and publish blog posts."
+                    title="إدارة المدونة"
+                    description="إنشاء وتحرير ونشر المقالات."
                 />
                 <Button onClick={handleAdd}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Post
+                    <PlusCircle className="ml-2 h-4 w-4" /> إضافة مقال
                 </Button>
             </div>
 
             <Card>
                 <CardHeader>
-                    <CardTitle>All Posts</CardTitle>
+                    <CardTitle>كل المقالات</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
@@ -259,10 +259,10 @@ export default function ManageBlogPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>Title</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Last Updated</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
+                                    <TableHead>العنوان</TableHead>
+                                    <TableHead>الحالة</TableHead>
+                                    <TableHead>آخر تحديث</TableHead>
+                                    <TableHead className="text-left">الإجراءات</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -271,11 +271,11 @@ export default function ManageBlogPage() {
                                         <TableCell className="font-medium">{post.title}</TableCell>
                                         <TableCell>
                                             <Badge variant={post.status === 'published' ? 'default' : 'secondary'}>
-                                                {post.status}
+                                                {post.status === 'published' ? 'منشور' : 'مسودة'}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>{format(post.updatedAt, "PP")}</TableCell>
-                                        <TableCell className="text-right space-x-2">
+                                        <TableCell className="text-left space-x-2">
                                             <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleEdit(post)}>
                                                 <Edit className="h-4 w-4" />
                                             </Button>
@@ -287,12 +287,12 @@ export default function ManageBlogPage() {
                                                 </AlertDialogTrigger>
                                                 <AlertDialogContent>
                                                     <AlertDialogHeader>
-                                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                        <AlertDialogDescription>This will permanently delete this post.</AlertDialogDescription>
+                                                        <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                                        <AlertDialogDescription>سيؤدي هذا إلى حذف هذا المقال بشكل دائم.</AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
-                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleDelete(post.id)}>Delete</AlertDialogAction>
+                                                        <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleDelete(post.id)}>حذف</AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
@@ -308,7 +308,7 @@ export default function ManageBlogPage() {
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                  <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>{editingPost ? "Edit" : "Add New"} Post</DialogTitle>
+                        <DialogTitle>{editingPost ? "تعديل" : "إضافة"} مقال جديد</DialogTitle>
                     </DialogHeader>
                     <div className="p-1">
                         <PostForm 

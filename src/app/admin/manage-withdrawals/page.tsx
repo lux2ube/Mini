@@ -37,16 +37,16 @@ function RejectWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: str
 
     const handleSubmit = async () => {
         if (!reason.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Rejection reason cannot be empty.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: 'سبب الرفض لا يمكن أن يكون فارغاً.' });
             return;
         }
         setIsSubmitting(true);
         const result = await rejectWithdrawal(withdrawalId, reason);
         if (result.success) {
-            toast({ title: 'Success', description: result.message });
+            toast({ title: 'نجاح', description: result.message });
             onSuccess();
         } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
+            toast({ variant: 'destructive', title: 'خطأ', description: result.message });
         }
         setIsSubmitting(false);
     }
@@ -54,29 +54,29 @@ function RejectWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: str
     return (
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Reject Withdrawal</AlertDialogTitle>
+                <AlertDialogTitle>رفض طلب السحب</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Please provide a reason for rejecting this withdrawal. The user will be notified.
+                    يرجى تقديم سبب لرفض هذا السحب. سيتم إخطار المستخدم.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2">
-                <Label htmlFor="reason">Rejection Reason</Label>
+                <Label htmlFor="reason">سبب الرفض</Label>
                 <div className="relative">
-                    <MessageSquare className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <MessageSquare className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
                     <Textarea 
                         id="reason" 
                         value={reason} 
                         onChange={(e) => setReason(e.target.value)}
-                        placeholder="e.g., Insufficient trading activity."
-                        className="pl-10"
+                        placeholder="مثال: نشاط تداول غير كافٍ."
+                        className="pr-10"
                     />
                 </div>
             </div>
             <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
                 <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Confirm Reject
+                    {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                    تأكيد الرفض
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -90,16 +90,16 @@ function ApproveWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: st
 
     const handleSubmit = async () => {
         if (!txId.trim()) {
-            toast({ variant: 'destructive', title: 'Error', description: 'Transaction ID cannot be empty.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: 'معرف المعاملة لا يمكن أن يكون فارغًا.' });
             return;
         }
         setIsSubmitting(true);
         const result = await approveWithdrawal(withdrawalId, txId);
         if (result.success) {
-            toast({ title: 'Success', description: result.message });
+            toast({ title: 'نجاح', description: result.message });
             onSuccess();
         } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
+            toast({ variant: 'destructive', title: 'خطأ', description: result.message });
         }
         setIsSubmitting(false);
     }
@@ -107,29 +107,29 @@ function ApproveWithdrawalDialog({ withdrawalId, onSuccess }: { withdrawalId: st
     return (
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Approve Withdrawal</AlertDialogTitle>
+                <AlertDialogTitle>الموافقة على السحب</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Enter the blockchain transaction ID (TXID) or internal reference to confirm this withdrawal has been sent.
+                    أدخل معرف معاملة البلوك تشين (TXID) أو المرجع الداخلي لتأكيد إرسال هذا السحب.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-2">
-                <Label htmlFor="txid">Transaction ID / Reference</Label>
+                <Label htmlFor="txid">معرف المعاملة / المرجع</Label>
                 <div className="relative">
-                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Hash className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
                         id="txid" 
                         value={txId} 
                         onChange={(e) => setTxId(e.target.value)}
                         placeholder="0x..."
-                        className="pl-10"
+                        className="pr-10"
                     />
                 </div>
             </div>
             <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
                 <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Approve
+                    {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                    الموافقة
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -177,7 +177,7 @@ export default function ManageWithdrawalsPage() {
             setWithdrawals(data);
         } catch (error) {
             console.error("Failed to fetch withdrawals:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch withdrawals.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: 'تعذر جلب طلبات السحب.' });
         } finally {
             setIsLoading(false);
         }
@@ -195,13 +195,22 @@ export default function ManageWithdrawalsPage() {
             default: return 'outline';
         }
     }
+    
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'Completed': return 'مكتمل';
+            case 'Processing': return 'قيد المعالجة';
+            case 'Failed': return 'فشل';
+            default: return status;
+        }
+    }
 
     return (
         <div className="container mx-auto space-y-6">
-            <PageHeader title="Manage Withdrawals" description="Process user withdrawal requests." />
+            <PageHeader title="إدارة السحوبات" description="معالجة طلبات السحب من المستخدمين." />
             <Card>
                 <CardHeader>
-                    <CardTitle>All Withdrawal Requests</CardTitle>
+                    <CardTitle>جميع طلبات السحب</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
@@ -211,14 +220,14 @@ export default function ManageWithdrawalsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>User ID</TableHead>
-                                        <TableHead>Amount</TableHead>
-                                        <TableHead>Method</TableHead>
-                                        <TableHead>Details</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Reason</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead>التاريخ</TableHead>
+                                        <TableHead>معرف المستخدم</TableHead>
+                                        <TableHead>المبلغ</TableHead>
+                                        <TableHead>الطريقة</TableHead>
+                                        <TableHead>التفاصيل</TableHead>
+                                        <TableHead>الحالة</TableHead>
+                                        <TableHead>السبب</TableHead>
+                                        <TableHead className="text-left">الإجراءات</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -240,17 +249,17 @@ export default function ManageWithdrawalsPage() {
                                                         {detailsChanged && (
                                                             <Alert variant="destructive" className="p-2">
                                                                 <AlertTriangle className="h-4 w-4" />
-                                                                <AlertTitle className="text-xs font-bold">DETAILS CHANGED</AlertTitle>
+                                                                <AlertTitle className="text-xs font-bold">تم تغيير التفاصيل</AlertTitle>
                                                                 <AlertDescription className="text-xs">
-                                                                    Previous: {w.previousWithdrawalDetails && Object.values(w.previousWithdrawalDetails).join(', ')}
+                                                                    السابق: {w.previousWithdrawalDetails && Object.values(w.previousWithdrawalDetails).join(', ')}
                                                                 </AlertDescription>
                                                             </Alert>
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell><Badge variant={getStatusVariant(w.status)}>{w.status}</Badge></TableCell>
+                                                <TableCell><Badge variant={getStatusVariant(w.status)}>{getStatusText(w.status)}</Badge></TableCell>
                                                 <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{w.rejectionReason}</TableCell>
-                                                <TableCell className="text-right space-x-2">
+                                                <TableCell className="text-left space-x-2">
                                                     {w.status === 'Processing' && (
                                                         <>
                                                         <AlertDialog>

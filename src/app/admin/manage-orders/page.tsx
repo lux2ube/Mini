@@ -38,7 +38,7 @@ export default function ManageOrdersPage() {
             const data = await getOrders();
             setOrders(data);
         } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Could not fetch orders." });
+            toast({ variant: "destructive", title: "خطأ", description: "تعذر جلب الطلبات." });
         } finally {
             setIsLoading(false);
         }
@@ -51,10 +51,10 @@ export default function ManageOrdersPage() {
     const handleStatusUpdate = async (orderId: string, status: Order['status']) => {
         const result = await updateOrderStatus(orderId, status);
         if (result.success) {
-            toast({ title: "Success", description: result.message });
+            toast({ title: "نجاح", description: result.message });
             fetchOrders(); // Refetch to show updated status
         } else {
-            toast({ variant: "destructive", title: "Error", description: result.message });
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
         }
     };
     
@@ -66,17 +66,34 @@ export default function ManageOrdersPage() {
             case 'Cancelled': return 'destructive';
             default: return 'outline';
         }
+    };
+    
+    const getStatusText = (status: Order['status']) => {
+        switch (status) {
+            case 'Delivered': return 'تم التوصيل';
+            case 'Pending': return 'قيد الانتظار';
+            case 'Shipped': return 'تم الشحن';
+            case 'Cancelled': return 'ملغي';
+            default: return status;
+        }
+    };
+
+    const statusOptions = {
+        'Pending': 'تحديد كـ قيد الانتظار',
+        'Shipped': 'تحديد كـ تم الشحن',
+        'Delivered': 'تحديد كـ تم التوصيل',
+        'Cancelled': 'تحديد كـ ملغي',
     }
 
     return (
         <div className="container mx-auto space-y-6">
             <PageHeader
-                title="Manage Orders"
-                description="View and update user store orders."
+                title="إدارة الطلبات"
+                description="عرض وتحديث طلبات متجر المستخدمين."
             />
             <Card>
                 <CardHeader>
-                    <CardTitle>All Orders</CardTitle>
+                    <CardTitle>كل الطلبات</CardTitle>
                 </CardHeader>
                 <CardContent>
                     {isLoading ? (
@@ -86,13 +103,13 @@ export default function ManageOrdersPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Product</TableHead>
-                                        <TableHead>Customer</TableHead>
-                                        <TableHead>Phone</TableHead>
-                                        <TableHead>Price</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead>التاريخ</TableHead>
+                                        <TableHead>المنتج</TableHead>
+                                        <TableHead>العميل</TableHead>
+                                        <TableHead>الهاتف</TableHead>
+                                        <TableHead>السعر</TableHead>
+                                        <TableHead>الحالة</TableHead>
+                                        <TableHead className="text-left">الإجراءات</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -109,16 +126,16 @@ export default function ManageOrdersPage() {
                                             </TableCell>
                                             <TableCell>{order.deliveryPhoneNumber}</TableCell>
                                             <TableCell>${order.price.toFixed(2)}</TableCell>
-                                            <TableCell><Badge variant={getStatusVariant(order.status)}>{order.status}</Badge></TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell><Badge variant={getStatusVariant(order.status)}>{getStatusText(order.status)}</Badge></TableCell>
+                                            <TableCell className="text-left">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent>
-                                                        {(['Pending', 'Shipped', 'Delivered', 'Cancelled'] as const).map(status => (
+                                                        {(Object.keys(statusOptions) as Array<keyof typeof statusOptions>).map(status => (
                                                             <DropdownMenuItem key={status} onClick={() => handleStatusUpdate(order.id, status)} disabled={order.status === status}>
-                                                                Mark as {status}
+                                                                {statusOptions[status]}
                                                             </DropdownMenuItem>
                                                         ))}
                                                     </DropdownMenuContent>

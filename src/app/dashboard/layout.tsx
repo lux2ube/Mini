@@ -14,7 +14,7 @@ import {
     ShieldCheck,
     Lock,
     Activity,
-    ChevronRight,
+    ChevronLeft,
     Home,
     Wallet,
     Briefcase,
@@ -90,7 +90,7 @@ function NotificationBell() {
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="end">
                 <div className="p-2 border-b">
-                    <h3 className="font-semibold text-sm">Notifications</h3>
+                    <h3 className="font-semibold text-sm">الإشعارات</h3>
                 </div>
                 <ScrollArea className="h-80">
                     <div className="p-2 space-y-1">
@@ -104,14 +104,14 @@ function NotificationBell() {
                                 </Link>
                             ))
                         ) : (
-                            <p className="p-4 text-center text-sm text-muted-foreground">No notifications yet.</p>
+                            <p className="p-4 text-center text-sm text-muted-foreground">لا توجد إشعارات بعد.</p>
                         )}
                     </div>
                 </ScrollArea>
                 <div className="p-2 border-t">
                     <Button variant="ghost" size="sm" className="w-full text-sm" onClick={handleMarkAsRead}>
-                        <Check className="mr-2 h-4 w-4" />
-                        Mark all as read
+                        <Check className="ml-2 h-4 w-4" />
+                        وضع علامة "مقروء" على الكل
                     </Button>
                 </div>
             </PopoverContent>
@@ -120,10 +120,10 @@ function NotificationBell() {
 }
 
 const settingsLinks = [
-    { href: "/dashboard/profile", icon: User, label: "Profile", description: "Edit your personal information." },
-    { href: "/dashboard/settings/verification", icon: ShieldCheck, label: "Verification", description: "Complete KYC and unlock features." },
-    { href: "/dashboard/settings/security", icon: Lock, label: "Security", description: "Manage password and 2FA." },
-    { href: "/dashboard/settings/activity-logs", icon: Activity, label: "Activity Logs", description: "Review recent account activity." },
+    { href: "/dashboard/profile", icon: User, label: "الملف الشخصي", description: "تعديل معلوماتك الشخصية." },
+    { href: "/dashboard/settings/verification", icon: ShieldCheck, label: "التحقق", description: "أكمل KYC وافتح الميزات." },
+    { href: "/dashboard/settings/security", icon: Lock, label: "الأمان", description: "إدارة كلمة المرور والمصادقة الثنائية." },
+    { href: "/dashboard/settings/activity-logs", icon: Activity, label: "سجلات النشاط", description: "مراجعة نشاط الحساب الأخير." },
 ];
 
 const WhatsAppIcon = () => (
@@ -135,8 +135,8 @@ const TelegramIcon = () => (
 );
 
 const supportLinks = [
-    { href: "#", icon: WhatsAppIcon, label: "WhatsApp" },
-    { href: "#", icon: TelegramIcon, label: "Telegram" },
+    { href: "#", icon: WhatsAppIcon, label: "واتساب" },
+    { href: "#", icon: TelegramIcon, label: "تليجرام" },
 ]
 
 function SettingsSidebar() {
@@ -160,8 +160,8 @@ function SettingsSidebar() {
 
     return (
         <div className="flex flex-col h-full">
-            <SheetHeader className="p-4 border-b text-left">
-                <SheetTitle>Settings</SheetTitle>
+            <SheetHeader className="p-4 border-b text-right">
+                <SheetTitle>الإعدادات</SheetTitle>
             </SheetHeader>
             <div className="p-4 space-y-4">
                 <Link href="/dashboard/profile">
@@ -191,14 +191,14 @@ function SettingsSidebar() {
                         >
                             <link.icon className="h-5 w-5" />
                             <p className="text-sm font-medium">{link.label}</p>
-                            <ChevronRight className="h-4 w-4 ml-auto" />
+                            <ChevronLeft className="h-4 w-4 mr-auto" />
                         </Link>
                     ))}
                 </nav>
                 
                 <Separator />
                 
-                <p className="px-3 text-xs font-semibold text-muted-foreground">Support</p>
+                <p className="px-3 text-xs font-semibold text-muted-foreground">الدعم</p>
                  <nav className="flex flex-col gap-2">
                     {supportLinks.map(link => (
                         <Link
@@ -208,17 +208,17 @@ function SettingsSidebar() {
                         >
                             <link.icon />
                             <p className="text-sm font-medium">{link.label}</p>
-                             <ChevronRight className="h-4 w-4 ml-auto" />
+                             <ChevronLeft className="h-4 w-4 mr-auto" />
                         </Link>
                     ))}
                 </nav>
 
                 <Separator />
                 
-                 <p className="px-3 text-xs font-semibold text-muted-foreground">Preferences</p>
+                 <p className="px-3 text-xs font-semibold text-muted-foreground">التفضيلات</p>
                  <div className="flex items-center gap-3 rounded-md px-3 py-2">
                     <SunMoon className="h-5 w-5 text-muted-foreground" />
-                    <Label htmlFor="dark-mode" className="text-sm font-medium flex-grow">Theme</Label>
+                    <Label htmlFor="dark-mode" className="text-sm font-medium flex-grow">السمة</Label>
                     <Switch id="dark-mode" checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                 </div>
                  <Link
@@ -226,16 +226,16 @@ function SettingsSidebar() {
                     className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
                 >
                     <Languages className="h-5 w-5" />
-                    <p className="text-sm font-medium">Language</p>
-                    <span className="ml-auto text-sm text-muted-foreground">English</span>
-                    <ChevronRight className="h-4 w-4" />
+                    <p className="text-sm font-medium">اللغة</p>
+                    <span className="mr-auto text-sm text-muted-foreground">العربية</span>
+                    <ChevronLeft className="h-4 w-4" />
                 </Link>
 
             </div>
              <div className="mt-auto p-4 border-t">
                 <Link href="/" className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10">
                     <LogOut className="h-5 w-5" />
-                    <span className="text-sm font-medium">Logout</span>
+                    <span className="text-sm font-medium">تسجيل الخروج</span>
                 </Link>
             </div>
         </div>
@@ -245,13 +245,13 @@ function SettingsSidebar() {
 function BottomNavBar() {
     const pathname = usePathname();
     const navItems = [
-        { href: "/dashboard", icon: Home, label: "Home" },
-        { href: "/dashboard/withdraw", icon: Wallet, label: "Wallet" },
-        { href: "/dashboard/store", icon: Store, label: "Store" },
-        { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
+        { href: "/dashboard", icon: Home, label: "الرئيسية" },
+        { href: "/dashboard/withdraw", icon: Wallet, label: "المحفظة" },
+        { href: "/dashboard/store", icon: Store, label: "المتجر" },
+        { href: "/dashboard/referrals", icon: Gift, label: "الدعوات" },
     ];
 
-    const fabItem = { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" };
+    const fabItem = { href: "/dashboard/brokers", icon: Briefcase, label: "الوسطاء" };
 
     return (
         <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t">
@@ -294,19 +294,19 @@ export default function DashboardLayout({
                             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                                 <svg className="w-6 h-6 text-primary-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"></path><path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path><path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
                             </div>
-                            <span className="font-headline text-lg hidden sm:inline-block">Cashback Companion</span>
+                            <span className="font-headline text-lg hidden sm:inline-block">رفيق الكاش باك</span>
                         </Link>
                         
-                        <div className="ml-auto flex items-center gap-2">
+                        <div className="mr-auto flex items-center gap-2">
                             <NotificationBell />
                             <Sheet>
                                 <SheetTrigger asChild>
                                     <Button variant="secondary" size="icon" className="rounded-full h-9 w-9">
                                         <CircleUser className="h-5 w-5" />
-                                        <span className="sr-only">Open settings panel</span>
+                                        <span className="sr-only">فتح لوحة الإعدادات</span>
                                     </Button>
                                 </SheetTrigger>
-                                <SheetContent side="right" className="p-0 w-full max-w-xs">
+                                <SheetContent side="left" className="p-0 w-full max-w-xs">
                                     <SettingsSidebar />
                                 </SheetContent>
                             </Sheet>
@@ -321,5 +321,3 @@ export default function DashboardLayout({
         </AuthProvider>
     )
 }
-
-    

@@ -15,8 +15,8 @@ export default async function BlogPage() {
     return (
         <div className="max-w-5xl mx-auto px-4 py-8 space-y-12">
             <PageHeader
-                title="The Cashback Companion Blog"
-                description="News, updates, and trading insights from our team."
+                title="مدونة رفيق الكاش باك"
+                description="أخبار وتحديثات ورؤى تداول من فريقنا."
             />
 
             {posts.length > 0 ? (
@@ -37,14 +37,14 @@ export default async function BlogPage() {
                                     <h2 className="text-lg font-bold font-headline group-hover:text-primary transition-colors">{post.title}</h2>
                                     <p className="text-sm text-muted-foreground mt-2 flex-grow">{post.excerpt}</p>
                                     <div className="mt-4 flex justify-between items-center text-xs text-muted-foreground">
-                                        <span>By {post.authorName}</span>
+                                        <span>بواسطة {post.authorName}</span>
                                         <time dateTime={post.createdAt.toISOString()}>
                                             {format(post.createdAt, 'PP')}
                                         </time>
                                     </div>
                                     <div className="mt-2">
                                         {post.tags.map(tag => (
-                                            <Badge key={tag} variant="secondary" className="mr-1">{tag}</Badge>
+                                            <Badge key={tag} variant="secondary" className="ml-1">{tag}</Badge>
                                         ))}
                                     </div>
                                 </CardContent>
@@ -54,8 +54,8 @@ export default async function BlogPage() {
                 </div>
             ) : (
                 <div className="text-center py-20">
-                    <h2 className="text-2xl font-semibold">No posts yet!</h2>
-                    <p className="text-muted-foreground mt-2">Check back soon for news and updates.</p>
+                    <h2 className="text-2xl font-semibold">لا توجد مقالات بعد!</h2>
+                    <p className="text-muted-foreground mt-2">تحقق مرة أخرى قريبًا للحصول على الأخبار والتحديثات.</p>
                 </div>
             )}
         </div>

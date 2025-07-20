@@ -1,5 +1,5 @@
 
-"use client"
+"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -38,9 +38,9 @@ export function BrokerCard({ broker }: { broker: Broker }) {
 
   const name = isNewStructure ? broker.basicInfo.broker_name : broker.name;
   const rating = isNewStructure ? (broker.reputation?.wikifx_score ?? 0) / 2 : broker.rating;
-  const description = isNewStructure ? `Founded in ${broker.basicInfo.founded_year}` : broker.description;
+  const description = isNewStructure ? `تأسست عام ${broker.basicInfo.founded_year}` : broker.description;
   const cashbackPerLot = isNewStructure ? broker.cashback?.cashback_per_lot ?? 0 : (broker as any).cashbackRate?.amount ?? 0;
-  const cashbackFrequency = isNewStructure ? broker.cashback?.cashback_frequency : "Daily";
+  const cashbackFrequency = isNewStructure ? broker.cashback?.cashback_frequency : "يومي";
   const swapFree = isNewStructure ? broker.tradingConditions?.swap_free : (broker.features as any)?.find(f => f.text.toLowerCase().includes("islamic"))?.available ?? false;
   const copyTrading = isNewStructure ? broker.additionalFeatures?.copy_trading : (broker.features as any)?.find(f => f.text.toLowerCase().includes("copy"))?.available ?? false;
   
@@ -79,23 +79,23 @@ export function BrokerCard({ broker }: { broker: Broker }) {
             </Link>
             
             <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="space-y-1 text-center border-r pr-2">
-                    <p className="text-xs text-muted-foreground">Cashback per Lot</p>
+                <div className="space-y-1 text-center border-l pl-2">
+                    <p className="text-xs text-muted-foreground">كاش باك لكل لوت</p>
                     <p className="font-bold text-lg text-primary">${cashbackPerLot.toFixed(2)}</p>
                     <p className="text-xs text-muted-foreground">{cashbackFrequency}</p>
                 </div>
-                <div className="space-y-1 pl-2">
+                <div className="space-y-1 pr-2">
                     <div className="flex items-center gap-1.5 text-xs">
                          <HandCoins className="h-4 w-4 text-primary flex-shrink-0" />
-                         <span className="flex-1">Rebates Available</span>
+                         <span className="flex-1">الخصومات متاحة</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs">
                         {swapFree ? <Check className="h-4 w-4 text-green-500 flex-shrink-0" /> : <X className="h-4 w-4 text-red-500 flex-shrink-0" />}
-                        <span className="flex-1">Islamic Account</span>
+                        <span className="flex-1">حساب إسلامي</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs">
                        {copyTrading ? <Check className="h-4 w-4 text-green-500 flex-shrink-0" /> : <X className="h-4 w-4 text-red-500 flex-shrink-0" />}
-                        <span className="flex-1">Copy Trading</span>
+                        <span className="flex-1">نسخ التداول</span>
                     </div>
                 </div>
             </div>
@@ -103,12 +103,12 @@ export function BrokerCard({ broker }: { broker: Broker }) {
             <div className="space-y-2">
                 <Button asChild className="w-full" size="sm">
                     <Link href={`/dashboard/brokers/${broker.id}/link?action=new`}>
-                        Open new {name} account.
+                        فتح حساب جديد مع {name}.
                     </Link>
                 </Button>
                 <Button asChild className="w-full" variant="secondary" size="sm">
                     <Link href={`/dashboard/brokers/${broker.id}/link?action=existing`}>
-                        I already have {name} account.
+                        لدي بالفعل حساب مع {name}.
                     </Link>
                 </Button>
             </div>

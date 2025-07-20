@@ -43,7 +43,7 @@ export default function ManageBannerPage() {
                 const settings = await getBannerSettings();
                 form.reset(settings);
             } catch (error) {
-                toast({ variant: "destructive", title: "Error", description: "Could not fetch banner settings." });
+                toast({ variant: "destructive", title: "خطأ", description: "تعذر جلب إعدادات البانر." });
             } finally {
                 setIsLoading(false);
             }
@@ -55,9 +55,9 @@ export default function ManageBannerPage() {
         setIsSubmitting(true);
         const result = await updateBannerSettings(data);
         if (result.success) {
-            toast({ title: "Success", description: result.message });
+            toast({ title: "نجاح", description: result.message });
         } else {
-            toast({ variant: "destructive", title: "Error", description: result.message });
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
         }
         setIsSubmitting(false);
     };
@@ -73,15 +73,15 @@ export default function ManageBannerPage() {
     return (
         <div className="container mx-auto space-y-6">
             <PageHeader 
-                title="Manage Banner"
-                description="Update the promotional banner displayed to users."
+                title="إدارة البانر"
+                description="تحديث البانر الترويجي المعروض للمستخدمين."
             />
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Banner Settings</CardTitle>
+                    <CardTitle>إعدادات البانر</CardTitle>
                     <CardDescription>
-                        Paste your ad script code below. This will be rendered on the user dashboard.
+                        ألصق كود السكريبت الإعلاني أدناه. سيتم عرضه في لوحة تحكم المستخدم.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -93,9 +93,9 @@ export default function ManageBannerPage() {
                                 render={({ field }) => (
                                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                         <div className="space-y-0.5">
-                                            <FormLabel className="text-base">Enable Banner</FormLabel>
+                                            <FormLabel className="text-base">تفعيل البانر</FormLabel>
                                             <FormDescription>
-                                                Turn this on to show the banner on the user dashboard.
+                                                قم بتشغيل هذا الخيار لعرض البانر في لوحة تحكم المستخدم.
                                             </FormDescription>
                                         </div>
                                         <FormControl>
@@ -112,7 +112,7 @@ export default function ManageBannerPage() {
                                 name="scriptCode"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Banner Script Code</FormLabel>
+                                        <FormLabel>كود سكريبت البانر</FormLabel>
                                         <FormControl>
                                             <Textarea
                                                 placeholder='<script src="..."></script>'
@@ -121,7 +121,7 @@ export default function ManageBannerPage() {
                                             />
                                         </FormControl>
                                         <FormDescription>
-                                            Enter the full HTML script tag for your ad banner.
+                                            أدخل وسم السكريبت الكامل للبانر الإعلاني الخاص بك.
                                         </FormDescription>
                                         <FormMessage />
                                     </FormItem>
@@ -129,8 +129,8 @@ export default function ManageBannerPage() {
                             />
                             
                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Settings
+                                {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                                حفظ الإعدادات
                             </Button>
                         </form>
                     </Form>

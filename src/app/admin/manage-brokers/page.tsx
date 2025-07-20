@@ -81,10 +81,10 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
   const handleDelete = async () => {
       const result = await deleteBroker(broker.id);
       if (result.success) {
-        toast({ title: 'Success', description: 'Broker deleted.'})
+        toast({ title: 'نجاح', description: 'تم حذف الوسيط.'})
         onSuccess();
       } else {
-        toast({ variant: 'destructive', title: 'Error', description: result.message})
+        toast({ variant: 'destructive', title: 'خطأ', description: result.message})
       }
   }
 
@@ -118,7 +118,7 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
       <TableCell className="flex items-center gap-1">
           {wikifxScore ?? 'N/A'} <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
       </TableCell>
-      <TableCell className="space-x-2 text-right">
+      <TableCell className="space-x-2 text-left">
         <BrokerFormDialog
           broker={broker}
           onSuccess={onSuccess}
@@ -143,16 +143,15 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+              <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete the
-                broker.
+                لا يمكن التراجع عن هذا الإجراء. سيؤدي هذا إلى حذف الوسيط بشكل دائم.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
               <AlertDialogAction onClick={handleDelete}>
-                Continue
+                متابعة
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -176,8 +175,8 @@ export default function ManageBrokersPage() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch brokers.",
+        title: "خطأ",
+        description: "فشل جلب الوسطاء.",
       });
     } finally {
       setIsLoading(false);
@@ -209,11 +208,11 @@ export default function ManageBrokersPage() {
       const orderedIds = newOrderBrokers.map((b) => b.id);
       const result = await updateBrokerOrder(orderedIds);
       if (result.success) {
-        toast({ title: "Success", description: "Broker order updated." });
+        toast({ title: "نجاح", description: "تم تحديث ترتيب الوسطاء." });
       } else {
         toast({
           variant: "destructive",
-          title: "Error",
+          title: "خطأ",
           description: result.message,
         });
         // Revert optimistic update
@@ -234,8 +233,8 @@ export default function ManageBrokersPage() {
     <div className="container mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <PageHeader
-          title="Manage Brokers"
-          description="Add, edit, or remove partner brokers."
+          title="إدارة الوسطاء"
+          description="إضافة أو تعديل أو إزالة الوسطاء الشركاء."
         />
         <BrokerFormDialog
           onSuccess={fetchBrokers}
@@ -243,15 +242,15 @@ export default function ManageBrokersPage() {
           setIsOpen={setIsFormOpen}
         >
           <Button onClick={() => setIsFormOpen(true)}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Broker
+            <PlusCircle className="ml-2 h-4 w-4" />
+            إضافة وسيط
           </Button>
         </BrokerFormDialog>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Current Brokers</CardTitle>
+          <CardTitle>الوسطاء الحاليون</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
@@ -264,11 +263,11 @@ export default function ManageBrokersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10"></TableHead>
-                    <TableHead>Logo</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Risk Level</TableHead>
-                    <TableHead>WikiFX Score</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>الشعار</TableHead>
+                    <TableHead>الاسم</TableHead>
+                    <TableHead>مستوى المخاطرة</TableHead>
+                    <TableHead>تقييم WikiFX</TableHead>
+                    <TableHead className="text-left">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
                 <SortableContext

@@ -36,8 +36,8 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const formSchema = z.object({
-    name: z.string().min(2, "Category name must be at least 2 characters."),
-    description: z.string().min(10, "Description must be at least 10 characters."),
+    name: z.string().min(2, "يجب أن يكون اسم الفئة حرفين على الأقل."),
+    description: z.string().min(10, "يجب أن يكون الوصف 10 أحرف على الأقل."),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -60,7 +60,7 @@ export default function ManageCategoriesPage() {
             const data = await getCategories();
             setCategories(data);
         } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Could not fetch categories." });
+            toast({ variant: "destructive", title: "خطأ", description: "تعذر جلب الفئات." });
         } finally {
             setIsLoading(false);
         }
@@ -77,12 +77,12 @@ export default function ManageCategoriesPage() {
             : await addCategory(data);
 
         if (result.success) {
-            toast({ title: "Success", description: result.message });
+            toast({ title: "نجاح", description: result.message });
             form.reset();
             setEditingCategory(null);
             fetchCategories();
         } else {
-            toast({ variant: "destructive", title: "Error", description: result.message });
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
         }
         setIsSubmitting(false);
     };
@@ -100,25 +100,25 @@ export default function ManageCategoriesPage() {
     const handleDelete = async (id: string) => {
         const result = await deleteCategory(id);
         if (result.success) {
-            toast({ title: "Success", description: result.message });
+            toast({ title: "نجاح", description: result.message });
             fetchCategories();
         } else {
-            toast({ variant: "destructive", title: "Error", description: result.message });
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
         }
     };
 
     return (
         <div className="container mx-auto space-y-6">
             <PageHeader
-                title="Manage Product Categories"
-                description="Add, edit, or remove categories for your store."
+                title="إدارة فئات المنتجات"
+                description="إضافة أو تعديل أو إزالة الفئات لمتجرك."
             />
 
             <div className="grid md:grid-cols-3 gap-6">
                 <div className="md:col-span-1">
                     <Card>
                         <CardHeader>
-                            <CardTitle>{editingCategory ? "Edit" : "Add"} Category</CardTitle>
+                            <CardTitle>{editingCategory ? "تعديل" : "إضافة"} فئة</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <Form {...form}>
@@ -128,8 +128,8 @@ export default function ManageCategoriesPage() {
                                         name="name"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Category Name</FormLabel>
-                                                <FormControl><Input placeholder="e.g., T-Shirts" {...field} /></FormControl>
+                                                <FormLabel>اسم الفئة</FormLabel>
+                                                <FormControl><Input placeholder="مثال: قمصان" {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -139,8 +139,8 @@ export default function ManageCategoriesPage() {
                                         name="description"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Description</FormLabel>
-                                                <FormControl><Textarea placeholder="Describe the category..." {...field} /></FormControl>
+                                                <FormLabel>الوصف</FormLabel>
+                                                <FormControl><Textarea placeholder="صف الفئة..." {...field} /></FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
@@ -148,12 +148,12 @@ export default function ManageCategoriesPage() {
                                     <div className="flex gap-2">
                                         {editingCategory && (
                                             <Button type="button" variant="secondary" onClick={handleCancelEdit} className="w-full">
-                                                Cancel
+                                                إلغاء
                                             </Button>
                                         )}
                                         <Button type="submit" disabled={isSubmitting} className="w-full">
-                                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            {editingCategory ? "Save Changes" : "Add Category"}
+                                            {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                                            {editingCategory ? "حفظ التغييرات" : "إضافة فئة"}
                                         </Button>
                                     </div>
                                 </form>
@@ -164,7 +164,7 @@ export default function ManageCategoriesPage() {
                 <div className="md:col-span-2">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Existing Categories</CardTitle>
+                            <CardTitle>الفئات الحالية</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {isLoading ? (
@@ -173,9 +173,9 @@ export default function ManageCategoriesPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Name</TableHead>
-                                            <TableHead>Description</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
+                                            <TableHead>الاسم</TableHead>
+                                            <TableHead>الوصف</TableHead>
+                                            <TableHead className="text-left">الإجراءات</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -183,7 +183,7 @@ export default function ManageCategoriesPage() {
                                             <TableRow key={cat.id}>
                                                 <TableCell className="font-medium">{cat.name}</TableCell>
                                                 <TableCell className="text-sm text-muted-foreground">{cat.description}</TableCell>
-                                                <TableCell className="text-right space-x-2">
+                                                <TableCell className="text-left space-x-2">
                                                     <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleEdit(cat)}>
                                                         <Edit className="h-4 w-4" />
                                                     </Button>
@@ -195,14 +195,14 @@ export default function ManageCategoriesPage() {
                                                       </AlertDialogTrigger>
                                                       <AlertDialogContent>
                                                         <AlertDialogHeader>
-                                                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                                          <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
                                                           <AlertDialogDescription>
-                                                            This will permanently delete the category. This action cannot be undone.
+                                                            سيؤدي هذا إلى حذف الفئة بشكل دائم. لا يمكن التراجع عن هذا الإجراء.
                                                           </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
-                                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                          <AlertDialogAction onClick={() => handleDelete(cat.id)}>Delete</AlertDialogAction>
+                                                          <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                          <AlertDialogAction onClick={() => handleDelete(cat.id)}>حذف</AlertDialogAction>
                                                         </AlertDialogFooter>
                                                       </AlertDialogContent>
                                                     </AlertDialog>

@@ -27,7 +27,7 @@ export default function SecurityLogsPage() {
                 setLogs(fetchedLogs);
             } catch (error) {
                 console.error("Failed to fetch logs:", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch activity logs.' });
+                toast({ variant: 'destructive', title: 'خطأ', description: 'تعذر جلب سجلات النشاط.' });
             } finally {
                 setIsLoading(false);
             }
@@ -47,6 +47,16 @@ export default function SecurityLogsPage() {
         );
     }, [searchQuery, logs]);
 
+    const getEventText = (event: ActivityLog['event']) => {
+        const texts = {
+            'login': 'تسجيل دخول',
+            'signup': 'تسجيل جديد',
+            'withdrawal_request': 'طلب سحب',
+            'store_purchase': 'شراء من المتجر',
+        };
+        return texts[event] || event;
+    }
+
     const getEventVariant = (event: ActivityLog['event']) => {
         switch (event) {
             case 'login': return 'default';
@@ -59,20 +69,20 @@ export default function SecurityLogsPage() {
 
     return (
         <div className="container mx-auto space-y-6">
-            <PageHeader title="Security & Activity Logs" description="Monitor key user activities across the application." />
+            <PageHeader title="سجلات الأمان والنشاط" description="مراقبة أنشطة المستخدمين الرئيسية عبر التطبيق." />
             <Card>
                 <CardHeader>
-                    <CardTitle>All Logs</CardTitle>
+                    <CardTitle>كل السجلات</CardTitle>
                     <CardDescription>
-                        Found {filteredLogs.length} of {logs.length} log entries.
+                        تم العثور على {filteredLogs.length} من {logs.length} سجل.
                     </CardDescription>
                     <div className="relative max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Search by User ID, event, IP, or country..."
+                            placeholder="بحث حسب معرف المستخدم، الحدث، IP، أو البلد..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
+                            className="pr-10"
                         />
                     </div>
                 </CardHeader>
@@ -84,11 +94,11 @@ export default function SecurityLogsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Timestamp</TableHead>
-                                        <TableHead>Event</TableHead>
-                                        <TableHead>User ID</TableHead>
-                                        <TableHead>Location</TableHead>
-                                        <TableHead>User Agent</TableHead>
+                                        <TableHead>الوقت</TableHead>
+                                        <TableHead>الحدث</TableHead>
+                                        <TableHead>معرف المستخدم</TableHead>
+                                        <TableHead>الموقع</TableHead>
+                                        <TableHead>متصفح المستخدم</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -97,12 +107,12 @@ export default function SecurityLogsPage() {
                                             <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{format(log.timestamp, 'Pp')}</TableCell>
                                             <TableCell>
                                                 <Badge variant={getEventVariant(log.event)} className="capitalize">
-                                                    {log.event.replace('_', ' ')}
+                                                    {getEventText(log.event)}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="font-mono text-xs">{log.userId}</TableCell>
                                             <TableCell>
-                                                <div className="text-xs">{log.geo?.city}, {log.geo?.country || 'Unknown'}</div>
+                                                <div className="text-xs">{log.geo?.city}, {log.geo?.country || 'غير معروف'}</div>
                                                 <div className="text-xs text-muted-foreground font-mono">{log.ipAddress}</div>
                                             </TableCell>
                                             <TableCell className="text-xs text-muted-foreground truncate max-w-xs">{log.userAgent}</TableCell>

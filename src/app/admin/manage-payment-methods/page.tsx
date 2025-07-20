@@ -42,8 +42,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 const fieldSchema = z.object({
-    name: z.string().min(2, "Name is required"),
-    label: z.string().min(2, "Label is required"),
+    name: z.string().min(2, "الاسم مطلوب"),
+    label: z.string().min(2, "العنوان مطلوب"),
     type: z.enum(['text', 'number']),
     placeholder: z.string().optional(),
     validation: z.object({
@@ -56,8 +56,8 @@ const fieldSchema = z.object({
 });
 
 const formSchema = z.object({
-    name: z.string().min(2, "Method name is required"),
-    description: z.string().min(5, "Description is required"),
+    name: z.string().min(2, "اسم الطريقة مطلوب"),
+    description: z.string().min(5, "الوصف مطلوب"),
     isEnabled: z.boolean(),
     type: z.enum(['crypto', 'internal_transfer', 'trading_account']),
     fields: z.array(fieldSchema),
@@ -94,10 +94,10 @@ function PaymentMethodForm({ method, onSuccess, onCancel }: { method?: PaymentMe
             : await addPaymentMethod(data);
 
         if (result.success) {
-            toast({ title: "Success", description: result.message });
+            toast({ title: "نجاح", description: result.message });
             onSuccess();
         } else {
-            toast({ variant: "destructive", title: "Error", description: result.message });
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
         }
         setIsSubmitting(false);
     };
@@ -117,83 +117,83 @@ function PaymentMethodForm({ method, onSuccess, onCancel }: { method?: PaymentMe
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="name" render={({ field }) => (
-                        <FormItem><FormLabel>Method Name</FormLabel>
+                        <FormItem><FormLabel>اسم الطريقة</FormLabel>
                           <div className="relative">
-                              <Type className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                              <Input placeholder="e.g., USDT (TRC20)" {...field} className="pl-10" />
+                              <Type className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="مثال: USDT (TRC20)" {...field} className="pr-10" />
                           </div>
                         <FormMessage /></FormItem>
                     )}/>
                     <FormField control={form.control} name="type" render={({ field }) => (
-                        <FormItem><FormLabel>Type</FormLabel>
+                        <FormItem><FormLabel>النوع</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger></FormControl>
+                            <FormControl><SelectTrigger><SelectValue placeholder="اختر نوعًا" /></SelectTrigger></FormControl>
                             <SelectContent>
-                                <SelectItem value="crypto">Crypto</SelectItem>
-                                <SelectItem value="internal_transfer">Internal Transfer</SelectItem>
-                                <SelectItem value="trading_account">Trading Account</SelectItem>
+                                <SelectItem value="crypto">عملات مشفرة</SelectItem>
+                                <SelectItem value="internal_transfer">تحويل داخلي</SelectItem>
+                                <SelectItem value="trading_account">حساب تداول</SelectItem>
                             </SelectContent>
                         </Select><FormMessage /></FormItem>
                     )}/>
                 </div>
                  <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="e.g., Withdraw USDT on the TRON network." {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>الوصف</FormLabel><FormControl><Textarea placeholder="مثال: سحب USDT على شبكة TRON." {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={form.control} name="isEnabled" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Enable Method</FormLabel><FormDescription>Users can see and use this method.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>تفعيل الطريقة</FormLabel><FormDescription>يمكن للمستخدمين رؤية واستخدام هذه الطريقة.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                 )}/>
                 
                 <Separator />
                 
                 <div>
-                    <h3 className="text-lg font-medium">Required Fields</h3>
-                    <p className="text-sm text-muted-foreground">Define the fields users must fill out for this method.</p>
+                    <h3 className="text-lg font-medium">الحقول المطلوبة</h3>
+                    <p className="text-sm text-muted-foreground">حدد الحقول التي يجب على المستخدمين تعبئتها لهذه الطريقة.</p>
                 </div>
                 
                 <div className="space-y-4">
                     {fields.map((field, index) => (
                         <Card key={field.id} className="p-4 relative">
-                           <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-6 w-6 z-10" onClick={() => remove(index)}>
+                           <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -left-2 h-6 w-6 z-10" onClick={() => remove(index)}>
                                <Trash2 className="h-4 w-4"/>
                            </Button>
                            <div className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <FormField control={form.control} name={`fields.${index}.name`} render={({ field }) => (
-                                        <FormItem><FormLabel>Field Name</FormLabel><FormControl><Input placeholder="e.g., walletAddress" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>اسم الحقل (بالانجليزية)</FormLabel><FormControl><Input placeholder="e.g., walletAddress" {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name={`fields.${index}.label`} render={({ field }) => (
-                                        <FormItem><FormLabel>Field Label</FormLabel><FormControl><Input placeholder="e.g., Wallet Address" {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>عنوان الحقل</FormLabel><FormControl><Input placeholder="مثال: عنوان المحفظة" {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                     <FormField control={form.control} name={`fields.${index}.placeholder`} render={({ field }) => (
-                                        <FormItem><FormLabel>Placeholder</FormLabel><FormControl><Input placeholder="e.g., 0x..." {...field} /></FormControl><FormMessage /></FormItem>
+                                        <FormItem><FormLabel>النص النائب</FormLabel><FormControl><Input placeholder="مثال: 0x..." {...field} /></FormControl><FormMessage /></FormItem>
                                     )}/>
                                      <FormField control={form.control} name={`fields.${index}.type`} render={({ field }) => (
-                                        <FormItem><FormLabel>Field Type</FormLabel>
+                                        <FormItem><FormLabel>نوع الحقل</FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
-                                            <SelectContent><SelectItem value="text">Text</SelectItem><SelectItem value="number">Number</SelectItem></SelectContent>
+                                            <FormControl><SelectTrigger><SelectValue placeholder="اختر نوعًا" /></SelectTrigger></FormControl>
+                                            <SelectContent><SelectItem value="text">نص</SelectItem><SelectItem value="number">رقم</SelectItem></SelectContent>
                                         </Select><FormMessage /></FormItem>
                                     )}/>
                                 </div>
                                 <div className="p-3 border rounded-md space-y-4">
-                                    <h4 className="font-medium">Validation Rules</h4>
+                                    <h4 className="font-medium">قواعد التحقق</h4>
                                      <FormField control={form.control} name={`fields.${index}.validation.required`} render={({ field }) => (
-                                        <FormItem className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>Required</FormLabel></div></FormItem>
+                                        <FormItem className="flex flex-row items-start gap-x-3 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><div className="space-y-1 leading-none"><FormLabel>مطلوب</FormLabel></div></FormItem>
                                     )}/>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <FormField control={form.control} name={`fields.${index}.validation.minLength`} render={({ field }) => (
-                                            <FormItem><FormLabel>Min Length</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>الحد الأدنى للطول</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                         )}/>
                                         <FormField control={form.control} name={`fields.${index}.validation.maxLength`} render={({ field }) => (
-                                            <FormItem><FormLabel>Max Length</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>الحد الأقصى للطول</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
                                         )}/>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                        <FormField control={form.control} name={`fields.${index}.validation.regex`} render={({ field }) => (
-                                            <FormItem><FormLabel>Regex Pattern</FormLabel><FormControl><Input placeholder="^0x[a-fA-F0-9]{40}$" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>نمط Regex</FormLabel><FormControl><Input placeholder="^0x[a-fA-F0-9]{40}$" {...field} /></FormControl><FormMessage /></FormItem>
                                         )}/>
                                         <FormField control={form.control} name={`fields.${index}.validation.regexErrorMessage`} render={({ field }) => (
-                                            <FormItem><FormLabel>Regex Error Message</FormLabel><FormControl><Input placeholder="Invalid address format" {...field} /></FormControl><FormMessage /></FormItem>
+                                            <FormItem><FormLabel>رسالة خطأ Regex</FormLabel><FormControl><Input placeholder="تنسيق عنوان غير صالح" {...field} /></FormControl><FormMessage /></FormItem>
                                         )}/>
                                     </div>
                                 </div>
@@ -203,14 +203,14 @@ function PaymentMethodForm({ method, onSuccess, onCancel }: { method?: PaymentMe
                 </div>
 
                 <Button type="button" variant="outline" onClick={addNewField}>
-                    <PlusCircle className="mr-2 h-4 w-4"/> Add Field
+                    <PlusCircle className="ml-2 h-4 w-4"/> إضافة حقل
                 </Button>
 
                 <DialogFooter className="pt-4">
-                    <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
+                    <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
                     <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {method ? "Save Changes" : "Create Method"}
+                        {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                        {method ? "حفظ التغييرات" : "إنشاء طريقة"}
                     </Button>
                 </DialogFooter>
             </form>
@@ -232,7 +232,7 @@ export default function ManagePaymentMethodsPage() {
             const data = await getPaymentMethods();
             setMethods(data);
         } catch (error) {
-            toast({ variant: "destructive", title: "Error", description: "Could not fetch payment methods." });
+            toast({ variant: "destructive", title: "خطأ", description: "تعذر جلب طرق الدفع." });
         } finally {
             setIsLoading(false);
         }
@@ -245,10 +245,10 @@ export default function ManagePaymentMethodsPage() {
     const handleDelete = async (id: string) => {
         const result = await deletePaymentMethod(id);
         if (result.success) {
-            toast({ title: "Success", description: result.message });
+            toast({ title: "نجاح", description: result.message });
             fetchData();
         } else {
-            toast({ variant: "destructive", title: "Error", description: result.message });
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
         }
     };
 
@@ -278,17 +278,17 @@ export default function ManagePaymentMethodsPage() {
             <div className="container mx-auto space-y-6">
                 <div className="flex justify-between items-start">
                     <PageHeader
-                        title="Manage Payment Methods"
-                        description="Configure how users can withdraw their funds."
+                        title="إدارة طرق الدفع"
+                        description="تكوين كيفية سحب المستخدمين لأموالهم."
                     />
                     <Button onClick={handleAdd}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add Method
+                        <PlusCircle className="ml-2 h-4 w-4" /> إضافة طريقة
                     </Button>
                 </div>
 
                 <Card>
                     <CardHeader>
-                        <CardTitle>Configured Methods</CardTitle>
+                        <CardTitle>الطرق المكونة</CardTitle>
                     </CardHeader>
                     <CardContent>
                         {isLoading ? (
@@ -297,10 +297,10 @@ export default function ManagePaymentMethodsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Type</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
+                                        <TableHead>الاسم</TableHead>
+                                        <TableHead>النوع</TableHead>
+                                        <TableHead>الحالة</TableHead>
+                                        <TableHead className="text-left">الإجراءات</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -310,10 +310,10 @@ export default function ManagePaymentMethodsPage() {
                                             <TableCell><Badge variant="outline">{method.type.replace('_', ' ')}</Badge></TableCell>
                                             <TableCell>
                                                 <Badge variant={method.isEnabled ? 'default' : 'secondary'}>
-                                                    {method.isEnabled ? 'Enabled' : 'Disabled'}
+                                                    {method.isEnabled ? 'مفعل' : 'معطل'}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-right space-x-2">
+                                            <TableCell className="text-left space-x-2">
                                                 <Button size="icon" variant="outline" className="h-8 w-8" onClick={() => handleEdit(method)}>
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
@@ -325,12 +325,12 @@ export default function ManagePaymentMethodsPage() {
                                                   </AlertDialogTrigger>
                                                   <AlertDialogContent>
                                                     <AlertDialogHeader>
-                                                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                                      <AlertDialogDescription>This will permanently delete the payment method.</AlertDialogDescription>
+                                                      <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                                      <AlertDialogDescription>سيؤدي هذا إلى حذف طريقة الدفع بشكل دائم.</AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
-                                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                      <AlertDialogAction onClick={() => handleDelete(method.id)}>Delete</AlertDialogAction>
+                                                      <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                                      <AlertDialogAction onClick={() => handleDelete(method.id)}>حذف</AlertDialogAction>
                                                     </AlertDialogFooter>
                                                   </AlertDialogContent>
                                                 </AlertDialog>
@@ -347,7 +347,7 @@ export default function ManagePaymentMethodsPage() {
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                  <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>{editingMethod ? "Edit" : "Add New"} Payment Method</DialogTitle>
+                        <DialogTitle>{editingMethod ? "تعديل" : "إضافة"} طريقة دفع جديدة</DialogTitle>
                     </DialogHeader>
                     <div className="p-1">
                         <PaymentMethodForm 

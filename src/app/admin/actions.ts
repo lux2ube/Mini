@@ -129,10 +129,10 @@ export async function updateBannerSettings(settings: BannerSettings) {
     try {
         const docRef = doc(db, 'settings', 'banner');
         await setDoc(docRef, settings, { merge: true });
-        return { success: true, message: 'Banner settings updated successfully.' };
+        return { success: true, message: 'تم تحديث إعدادات البانر بنجاح.' };
     } catch (error) {
         console.error("Error updating banner settings:", error);
-        return { success: false, message: 'Failed to update banner settings.' };
+        return { success: false, message: 'فشل تحديث إعدادات البانر.' };
     }
 }
 
@@ -153,10 +153,10 @@ export async function addBroker(data: Omit<Broker, 'id' | 'order'>) {
             ...data,
             order: maxOrder + 1,
         });
-        return { success: true, message: 'Broker added successfully.' };
+        return { success: true, message: 'تمت إضافة الوسيط بنجاح.' };
     } catch (error) {
         console.error("Error adding broker:", error);
-        return { success: false, message: 'Failed to add broker.' };
+        return { success: false, message: 'فشل إضافة الوسيط.' };
     }
 }
 
@@ -164,20 +164,20 @@ export async function updateBroker(brokerId: string, data: Partial<Omit<Broker, 
     try {
         const brokerRef = doc(db, 'brokers', brokerId);
         await updateDoc(brokerRef, data);
-        return { success: true, message: 'Broker updated successfully.' };
+        return { success: true, message: 'تم تحديث الوسيط بنجاح.' };
     } catch (error) {
         console.error("Error updating broker:", error);
-        return { success: false, message: 'Failed to update broker.' };
+        return { success: false, message: 'فشل تحديث الوسيط.' };
     }
 }
 
 export async function deleteBroker(brokerId: string) {
     try {
         await deleteDoc(doc(db, 'brokers', brokerId));
-        return { success: true, message: 'Broker deleted successfully.' };
+        return { success: true, message: 'تم حذف الوسيط بنجاح.' };
     } catch (error) {
         console.error("Error deleting broker:", error);
-        return { success: false, message: 'Failed to delete broker.' };
+        return { success: false, message: 'فشل حذف الوسيط.' };
     }
 }
 
@@ -189,10 +189,10 @@ export async function updateBrokerOrder(orderedIds: string[]) {
             batch.update(docRef, { order: index });
         });
         await batch.commit();
-        return { success: true, message: 'Broker order updated.' };
+        return { success: true, message: 'تم تحديث ترتيب الوسطاء.' };
     } catch (error) {
         console.error("Error updating broker order:", error);
-        return { success: false, message: 'Failed to update broker order.' };
+        return { success: false, message: 'فشل تحديث ترتيب الوسطاء.' };
     }
 }
 
@@ -216,16 +216,16 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
     
     await runTransaction(db, async (transaction) => {
         const accountSnap = await transaction.get(accountRef);
-        if (!accountSnap.exists()) throw new Error("Account not found");
+        if (!accountSnap.exists()) throw new Error("لم يتم العثور على الحساب");
         const accountData = accountSnap.data() as TradingAccount;
 
         const updateData: { status: 'Approved' | 'Rejected', rejectionReason?: string } = { status };
-        let message = `Your trading account ${accountData.accountNumber} has been ${status.toLowerCase()}.`;
+        let message = `تم ${status === 'Approved' ? 'الموافقة على' : 'رفض'} حساب التداول الخاص بك ${accountData.accountNumber}.`;
 
         if (status === 'Rejected') {
-            if (!reason) throw new Error("Rejection reason is required.");
+            if (!reason) throw new Error("سبب الرفض مطلوب.");
             updateData.rejectionReason = reason;
-            message += ` Reason: ${reason}`;
+            message += ` السبب: ${reason}`;
         } else {
              updateData.rejectionReason = ""; // Clear reason on approval
         }
@@ -234,11 +234,11 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
         await createNotification(transaction, accountData.userId, message, 'account', '/dashboard/my-accounts');
     });
 
-    return { success: true, message: `Account status updated to ${status}.` };
+    return { success: true, message: `تم تحديث حالة الحساب إلى ${status}.` };
   } catch (error) {
     console.error("Error updating account status:", error);
-    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-    return { success: false, message: `Failed to update account status: ${errorMessage}` };
+    const errorMessage = error instanceof Error ? error.message : "حدث خطأ غير معروف";
+    return { success: false, message: `فشل تحديث حالة الحساب: ${errorMessage}` };
   }
 }
 
@@ -259,11 +259,11 @@ export async function updateUserProfile(userId: string, data: { name: string }) 
     try {
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, { name: data.name });
-        return { success: true, message: 'Profile updated successfully.' };
+        return { success: true, message: 'تم تحديث الملف الشخصي بنجاح.' };
     } catch (error) {
         console.error("Error updating user profile:", error);
-        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { success: false, message: `Failed to update profile: ${errorMessage}` };
+        const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير معروف.';
+        return { success: false, message: `فشل تحديث الملف الشخصي: ${errorMessage}` };
     }
 }
 
@@ -277,14 +277,14 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
                 date: serverTimestamp(),
             });
 
-            const message = `You received $${data.cashbackAmount.toFixed(2)} cashback for account ${data.accountNumber}.`;
+            const message = `لقد تلقيت ${data.cashbackAmount.toFixed(2)}$ كاش باك للحساب ${data.accountNumber}.`;
             await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
         });
 
-        return { success: true, message: 'Cashback transaction added successfully.' };
+        return { success: true, message: 'تمت إضافة معاملة الكاش باك بنجاح.' };
     } catch (error) {
         console.error("Error adding cashback transaction:", error);
-        return { success: false, message: 'Failed to add cashback transaction.' };
+        return { success: false, message: 'فشل إضافة معاملة الكاش باك.' };
     }
 }
 
@@ -329,7 +329,7 @@ export async function approveWithdrawal(withdrawalId: string, txId: string) {
         
         await runTransaction(db, async (transaction) => {
             const withdrawalSnap = await transaction.get(withdrawalRef);
-            if (!withdrawalSnap.exists()) throw new Error("Withdrawal not found");
+            if (!withdrawalSnap.exists()) throw new Error("لم يتم العثور على طلب السحب");
             const withdrawalData = withdrawalSnap.data() as Withdrawal;
 
             transaction.update(withdrawalRef, {
@@ -339,14 +339,14 @@ export async function approveWithdrawal(withdrawalId: string, txId: string) {
                 rejectionReason: "", // Clear reason on approval
             });
 
-            const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has been completed.`;
+            const message = `تم إكمال طلب السحب الخاص بك بمبلغ ${withdrawalData.amount.toFixed(2)}$.`;
             await createNotification(transaction, withdrawalData.userId, message, 'withdrawal', '/dashboard/withdraw');
         });
 
-        return { success: true, message: 'Withdrawal approved successfully with TXID.' };
+        return { success: true, message: 'تمت الموافقة على السحب بنجاح مع TXID.' };
     } catch (error) {
         console.error("Error approving withdrawal:", error);
-        return { success: false, message: 'Failed to approve withdrawal.' };
+        return { success: false, message: 'فشل الموافقة على السحب.' };
     }
 }
 
@@ -356,22 +356,22 @@ export async function rejectWithdrawal(withdrawalId: string, reason: string) {
         
         await runTransaction(db, async (transaction) => {
             const withdrawalSnap = await transaction.get(withdrawalRef);
-            if (!withdrawalSnap.exists()) throw new Error("Withdrawal not found");
+            if (!withdrawalSnap.exists()) throw new Error("لم يتم العثور على طلب السحب");
             const withdrawalData = withdrawalSnap.data() as Withdrawal;
 
-            if (!reason) throw new Error("Rejection reason is required.");
+            if (!reason) throw new Error("سبب الرفض مطلوب.");
 
             transaction.update(withdrawalRef, { status: 'Failed', rejectionReason: reason });
 
-            const message = `Your withdrawal of $${withdrawalData.amount.toFixed(2)} has failed. Reason: ${reason}`;
+            const message = `فشل طلب السحب الخاص بك بمبلغ ${withdrawalData.amount.toFixed(2)}$. السبب: ${reason}`;
             await createNotification(transaction, withdrawalData.userId, message, 'withdrawal', '/dashboard/withdraw');
         });
 
-        return { success: true, message: `Withdrawal status updated to Failed.` };
+        return { success: true, message: `تم تحديث حالة السحب إلى "فشل".` };
     } catch (error) {
         console.error("Error rejecting withdrawal:", error);
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
-        return { success: false, message: `Failed to reject withdrawal: ${errorMessage}` };
+        const errorMessage = error instanceof Error ? error.message : "حدث خطأ غير معروف";
+        return { success: false, message: `فشل رفض السحب: ${errorMessage}` };
     }
 }
 
@@ -417,20 +417,20 @@ export async function getCategories(): Promise<ProductCategory[]> {
 export async function addCategory(data: Omit<ProductCategory, 'id'>) {
     try {
         await addDoc(collection(db, 'productCategories'), data);
-        return { success: true, message: 'Category added successfully.' };
+        return { success: true, message: 'تمت إضافة الفئة بنجاح.' };
     } catch (error) {
         console.error("Error adding category:", error);
-        return { success: false, message: 'Failed to add category.' };
+        return { success: false, message: 'فشل إضافة الفئة.' };
     }
 }
 
 export async function updateCategory(id: string, data: Partial<ProductCategory>) {
     try {
         await updateDoc(doc(db, 'productCategories', id), data);
-        return { success: true, message: 'Category updated successfully.' };
+        return { success: true, message: 'تم تحديث الفئة بنجاح.' };
     } catch (error) {
         console.error("Error updating category:", error);
-        return { success: false, message: 'Failed to update category.' };
+        return { success: false, message: 'فشل تحديث الفئة.' };
     }
 }
 
@@ -438,10 +438,10 @@ export async function deleteCategory(id: string) {
     try {
         // TODO: Check if any products use this category before deleting.
         await deleteDoc(doc(db, 'productCategories', id));
-        return { success: true, message: 'Category deleted successfully.' };
+        return { success: true, message: 'تم حذف الفئة بنجاح.' };
     } catch (error) {
         console.error("Error deleting category:", error);
-        return { success: false, message: 'Failed to delete category.' };
+        return { success: false, message: 'فشل حذف الفئة.' };
     }
 }
 
@@ -454,30 +454,30 @@ export async function getProducts(): Promise<Product[]> {
 export async function addProduct(data: Omit<Product, 'id'>) {
     try {
         await addDoc(collection(db, 'products'), data);
-        return { success: true, message: 'Product added successfully.' };
+        return { success: true, message: 'تمت إضافة المنتج بنجاح.' };
     } catch (error) {
         console.error("Error adding product:", error);
-        return { success: false, message: 'Failed to add product.' };
+        return { success: false, message: 'فشل إضافة المنتج.' };
     }
 }
 
 export async function updateProduct(id: string, data: Partial<Product>) {
     try {
         await updateDoc(doc(db, 'products', id), data);
-        return { success: true, message: 'Product updated successfully.' };
+        return { success: true, message: 'تم تحديث المنتج بنجاح.' };
     } catch (error) {
         console.error("Error updating product:", error);
-        return { success: false, message: 'Failed to update product.' };
+        return { success: false, message: 'فشل تحديث المنتج.' };
     }
 }
 
 export async function deleteProduct(id: string) {
     try {
         await deleteDoc(doc(db, 'products', id));
-        return { success: true, message: 'Product deleted successfully.' };
+        return { success: true, message: 'تم حذف المنتج بنجاح.' };
     } catch (error) {
         console.error("Error deleting product:", error);
-        return { success: false, message: 'Failed to delete product.' };
+        return { success: false, message: 'فشل حذف المنتج.' };
     }
 }
 
@@ -503,7 +503,7 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
             const orderRef = doc(db, 'orders', orderId);
             const orderSnap = await transaction.get(orderRef);
             if (!orderSnap.exists()) {
-                throw new Error("Order not found.");
+                throw new Error("لم يتم العثور على الطلب.");
             }
             const orderData = orderSnap.data() as Order;
 
@@ -512,14 +512,14 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
             transaction.update(orderRef, { status });
 
             // 2. Create a notification for the user
-            const message = `The status of your order for "${orderData.productName}" has been updated to ${status}.`;
+            const message = `تم تحديث حالة طلبك لـ "${orderData.productName}" إلى ${status}.`;
             await createNotification(transaction, orderData.userId, message, 'store', '/dashboard/store/orders');
         });
 
-        return { success: true, message: 'Order status updated.' };
+        return { success: true, message: 'تم تحديث حالة الطلب.' };
     } catch (error) {
         console.error("Error updating order status:", error);
-        return { success: false, message: 'Failed to update order status.' };
+        return { success: false, message: 'فشل تحديث حالة الطلب.' };
     }
 }
 
@@ -533,8 +533,8 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             const productSnap = await transaction.get(productRef);
             const userSnap = await transaction.get(userRef);
 
-            if (!productSnap.exists()) throw new Error("Product not found.");
-            if (!userSnap.exists()) throw new Error("User not found.");
+            if (!productSnap.exists()) throw new Error("لم يتم العثور على المنتج.");
+            if (!userSnap.exists()) throw new Error("لم يتم العثور على المستخدم.");
             
             const product = productSnap.data() as Product;
             const userData = userSnap.data();
@@ -570,10 +570,10 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
 
             // --- VALIDATION AND LOGIC ---
             if (product.stock <= 0) {
-                return { success: false, message: 'This item is out of stock.' };
+                return { success: false, message: 'هذا المنتج غير متوفر حالياً.' };
             }
             if (availableBalance < product.price) {
-                return { success: false, message: 'Insufficient balance to purchase this item.' };
+                return { success: false, message: 'رصيد غير كافٍ لشراء هذا المنتج.' };
             }
 
             // --- ALL WRITES HAPPEN LAST ---
@@ -596,7 +596,7 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             });
 
             // 3. Create notification
-            await createNotification(transaction, userId, `Your order for ${product.name} has been placed.`, 'store', '/dashboard/store/orders');
+            await createNotification(transaction, userId, `تم تقديم طلبك لـ ${product.name}.`, 'store', '/dashboard/store/orders');
             
             // 4. Log the activity (This will be missing client-side info)
             // Consider if a separate client-side triggered log is needed here
@@ -609,11 +609,11 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             }, { productId: productId, price: product.price });
 
 
-            return { success: true, message: 'Order placed successfully!' };
+            return { success: true, message: 'تم تقديم الطلب بنجاح!' };
         });
     } catch (error) {
         console.error('Error placing order:', error);
-        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+        const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع.';
         return { success: false, message: errorMessage };
     }
 }
@@ -627,30 +627,30 @@ export async function getPaymentMethods(): Promise<PaymentMethod[]> {
 export async function addPaymentMethod(data: Omit<PaymentMethod, 'id'>) {
     try {
         await addDoc(collection(db, 'paymentMethods'), data);
-        return { success: true, message: 'Payment method added successfully.' };
+        return { success: true, message: 'تمت إضافة طريقة الدفع بنجاح.' };
     } catch (error) {
         console.error("Error adding payment method:", error);
-        return { success: false, message: 'Failed to add payment method.' };
+        return { success: false, message: 'فشل إضافة طريقة الدفع.' };
     }
 }
 
 export async function updatePaymentMethod(id: string, data: Partial<PaymentMethod>) {
     try {
         await updateDoc(doc(db, 'paymentMethods', id), data);
-        return { success: true, message: 'Payment method updated successfully.' };
+        return { success: true, message: 'تم تحديث طريقة الدفع بنجاح.' };
     } catch (error) {
         console.error("Error updating payment method:", error);
-        return { success: false, message: 'Failed to update payment method.' };
+        return { success: false, message: 'فشل تحديث طريقة الدفع.' };
     }
 }
 
 export async function deletePaymentMethod(id: string) {
     try {
         await deleteDoc(doc(db, 'paymentMethods', id));
-        return { success: true, message: 'Payment method deleted successfully.' };
+        return { success: true, message: 'تم حذف طريقة الدفع بنجاح.' };
     } catch (error) {
         console.error("Error deleting payment method:", error);
-        return { success: false, message: 'Failed to delete payment method.' };
+        return { success: false, message: 'فشل حذف طريقة الدفع.' };
     }
 }
 
@@ -709,10 +709,10 @@ export async function addBlogPost(data: Omit<BlogPost, 'id' | 'createdAt' | 'upd
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         });
-        return { success: true, message: 'Blog post created successfully.' };
+        return { success: true, message: 'تم إنشاء المقال بنجاح.' };
     } catch (error) {
         console.error("Error adding blog post:", error);
-        return { success: false, message: 'Failed to create blog post.' };
+        return { success: false, message: 'فشل إنشاء المقال.' };
     }
 }
 
@@ -724,10 +724,10 @@ export async function updateBlogPost(id: string, data: Partial<Omit<BlogPost, 'i
             ...data,
             updatedAt: serverTimestamp(),
         });
-        return { success: true, message: 'Blog post updated successfully.' };
+        return { success: true, message: 'تم تحديث المقال بنجاح.' };
     } catch (error) {
         console.error("Error updating blog post:", error);
-        return { success: false, message: 'Failed to update blog post.' };
+        return { success: false, message: 'فشل تحديث المقال.' };
     }
 }
 
@@ -735,9 +735,9 @@ export async function updateBlogPost(id: string, data: Partial<Omit<BlogPost, 'i
 export async function deleteBlogPost(id: string) {
     try {
         await deleteDoc(doc(db, 'blogPosts', id));
-        return { success: true, message: 'Blog post deleted successfully.' };
+        return { success: true, message: 'تم حذف المقال بنجاح.' };
     } catch (error) {
         console.error("Error deleting blog post:", error);
-        return { success: false, message: 'Failed to delete blog post.' };
+        return { success: false, message: 'فشل حذف المقال.' };
     }
 }

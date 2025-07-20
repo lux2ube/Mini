@@ -61,13 +61,13 @@ export default function AdminDashboardPage() {
   return (
     <div className="container mx-auto space-y-6">
       <PageHeader
-        title="Admin Dashboard"
-        description="Oversee application activity."
+        title="لوحة تحكم المشرف"
+        description="الإشراف على نشاط التطبيق."
       />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي المستخدمين</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -76,7 +76,7 @@ export default function AdminDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Accounts</CardTitle>
+            <CardTitle className="text-sm font-medium">الحسابات المعلقة</CardTitle>
             <Briefcase className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -85,7 +85,7 @@ export default function AdminDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Withdrawals</CardTitle>
+            <CardTitle className="text-sm font-medium">السحوبات المعلقة</CardTitle>
             <Landmark className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -94,7 +94,7 @@ export default function AdminDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Paid Out</CardTitle>
+            <CardTitle className="text-sm font-medium">إجمالي المدفوعات</CardTitle>
             <div className="h-4 w-4 text-muted-foreground font-bold">$</div>
           </CardHeader>
           <CardContent>

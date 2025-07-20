@@ -41,7 +41,7 @@ export default function ManageUsersPage() {
                 setUsers(enriched);
             } catch (error) {
                 console.error("Failed to fetch users:", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch users.' });
+                toast({ variant: 'destructive', title: 'خطأ', description: 'تعذر جلب المستخدمين.' });
             } finally {
                 setIsLoading(false);
             }
@@ -76,20 +76,20 @@ export default function ManageUsersPage() {
 
     return (
         <div className="container mx-auto space-y-6">
-            <PageHeader title="Manage Users" description="View and manage all registered users." />
+            <PageHeader title="إدارة المستخدمين" description="عرض وإدارة جميع المستخدمين المسجلين." />
             <Card>
                 <CardHeader>
-                    <CardTitle>All Users</CardTitle>
+                    <CardTitle>جميع المستخدمين</CardTitle>
                     <CardDescription>
-                        Found {filteredUsers.length} of {users.length} users.
+                        تم العثور على {filteredUsers.length} من {users.length} مستخدم.
                     </CardDescription>
                     <div className="relative max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="Search by name, email, UID, code, or client ID..."
+                            placeholder="بحث بالاسم، البريد، UID، الكود، أو معرف العميل..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10"
+                            className="pr-10"
                         />
                     </div>
                 </CardHeader>
@@ -101,14 +101,14 @@ export default function ManageUsersPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Client ID</TableHead>
-                                        <TableHead>Name</TableHead>
-                                        <TableHead>Email</TableHead>
+                                        <TableHead>معرف العميل</TableHead>
+                                        <TableHead>الاسم</TableHead>
+                                        <TableHead>البريد الإلكتروني</TableHead>
                                         <TableHead>Firebase UID</TableHead>
-                                        <TableHead>Joined</TableHead>
-                                        <TableHead>Referrals</TableHead>
-                                        <TableHead>Points</TableHead>
-                                        <TableHead>Referred By</TableHead>
+                                        <TableHead>تاريخ الانضمام</TableHead>
+                                        <TableHead>الإحالات</TableHead>
+                                        <TableHead>النقاط</TableHead>
+                                        <TableHead>تمت إحالته بواسطة</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

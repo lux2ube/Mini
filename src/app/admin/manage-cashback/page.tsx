@@ -17,8 +17,8 @@ import type { TradingAccount } from '@/types';
 import { useAdminData } from '@/hooks/useAdminData';
 
 const formSchema = z.object({
-  tradeDetails: z.string().min(3, { message: "Please enter trade details." }),
-  cashbackAmount: z.coerce.number().positive({ message: "Amount must be positive." }),
+  tradeDetails: z.string().min(3, { message: "الرجاء إدخال تفاصيل الصفقة." }),
+  cashbackAmount: z.coerce.number().positive({ message: "يجب أن يكون المبلغ أكبر من صفر." }),
 });
 
 type EnrichedAccount = TradingAccount & { userName: string; userEmail: string };
@@ -47,8 +47,8 @@ export default function ManageCashbackPage() {
                 const user = users.find(u => u.uid === acc.userId);
                 return {
                     ...acc,
-                    userName: user?.name || 'Unknown User',
-                    userEmail: user?.email || 'No email',
+                    userName: user?.name || 'مستخدم غير معروف',
+                    userEmail: user?.email || 'لا يوجد بريد إلكتروني',
                 };
             });
     }, [accounts, users, isDataLoading]);
@@ -65,7 +65,7 @@ export default function ManageCashbackPage() {
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         if (!selectedAccount) {
-            toast({ variant: 'destructive', title: 'Error', description: 'No account selected.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم اختيار حساب.' });
             return;
         }
         setIsSubmitting(true);
@@ -80,12 +80,12 @@ export default function ManageCashbackPage() {
         });
 
         if (result.success) {
-            toast({ title: 'Success', description: result.message });
+            toast({ title: 'نجاح', description: result.message });
             form.reset();
             setSelectedAccount(null);
             setSearchQuery('');
         } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.message });
+            toast({ variant: 'destructive', title: 'خطأ', description: result.message });
         }
         setIsSubmitting(false);
     }
@@ -102,12 +102,12 @@ export default function ManageCashbackPage() {
 
     return (
         <div className="container mx-auto space-y-6">
-            <PageHeader title="Manage Cashback" description="Manually add cashback transactions for users." />
+            <PageHeader title="إدارة الكاش باك" description="إضافة معاملات الكاش باك للمستخدمين يدويًا." />
             
             <Card>
                 <CardHeader>
-                    <CardTitle>1. Find Trading Account</CardTitle>
-                    <CardDescription>Search by user name, email, or account number.</CardDescription>
+                    <CardTitle>1. البحث عن حساب التداول</CardTitle>
+                    <CardDescription>ابحث باسم المستخدم أو البريد الإلكتروني أو رقم الحساب.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     {isDataLoading ? (
@@ -125,10 +125,10 @@ export default function ManageCashbackPage() {
                     ) : (
                         <div className="space-y-4">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <Input 
-                                    placeholder="Search..."
-                                    className="pl-10"
+                                    placeholder="بحث..."
+                                    className="pr-10"
                                     value={searchQuery}
                                     onChange={e => setSearchQuery(e.target.value)}
                                 />
@@ -138,14 +138,14 @@ export default function ManageCashbackPage() {
                                     {searchResults.length > 0 ? searchResults.map(acc => (
                                         <button 
                                             key={acc.id} 
-                                            className="w-full text-left p-3 hover:bg-muted"
+                                            className="w-full text-right p-3 hover:bg-muted"
                                             onClick={() => handleSelectAccount(acc)}
                                         >
                                             <p className="font-medium">{acc.userName} ({acc.accountNumber})</p>
                                             <p className="text-sm text-muted-foreground">{acc.userEmail}</p>
                                         </button>
                                     )) : (
-                                        <p className="p-4 text-center text-sm text-muted-foreground">No matching accounts found.</p>
+                                        <p className="p-4 text-center text-sm text-muted-foreground">لم يتم العثور على حسابات مطابقة.</p>
                                     )}
                                 </div>
                             )}
@@ -156,7 +156,7 @@ export default function ManageCashbackPage() {
 
             <Card className={!selectedAccount ? 'opacity-50 pointer-events-none' : ''}>
                 <CardHeader>
-                    <CardTitle>2. Add Transaction Details</CardTitle>
+                    <CardTitle>2. إضافة تفاصيل المعاملة</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
@@ -166,11 +166,11 @@ export default function ManageCashbackPage() {
                                 name="tradeDetails"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Trade Details</FormLabel>
+                                        <FormLabel>تفاصيل الصفقة</FormLabel>
                                         <FormControl>
                                             <div className="relative">
-                                                <Edit className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input placeholder="e.g., 5.0 lots EUR/USD" {...field} className="pl-10" />
+                                                <Edit className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input placeholder="مثال: 5.0 لوت EUR/USD" {...field} className="pr-10" />
                                             </div>
                                         </FormControl>
                                         <FormMessage />
@@ -183,11 +183,11 @@ export default function ManageCashbackPage() {
                                 name="cashbackAmount"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Cashback Amount ($)</FormLabel>
+                                        <FormLabel>مبلغ الكاش باك ($)</FormLabel>
                                         <FormControl>
                                             <div className="relative">
-                                                <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input type="number" placeholder="e.g., 25.50" {...field} className="pl-10" />
+                                                <DollarSign className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input type="number" placeholder="مثال: 25.50" {...field} className="pr-10" />
                                             </div>
                                         </FormControl>
                                         <FormMessage />
@@ -196,8 +196,8 @@ export default function ManageCashbackPage() {
                             />
                             
                             <Button type="submit" disabled={isSubmitting || !selectedAccount}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Add Transaction
+                                {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                                إضافة معاملة
                             </Button>
                         </form>
                     </Form>

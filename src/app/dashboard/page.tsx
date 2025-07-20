@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronRight, KeyRound, History, Settings, Store, ShoppingBag } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronLeft, KeyRound, History, Settings, Store, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
@@ -173,6 +173,15 @@ export default function UserDashboardPage() {
         default: return 'outline';
     }
   };
+  
+  const getStatusText = (status: string) => {
+    switch (status) {
+        case 'Approved': return 'مقبول';
+        case 'Pending': return 'معلق';
+        case 'Rejected': return 'مرفوض';
+        default: return status;
+    }
+  };
 
   return (
     <div className="flex-1 bg-muted/30">
@@ -182,14 +191,14 @@ export default function UserDashboardPage() {
 
             <Tabs defaultValue="wallet" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="wallet">UTSPAY WALLET</TabsTrigger>
-                    <TabsTrigger value="rebate">AUTO REBATE</TabsTrigger>
+                    <TabsTrigger value="wallet">محفظة UTSPAY</TabsTrigger>
+                    <TabsTrigger value="rebate">خصم تلقائي</TabsTrigger>
                 </TabsList>
                 <TabsContent value="wallet" className="space-y-4">
-                    <h2 className="text-lg font-semibold mt-4">Account Rebates</h2>
+                    <h2 className="text-lg font-semibold mt-4">خصومات الحساب</h2>
                     <Card className="bg-slate-800 text-white shadow-lg overflow-hidden">
                         <CardContent className="p-4 relative">
-                            <div className="absolute top-0 left-0 w-full h-full bg-slate-900/20" style={{ backgroundImage: `radial-gradient(circle at top right, hsl(var(--primary) / 0.15), transparent 50%)`}}></div>
+                            <div className="absolute top-0 right-0 w-full h-full bg-slate-900/20" style={{ backgroundImage: `radial-gradient(circle at top left, hsl(var(--primary) / 0.15), transparent 50%)`}}></div>
                             <div className="relative z-10">
                                 <div className="flex justify-between items-start">
                                     <h3 className="text-base font-semibold text-gray-300">COIN CASH</h3>
@@ -198,20 +207,20 @@ export default function UserDashboardPage() {
                                     </div>
                                 </div>
                                 <div className="mt-2">
-                                    <p className="text-xs text-gray-400">Total Cashback</p>
+                                    <p className="text-xs text-gray-400">إجمالي الكاش باك</p>
                                     <p className="text-3xl font-bold">${stats.availableBalance.toFixed(2)}</p>
                                 </div>
                                 <div className="mt-4 grid grid-cols-3 divide-x divide-slate-700">
-                                    <div className="px-2">
-                                        <p className="text-xs text-gray-400">Incoming</p>
+                                    <div className="pr-2">
+                                        <p className="text-xs text-gray-400">الوارد</p>
                                         <p className="font-semibold text-sm">${stats.totalEarned.toFixed(2)}</p>
                                     </div>
                                      <div className="px-2 text-center">
-                                        <p className="text-xs text-gray-400">Outgoing</p>
+                                        <p className="text-xs text-gray-400">الصادر</p>
                                         <p className="font-semibold text-sm">${stats.completedWithdrawals.toFixed(2)}</p>
                                     </div>
-                                     <div className="px-2 text-right">
-                                        <p className="text-xs text-gray-400">PENDING</p>
+                                     <div className="pl-2 text-left">
+                                        <p className="text-xs text-gray-400">قيد الانتظار</p>
                                         <p className="font-semibold text-sm">${stats.pendingWithdrawals.toFixed(2)}</p>
                                     </div>
                                 </div>
@@ -219,23 +228,23 @@ export default function UserDashboardPage() {
                         </CardContent>
                         <CardFooter className="p-2 border-t border-slate-700 bg-slate-800/50 grid grid-cols-2 gap-2">
                            <Button asChild variant="secondary" size="sm">
-                               <Link href="/dashboard/withdraw"><Wallet className="mr-2 h-4 w-4" /> Withdraw</Link>
+                               <Link href="/dashboard/withdraw"><Wallet className="ml-2 h-4 w-4" /> سحب</Link>
                            </Button>
                            <Button asChild size="sm">
-                               <Link href="/dashboard/brokers"><PlusCircle className="mr-2 h-4 w-4" /> Get Cashback</Link>
+                               <Link href="/dashboard/brokers"><PlusCircle className="ml-2 h-4 w-4" /> الحصول على كاش باك</Link>
                            </Button>
                         </CardFooter>
                     </Card>
 
                     <div className="space-y-4">
-                         <h2 className="text-lg font-semibold mt-4">My Trading Accounts</h2>
+                         <h2 className="text-lg font-semibold mt-4">حساباتي التجارية</h2>
                           <Card>
                             <CardContent className="p-0">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="text-xs">Account</TableHead>
-                                            <TableHead className="text-right text-xs">Status</TableHead>
+                                            <TableHead className="text-xs">الحساب</TableHead>
+                                            <TableHead className="text-left text-xs">الحالة</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -246,15 +255,15 @@ export default function UserDashboardPage() {
                                                         <div className="font-medium text-xs">{acc.broker}</div>
                                                         <div className="text-xs text-muted-foreground">{acc.accountNumber}</div>
                                                     </TableCell>
-                                                    <TableCell className="text-right">
-                                                        <Badge variant={getStatusVariant(acc.status)}>{acc.status}</Badge>
+                                                    <TableCell className="text-left">
+                                                        <Badge variant={getStatusVariant(acc.status)}>{getStatusText(acc.status)}</Badge>
                                                     </TableCell>
                                                 </TableRow>
                                             ))
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={2} className="h-24 text-center text-xs text-muted-foreground">
-                                                    No accounts linked yet.
+                                                    لم يتم ربط أي حسابات بعد.
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -263,20 +272,20 @@ export default function UserDashboardPage() {
                             </CardContent>
                              <CardFooter className="p-2 border-t">
                                 <Button asChild variant="ghost" size="sm" className="w-full justify-center">
-                                    <Link href="/dashboard/my-accounts">View All Accounts <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                                    <Link href="/dashboard/my-accounts">عرض كل الحسابات <ChevronLeft className="mr-2 h-4 w-4" /></Link>
                                 </Button>
                              </CardFooter>
                          </Card>
 
-                         <h2 className="text-lg font-semibold mt-4">Recent Transactions</h2>
+                         <h2 className="text-lg font-semibold mt-4">المعاملات الأخيرة</h2>
                          <Card>
                             <CardContent className="p-0">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="text-xs">Date</TableHead>
-                                            <TableHead className="text-xs">Broker/Account</TableHead>
-                                            <TableHead className="text-right text-xs">Amount</TableHead>
+                                            <TableHead className="text-xs">التاريخ</TableHead>
+                                            <TableHead className="text-xs">الوسيط/الحساب</TableHead>
+                                            <TableHead className="text-left text-xs">المبلغ</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -288,13 +297,13 @@ export default function UserDashboardPage() {
                                                         <div className="font-medium text-xs">{tx.broker}</div>
                                                         <div className="text-xs text-muted-foreground">{tx.accountNumber}</div>
                                                     </TableCell>
-                                                    <TableCell className="text-right font-semibold text-primary text-xs">${tx.cashbackAmount.toFixed(2)}</TableCell>
+                                                    <TableCell className="text-left font-semibold text-primary text-xs">${tx.cashbackAmount.toFixed(2)}</TableCell>
                                                 </TableRow>
                                             ))
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={3} className="h-24 text-center text-xs text-muted-foreground">
-                                                    No transactions yet.
+                                                    لا توجد معاملات بعد.
                                                 </TableCell>
                                             </TableRow>
                                         )}
@@ -303,7 +312,7 @@ export default function UserDashboardPage() {
                             </CardContent>
                              <CardFooter className="p-2 border-t">
                                 <Button asChild variant="ghost" size="sm" className="w-full justify-center">
-                                    <Link href="/dashboard/transactions">View All Transactions <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                                    <Link href="/dashboard/transactions">عرض كل المعاملات <ChevronLeft className="mr-2 h-4 w-4" /></Link>
                                 </Button>
                              </CardFooter>
                          </Card>
@@ -314,13 +323,13 @@ export default function UserDashboardPage() {
                 <TabsContent value="rebate">
                     <Card className="mt-4">
                         <CardContent className="p-6">
-                            <p className="text-center text-muted-foreground text-sm">Auto Rebate feature is coming soon.</p>
+                            <p className="text-center text-muted-foreground text-sm">ميزة الخصم التلقائي ستتوفر قريباً.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>
             </Tabs>
         </div>
-        <div className="fixed bottom-4 right-4">
+        <div className="fixed bottom-4 left-4">
             <Button size="icon" className="rounded-full h-12 w-12 shadow-lg">
                 <MessageCircle className="h-6 w-6" />
             </Button>
