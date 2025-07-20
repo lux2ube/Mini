@@ -129,7 +129,7 @@ export default function ProductDetailPage() {
     }
 
     return (
-        <>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <div className="w-full bg-slate-900 text-white relative">
                  <div 
                     className="absolute inset-0 bg-cover bg-center opacity-20"
@@ -157,7 +157,7 @@ export default function ProductDetailPage() {
             </div>
             
             <div className="bg-slate-900">
-                <div className="bg-background rounded-t-3xl pt-8 pb-24">
+                <div className="bg-background rounded-t-3xl pt-8 pb-28">
                     <div className="container mx-auto px-4 max-w-2xl space-y-8">
                         <AnimatedSection>
                             <Badge variant="outline">{product.categoryName}</Badge>
@@ -177,60 +177,56 @@ export default function ProductDetailPage() {
                                 <p>{product.description}</p>
                             </div>
                         </AnimatedSection>
+
+                         <AnimatedSection>
+                            <DialogTrigger asChild>
+                                <Button size="lg" className="w-full h-12 text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90" disabled={product.stock <= 0}>
+                                    <ShoppingCart className="mr-2 h-5 w-5" />
+                                    {product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
+                                </Button>
+                            </DialogTrigger>
+                        </AnimatedSection>
                     </div>
                 </div>
             </div>
             
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t z-50">
-                    <div className="container mx-auto max-w-2xl">
-                         <DialogTrigger asChild>
-                            <Button size="lg" className="w-full h-12 text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90" disabled={product.stock <= 0}>
-                                 <ShoppingCart className="mr-2 h-5 w-5" />
-                                {product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Confirm Purchase: {product.name}</DialogTitle>
+                    <DialogDescription>
+                        Enter your phone number for delivery. ${product.price.toFixed(2)} will be deducted from your available cashback balance.
+                    </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-4">
+                            <FormField
+                            control={form.control}
+                            name="phoneNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Phone Number</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input type="tel" placeholder="e.g., +1 555-123-4567" {...field} className="pl-10" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary">Cancel</Button>
+                            </DialogClose>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Confirm Order
                             </Button>
-                        </DialogTrigger>
-                    </div>
-                </div>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Confirm Purchase: {product.name}</DialogTitle>
-                        <DialogDescription>
-                            Enter your phone number for delivery. ${product.price.toFixed(2)} will be deducted from your available cashback balance.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-4">
-                                <FormField
-                                control={form.control}
-                                name="phoneNumber"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Phone Number</FormLabel>
-                                        <FormControl>
-                                            <div className="relative">
-                                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input type="tel" placeholder="e.g., +1 555-123-4567" {...field} className="pl-10" />
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <DialogFooter>
-                                <DialogClose asChild>
-                                    <Button type="button" variant="secondary">Cancel</Button>
-                                </DialogClose>
-                                <Button type="submit" disabled={isSubmitting}>
-                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    Confirm Order
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </Form>
-                </DialogContent>
-            </Dialog>
-        </>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
     );
 }
-
