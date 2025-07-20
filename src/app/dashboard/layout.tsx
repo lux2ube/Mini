@@ -19,7 +19,9 @@ import {
     Wallet,
     Briefcase,
     Store,
-    Gift
+    Gift,
+    SunMoon,
+    Languages
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -39,6 +41,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 
 function NotificationBell() {
@@ -121,9 +126,37 @@ const settingsLinks = [
     { href: "/dashboard/settings/activity-logs", icon: Activity, label: "Activity Logs", description: "Review recent account activity." },
 ];
 
+const WhatsAppIcon = () => (
+    <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M16.75 13.96c.25.58.11 1.25-.37 1.62l-1.43.93c-.23.16-.54.2-.8.09c-.66-.27-1.39-.68-2.09-1.22c-.75-.58-1.38-1.29-1.89-2.07c-.16-.25-.13-.59.08-.81l.93-1.43c.37-.48 1.04-.62 1.62-.37l1.93.83c.58.25.86.9.61 1.48l-.53 1.21zM12 2a10 10 0 0 0-10 10a10 10 0 0 0 10 10c.39 0 .78-.04 1.15-.09l3.85 1.19l-1.19-3.85A9.9 9.9 0 0 0 22 12a10 10 0 0 0-10-10z"></path></svg>
+);
+
+const TelegramIcon = () => (
+    <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M22 12A10 10 0 0 0 12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10c.39 0 .78-.04 1.15-.09l3.85 1.19l-1.19-3.85A9.9 9.9 0 0 0 22 12m-9.01-1.13l-4.22 1.61c-.5.19-.51.52-.03.7l1.75.54l.54 1.75c.18.48.51.47.7.03l1.61-4.22c.19-.5-.04-.84-.55-.61M14.26 14l-2.61-2.61l.96-.97l3.62 3.63l-.97.95z"></path></svg>
+);
+
+const supportLinks = [
+    { href: "#", icon: WhatsAppIcon, label: "WhatsApp" },
+    { href: "#", icon: TelegramIcon, label: "Telegram" },
+]
+
 function SettingsSidebar() {
     const { user } = useAuthContext();
     const pathname = usePathname();
+    const [theme, setTheme] = useState('light');
+
+    useEffect(() => {
+        const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        setTheme(currentTheme);
+    }, []);
+
+    const toggleTheme = (isDark: boolean) => {
+        setTheme(isDark ? 'dark' : 'light');
+        if (isDark) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }
 
     return (
         <div className="flex flex-col h-full">
@@ -157,13 +190,47 @@ function SettingsSidebar() {
                             })}
                         >
                             <link.icon className="h-5 w-5" />
-                            <div className="flex-grow">
-                               <p className="text-sm font-medium">{link.label}</p>
-                            </div>
-                             <ChevronRight className="h-4 w-4" />
+                            <p className="text-sm font-medium">{link.label}</p>
+                            <ChevronRight className="h-4 w-4 ml-auto" />
                         </Link>
                     ))}
                 </nav>
+                
+                <Separator />
+                
+                <p className="px-3 text-xs font-semibold text-muted-foreground">Support</p>
+                 <nav className="flex flex-col gap-2">
+                    {supportLinks.map(link => (
+                        <Link
+                            key={link.label}
+                            href={link.href}
+                            className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
+                        >
+                            <link.icon />
+                            <p className="text-sm font-medium">{link.label}</p>
+                             <ChevronRight className="h-4 w-4 ml-auto" />
+                        </Link>
+                    ))}
+                </nav>
+
+                <Separator />
+                
+                 <p className="px-3 text-xs font-semibold text-muted-foreground">Preferences</p>
+                 <div className="flex items-center gap-3 rounded-md px-3 py-2">
+                    <SunMoon className="h-5 w-5 text-muted-foreground" />
+                    <Label htmlFor="dark-mode" className="text-sm font-medium flex-grow">Theme</Label>
+                    <Switch id="dark-mode" checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+                </div>
+                 <Link
+                    href="#"
+                    className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
+                >
+                    <Languages className="h-5 w-5" />
+                    <p className="text-sm font-medium">Language</p>
+                    <span className="ml-auto text-sm text-muted-foreground">English</span>
+                    <ChevronRight className="h-4 w-4" />
+                </Link>
+
             </div>
              <div className="mt-auto p-4 border-t">
                 <Link href="/" className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10">
@@ -254,3 +321,5 @@ export default function DashboardLayout({
         </AuthProvider>
     )
 }
+
+    
