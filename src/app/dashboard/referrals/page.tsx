@@ -92,6 +92,27 @@ export default function ReferralsPage() {
                 title="Invite & Earn"
                 description="Share the love and get rewarded for every friend you invite."
             />
+
+            <div className="grid grid-cols-2 gap-4">
+                <Card>
+                    <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Your Referrals</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                        <div className="text-2xl font-bold">{user?.profile?.referrals?.length ?? 0}</div>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Your Points</CardTitle>
+                        <Gift className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                        <div className="text-2xl font-bold text-primary">{user?.profile?.points ?? 0}</div>
+                    </CardContent>
+                </Card>
+            </div>
             
             <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
                 <CardContent className="p-4 space-y-4">
@@ -139,17 +160,11 @@ export default function ReferralsPage() {
             </Card>
 
             <Card>
-                <CardHeader className="p-4 flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle className="text-base">Your Referrals</CardTitle>
-                        <CardDescription className="text-xs">
-                            {user?.profile?.referrals?.length ?? 0} successful invites.
-                        </CardDescription>
-                    </div>
-                     <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Points</p>
-                        <p className="text-2xl font-bold text-primary">{user?.profile?.points ?? 0}</p>
-                    </div>
+                <CardHeader className="p-4">
+                    <CardTitle className="text-base">Your Referral History</CardTitle>
+                    <CardDescription className="text-xs">
+                        A list of users you've successfully invited.
+                    </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="space-y-1 p-2 max-h-80 overflow-y-auto">
