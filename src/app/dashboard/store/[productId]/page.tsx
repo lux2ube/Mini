@@ -7,6 +7,7 @@ import Image from "next/image";
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { motion, useInView } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +17,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import type { Product } from "@/types";
-import { Loader2, ArrowLeft, Phone, ShoppingCart } from "lucide-react";
+import { Loader2, ArrowLeft, Phone, ShoppingCart, Info, Sparkles } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { placeOrder } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import React from "react";
 
 
 const purchaseSchema = z.object({
@@ -31,23 +33,38 @@ type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
 function ProductPageSkeleton() {
     return (
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-            <Skeleton className="h-8 w-32 mb-6" />
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-                <Skeleton className="w-full aspect-square rounded-2xl" />
-                <div className="space-y-4">
-                    <Skeleton className="h-5 w-1/4" />
-                    <Skeleton className="h-10 w-3/4" />
-                    <Skeleton className="h-8 w-1/3" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-5/6" />
-                    <Skeleton className="h-12 w-full mt-6 rounded-full" />
-                </div>
+        <div className="w-full animate-pulse">
+            <div className="h-[50vh] bg-muted flex items-center justify-center">
+                 <Skeleton className="h-48 w-48 rounded-lg" />
+            </div>
+            <div className="container mx-auto px-4 py-8 space-y-6 max-w-2xl">
+                 <Skeleton className="h-6 w-1/4" />
+                 <Skeleton className="h-10 w-3/4" />
+                 <Skeleton className="h-4 w-full" />
+                 <Skeleton className="h-4 w-full" />
+                 <Skeleton className="h-4 w-5/6" />
             </div>
         </div>
     )
 }
+
+const AnimatedSection = ({ children, className }: { children: React.ReactNode, className?: string }) => {
+    const ref = React.useRef(null);
+    const isInView = useInView(ref, { once: true, amount: 0.3 });
+
+    return (
+        <motion.div
+            ref={ref}
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 30 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className={className}
+        >
+            {children}
+        </motion.div>
+    );
+}
+
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -112,81 +129,107 @@ export default function ProductDetailPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-             <Button variant="ghost" onClick={() => router.back()} className="mb-4 h-auto p-0 text-sm hover:bg-transparent">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Store
-            </Button>
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-                 <div className="relative group">
-                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-2xl blur-lg opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-                    <div className="relative aspect-square w-full bg-background/80 backdrop-blur-sm rounded-2xl p-4 border border-border/20">
+        <>
+            <div className="w-full bg-slate-900 text-white relative">
+                 <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-20"
+                    style={{ backgroundImage: `url(${product.imageUrl})`}}
+                ></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
+
+                <div className="min-h-[60vh] relative z-10 flex flex-col justify-center items-center container mx-auto px-4 py-12 text-center">
+                    <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}>
                         <Image
                             src={product.imageUrl}
                             alt={product.name}
-                            fill
-                            className="object-contain"
+                            width={256}
+                            height={256}
+                            className="object-contain drop-shadow-2xl"
+                            priority
                             data-ai-hint="product image"
                         />
-                    </div>
+                    </motion.div>
                 </div>
 
-                <div className="space-y-4">
-                    <Badge variant="outline">{product.categoryName}</Badge>
-                    <h1 className="text-3xl lg:text-4xl font-bold font-headline">{product.name}</h1>
-                    <p className="text-3xl font-bold text-primary">${product.price.toFixed(2)}</p>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>
-                    
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button size="lg" className="w-full mt-4 rounded-full h-12 text-base relative overflow-hidden group/btn" disabled={product.stock <= 0}>
-                                <span className="absolute w-0 h-0 transition-all duration-300 ease-out bg-primary-foreground/20 group-hover/btn:w-full group-hover/btn:h-full"></span>
-                                <span className="relative flex items-center gap-2">
-                                    <ShoppingCart className="h-5 w-5"/>
-                                    {product.stock > 0 ? 'Buy Now with Cashback' : 'Out of Stock'}
-                                </span>
-                            </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Confirm Purchase: {product.name}</DialogTitle>
-                                <DialogDescription>
-                                    Enter your phone number for delivery. ${product.price.toFixed(2)} will be deducted from your available cashback balance.
-                                </DialogDescription>
-                            </DialogHeader>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-4">
-                                     <FormField
-                                        control={form.control}
-                                        name="phoneNumber"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Phone Number</FormLabel>
-                                                <FormControl>
-                                                    <div className="relative">
-                                                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                        <Input type="tel" placeholder="e.g., +1 555-123-4567" {...field} className="pl-10" />
-                                                    </div>
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    <DialogFooter>
-                                        <DialogClose asChild>
-                                            <Button type="button" variant="secondary">Cancel</Button>
-                                        </DialogClose>
-                                        <Button type="submit" disabled={isSubmitting}>
-                                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Confirm Order
-                                        </Button>
-                                    </DialogFooter>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
+                <Button variant="ghost" onClick={() => router.back()} className="absolute top-4 left-4 z-20 bg-black/20 hover:bg-black/40 text-white h-auto p-2 rounded-full">
+                    <ArrowLeft className="h-5 w-5" />
+                </Button>
+            </div>
+            
+            <div className="bg-slate-900">
+                <div className="bg-background rounded-t-3xl pt-8 pb-24">
+                    <div className="container mx-auto px-4 max-w-2xl space-y-8">
+                        <AnimatedSection>
+                            <Badge variant="outline">{product.categoryName}</Badge>
+                            <h1 className="text-4xl lg:text-5xl font-bold font-headline mt-2">{product.name}</h1>
+                        </AnimatedSection>
+                        
+                        <AnimatedSection>
+                             <div className="flex items-baseline gap-4">
+                                <p className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</p>
+                                <span className="text-sm text-muted-foreground">with Cashback Balance</span>
+                             </div>
+                        </AnimatedSection>
+
+                        <AnimatedSection>
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+                                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2"><Info className="h-5 w-5 text-primary"/> Description</h2>
+                                <p>{product.description}</p>
+                            </div>
+                        </AnimatedSection>
+                    </div>
                 </div>
             </div>
-        </div>
+            
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                     <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t z-50">
+                        <div className="container mx-auto max-w-2xl">
+                             <Button size="lg" className="w-full h-12 text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90" disabled={product.stock <= 0}>
+                                {product.stock > 0 ? 'Proceed to Purchase' : 'Out of Stock'}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Confirm Purchase: {product.name}</DialogTitle>
+                        <DialogDescription>
+                            Enter your phone number for delivery. ${product.price.toFixed(2)} will be deducted from your available cashback balance.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-4">
+                                <FormField
+                                control={form.control}
+                                name="phoneNumber"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Phone Number</FormLabel>
+                                        <FormControl>
+                                            <div className="relative">
+                                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                <Input type="tel" placeholder="e.g., +1 555-123-4567" {...field} className="pl-10" />
+                                            </div>
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                    <Button type="button" variant="secondary">Cancel</Button>
+                                </DialogClose>
+                                <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Confirm Order
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
+
