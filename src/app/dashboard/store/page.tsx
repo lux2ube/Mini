@@ -23,29 +23,31 @@ import { cn } from '@/lib/utils';
 function ProductCard({ product }: { product: Product }) {
     return (
         <Card className="flex flex-col overflow-hidden group border-2 border-transparent hover:border-primary transition-all duration-300 hover:shadow-lg">
-            <div className="aspect-square relative w-full overflow-hidden">
-                <Image
-                    src={product.imageUrl}
-                    alt={product.name}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    data-ai-hint="product image"
-                />
-                 <div className="absolute bottom-2 right-2">
-                    <Badge variant="default" className="text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground">
-                        ${product.price.toFixed(2)}
-                    </Badge>
+            <Link href={`/dashboard/store/${product.id}`} className="flex flex-col h-full">
+                <div className="aspect-square relative w-full overflow-hidden">
+                    <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        data-ai-hint="product image"
+                    />
+                     <div className="absolute top-2 right-2">
+                        <Badge variant="default" className="text-sm shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground">
+                            ${product.price.toFixed(2)}
+                        </Badge>
+                    </div>
                 </div>
-            </div>
-            <div className="p-3 flex-grow flex flex-col">
-                <h3 className="font-semibold text-sm leading-tight line-clamp-2 flex-grow group-hover:text-primary transition-colors">{product.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">{product.categoryName}</p>
-            </div>
-            <CardFooter className="p-3 pt-0">
-                <Button asChild size="sm" className="w-full">
-                    <Link href={`/dashboard/store/${product.id}`}>Buy Now</Link>
-                </Button>
-            </CardFooter>
+                <div className="p-3 flex-grow flex flex-col">
+                    <h3 className="font-semibold text-sm leading-tight line-clamp-2 flex-grow group-hover:text-primary transition-colors">{product.name}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{product.categoryName}</p>
+                </div>
+                <CardFooter className="p-3 pt-0">
+                     <Button asChild size="sm" className="w-full text-xs h-8">
+                        <div>Buy Now</div>
+                    </Button>
+                </CardFooter>
+            </Link>
         </Card>
     )
 }
@@ -206,7 +208,7 @@ export default function StorePage() {
     }
 
     const renderGrid = (items: Product[]) => (
-         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
              {items.length > 0 ? (
                 items.map(product => (
                     <ProductCard key={product.id} product={product} />
