@@ -25,7 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { format } from "date-fns";
-import { Badge } from "../ui/badge";
+import { Badge } from "@/components/ui/badge";
 
 
 interface DashboardStats {
