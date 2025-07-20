@@ -43,7 +43,7 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast({ variant: "destructive", title: "Error", description: "Passwords do not match." });
+      toast({ variant: "destructive", title: "خطأ", description: "كلمات المرور غير متطابقة." });
       return;
     }
     setIsLoading(true);
@@ -110,15 +110,15 @@ export default function RegisterPage() {
 
       window.dispatchEvent(new CustomEvent('refetchUser'));
 
-      toast({ type: "success", title: "Success", description: "Account created successfully. Redirecting..." });
+      toast({ type: "success", title: "نجاح", description: "تم إنشاء الحساب بنجاح. جارٍ إعادة التوجيه..." });
       router.push('/dashboard');
 
     } catch (error: any) {
       console.error("Registration Error: ", error);
       if (error.code === 'auth/email-already-in-use') {
-        toast({ variant: 'destructive', title: "Registration Failed", description: "This email address is already in use. Please log in." });
+        toast({ variant: 'destructive', title: "فشل التسجيل", description: "هذا البريد الإلكتروني مستخدم بالفعل. يرجى تسجيل الدخول." });
       } else {
-        toast({ variant: 'destructive', title: "Error", description: error.message });
+        toast({ variant: 'destructive', title: "خطأ", description: "حدث خطأ غير متوقع." });
       }
     } finally {
       setIsLoading(false);
@@ -129,57 +129,57 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
        <div className="max-w-[400px] w-full mx-auto space-y-4">
         <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold font-headline">Create Account</h1>
-            <p className="text-muted-foreground">Join and start earning.</p>
+            <h1 className="text-3xl font-bold font-headline">إنشاء حساب</h1>
+            <p className="text-muted-foreground">انضم إلينا وابدأ في الكسب.</p>
         </div>
         <Card>
             <CardContent className="p-4">
                 <form onSubmit={handleRegister} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="name">الاسم الكامل</Label>
                          <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} className="pl-10"/>
+                            <Input id="name" type="text" placeholder="جون دو" required value={name} onChange={(e) => setName(e.target.value)} className="pl-10"/>
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">البريد الإلكتروني</Label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10"/>
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">كلمة المرور</Label>
                          <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10"/>
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm Password</Label>
+                        <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
                          <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input id="confirm-password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10"/>
                         </div>
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="referral-code">Referral Code (Optional)</Label>
+                        <Label htmlFor="referral-code">رمز الإحالة (اختياري)</Label>
                         <div className="relative">
                             <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="referral-code" type="text" placeholder="e.g. JOH123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="pl-10"/>
+                            <Input id="referral-code" type="text" placeholder="مثال: JOH123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="pl-10"/>
                         </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="animate-spin" /> : "Create Account"}
+                    {isLoading ? <Loader2 className="animate-spin" /> : "إنشاء حساب"}
                     </Button>
                 </form>
             </CardContent>
         </Card>
         <div className="text-center text-sm">
-            Already have an account?{' '}
+            هل لديك حساب بالفعل؟{' '}
             <Link href="/login" className="underline text-primary">
-                Login
+                تسجيل الدخول
             </Link>
         </div>
        </div>

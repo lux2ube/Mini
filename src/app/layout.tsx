@@ -1,7 +1,8 @@
+
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Inter, Space_Grotesk, Tajawal } from 'next/font/google';
 import { cn } from '@/lib/utils';
 
 const fontBody = Inter({
@@ -14,9 +15,15 @@ const fontHeadline = Space_Grotesk({
   variable: '--font-headline',
 });
 
+const fontArabic = Tajawal({
+  subsets: ['arabic'],
+  weight: ['400', '700'],
+  variable: '--font-arabic',
+});
+
 export const metadata: Metadata = {
-  title: 'Cashback Companion',
-  description: 'AI-powered insights into the Cashback1 GitHub project.',
+  title: 'رفيق الكاش باك',
+  description: 'تحليلات مدعومة بالذكاء الاصطناعي لمشروع Cashback1 على GitHub.',
 };
 
 export default function RootLayout({
@@ -25,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={cn("font-body antialiased", fontBody.variable, fontHeadline.variable)}>
+    <html lang="ar" dir="rtl">
+      <body className={cn("font-arabic antialiased", fontBody.variable, fontHeadline.variable, fontArabic.variable)}>
         {children}
         <Toaster />
       </body>

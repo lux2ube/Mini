@@ -52,7 +52,7 @@ export default function LoginPage() {
     if (isNewUser) {
         const newUserProfile = { 
             uid: user.uid,
-            name: user.displayName || "New User", 
+            name: user.displayName || "مستخدم جديد", 
             email: user.email!, 
             role: "user" as const,
             createdAt: Timestamp.now(),
@@ -74,8 +74,8 @@ export default function LoginPage() {
 
     toast({
         type: "success",
-        title: "Success",
-        description: "Logged in successfully.",
+        title: "نجاح",
+        description: "تم تسجيل الدخول بنجاح.",
     });
 
     const finalUserDoc = await getDoc(userDocRef);
@@ -95,8 +95,8 @@ export default function LoginPage() {
     } catch (error: any) {
       toast({
         type: "error",
-        title: "Login Failed",
-        description: error.message,
+        title: "فشل تسجيل الدخول",
+        description: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
       });
     } finally {
       setIsLoading(false);
@@ -111,10 +111,10 @@ export default function LoginPage() {
     } catch (error: any) {
          toast({
             type: "error",
-            title: "Login Failed",
+            title: "فشل تسجيل الدخول",
             description: error.code === 'auth/account-exists-with-different-credential'
-                ? "An account already exists with this email address. Please sign in with your original method."
-                : error.message,
+                ? "يوجد حساب بالفعل بهذا البريد الإلكتروني. يرجى تسجيل الدخول بالطريقة الأصلية."
+                : "حدث خطأ أثناء تسجيل الدخول.",
         });
     } finally {
         setIsSocialLoading(false);
@@ -126,8 +126,8 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-[400px] w-full mx-auto space-y-4">
         <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold font-headline">Login</h1>
-            <p className="text-muted-foreground">Access your account.</p>
+            <h1 className="text-3xl font-bold font-headline">تسجيل الدخول</h1>
+            <p className="text-muted-foreground">الوصول إلى حسابك.</p>
         </div>
         <Card>
             <CardContent className="p-4">
@@ -142,13 +142,13 @@ export default function LoginPage() {
 
                 <div className="my-4 flex items-center">
                     <div className="flex-grow border-t border-muted"></div>
-                    <span className="mx-4 text-xs uppercase text-muted-foreground">Or</span>
+                    <span className="mx-4 text-xs uppercase text-muted-foreground">أو</span>
                     <div className="flex-grow border-t border-muted"></div>
                 </div>
 
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">البريد الإلكتروني</Label>
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
@@ -164,7 +164,7 @@ export default function LoginPage() {
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <Label htmlFor="password">كلمة المرور</Label>
                          <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
@@ -179,15 +179,15 @@ export default function LoginPage() {
                         </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading || isSocialLoading}>
-                    {isLoading ? <Loader2 className="animate-spin" /> : "Login with Email"}
+                    {isLoading ? <Loader2 className="animate-spin" /> : "تسجيل الدخول بالبريد الإلكتروني"}
                     </Button>
                 </form>
             </CardContent>
         </Card>
         <div className="text-center text-sm">
-            Don&apos;t have an account?{' '}
+            ليس لديك حساب؟{' '}
             <Link href="/register" className="underline text-primary">
-                Sign up
+                إنشاء حساب
             </Link>
         </div>
       </div>

@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -15,6 +16,7 @@ export default {
       fontFamily: {
         body: ['var(--font-body)', 'sans-serif'],
         headline: ['var(--font-headline)', 'sans-serif'],
+        arabic: ['var(--font-arabic)', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',
