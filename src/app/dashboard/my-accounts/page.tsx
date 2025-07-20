@@ -8,11 +8,12 @@ import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, PlusCircle, Briefcase, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Loader2, PlusCircle, Briefcase, CheckCircle, Clock, XCircle, Wifi, Cpu } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import type { TradingAccount, CashbackTransaction } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Image from "next/image";
 
 function AccountCard({ account, totalEarned }: { account: TradingAccount, totalEarned: number }) {
     const getStatusVariant = (status: string) => {
@@ -23,28 +24,52 @@ function AccountCard({ account, totalEarned }: { account: TradingAccount, totalE
             default: return 'outline';
         }
     };
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'Approved': return <CheckCircle className="h-4 w-4" />;
-            case 'Pending': return <Clock className="h-4 w-4" />;
-            case 'Rejected': return <XCircle className="h-4 w-4" />;
-            default: return <Briefcase className="h-4 w-4" />;
-        }
-    };
     
+    // Mini Visa card design for approved accounts
+    if (account.status === 'Approved') {
+        return (
+             <Link href={`/dashboard/my-accounts/${account.id}`} className="block">
+                <Card className="aspect-[1.586] bg-slate-800 text-white shadow-lg overflow-hidden relative group hover:scale-105 transition-transform duration-300">
+                    <CardContent className="p-4 flex flex-col justify-between h-full">
+                         <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-primary/10 opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                        <div className="relative z-10">
+                            <div className="flex justify-between items-start">
+                                <Cpu className="w-8 h-8 text-yellow-400" />
+                                <Wifi className="w-6 h-6 text-gray-400" />
+                            </div>
+                        </div>
+                        <div className="relative z-10 space-y-1">
+                            <p className="font-mono text-lg tracking-wider">
+                                **** **** **** {account.accountNumber.slice(-4)}
+                            </p>
+                            <div className="flex justify-between items-end">
+                                <div className="space-y-0">
+                                     <p className="text-xs text-gray-400 uppercase">Broker</p>
+                                     <p className="font-semibold">{account.broker}</p>
+                                </div>
+                                <div className="space-y-0 text-right">
+                                     <p className="text-xs text-gray-400 uppercase">Earned</p>
+                                     <p className="font-bold text-primary">${totalEarned.toFixed(2)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+             </Link>
+        )
+    }
+
+    // Standard card for Pending/Rejected accounts
     return (
         <Link href={`/dashboard/my-accounts/${account.id}`} className="block">
             <Card className="hover:bg-muted/50 transition-colors">
                  <CardContent className="p-4 flex items-center gap-4">
-                    <div className="p-3 bg-primary/10 rounded-lg">
-                        <Briefcase className="w-6 h-6 text-primary" />
+                    <div className="p-3 bg-muted rounded-lg">
+                        <Briefcase className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <div className="flex-grow space-y-1">
                         <p className="font-semibold">{account.broker}</p>
                         <p className="text-sm text-muted-foreground">{account.accountNumber}</p>
-                        {account.status === 'Approved' && (
-                            <p className="text-xs text-primary font-medium pt-1">Total Earned: ${totalEarned.toFixed(2)}</p>
-                        )}
                         {account.status === 'Rejected' && account.rejectionReason && (
                             <p className="text-xs text-destructive flex items-center gap-1.5 pt-1">
                                 <XCircle className="h-3 w-3"/>{account.rejectionReason}
@@ -53,7 +78,8 @@ function AccountCard({ account, totalEarned }: { account: TradingAccount, totalE
                     </div>
                     <div className="flex flex-col items-end gap-2">
                         <Badge variant={getStatusVariant(account.status)} className="gap-1.5 h-6">
-                            {getStatusIcon(account.status)}
+                            {account.status === 'Pending' && <Clock className="h-3 w-3" />}
+                            {account.status === 'Rejected' && <XCircle className="h-3 w-3" />}
                             {account.status}
                         </Badge>
                     </div>
@@ -132,11 +158,24 @@ export default function MyAccountsPage() {
         );
     }
 
-    const renderAccountList = (accountList: TradingAccount[]) => {
+    const renderAccountList = (accountList: TradingAccount[], grid: boolean = false) => {
         if (accountList.length === 0) {
             return (
                 <div className="text-center py-10 border rounded-lg bg-muted/30">
                     <p className="text-muted-foreground text-sm">No accounts found in this category.</p>
+                </div>
+            );
+        }
+        if (grid) {
+             return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {accountList.map(account => (
+                        <AccountCard 
+                            key={account.id} 
+                            account={account} 
+                            totalEarned={transactionsByAccountId[account.id] || 0}
+                        />
+                    ))}
                 </div>
             );
         }
@@ -154,7 +193,7 @@ export default function MyAccountsPage() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-4 max-w-2xl space-y-6">
+        <div className="container mx-auto px-4 py-4 max-w-4xl space-y-6">
             <div className="flex justify-between items-center">
                 <PageHeader
                     title="My Accounts"
@@ -193,7 +232,7 @@ export default function MyAccountsPage() {
                         {renderAccountList(accountLists.all)}
                     </TabsContent>
                     <TabsContent value="approved" className="mt-4">
-                        {renderAccountList(accountLists.approved)}
+                        {renderAccountList(accountLists.approved, true)}
                     </TabsContent>
                     <TabsContent value="pending" className="mt-4">
                         {renderAccountList(accountLists.pending)}

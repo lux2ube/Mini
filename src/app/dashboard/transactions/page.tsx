@@ -108,38 +108,43 @@ export default function TransactionsPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Broker</TableHead>
-                                    <TableHead>Account #</TableHead>
-                                    <TableHead>Details</TableHead>
-                                    <TableHead className="text-right">Amount</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredTransactions.length > 0 ? (
-                                    filteredTransactions.map(tx => (
-                                        <TableRow key={tx.id}>
-                                            <TableCell className="whitespace-nowrap">{format(tx.date, "PP")}</TableCell>
-                                            <TableCell>{tx.broker}</TableCell>
-                                            <TableCell>{tx.accountNumber}</TableCell>
-                                            <TableCell>{tx.tradeDetails}</TableCell>
-                                            <TableCell className="text-right font-semibold text-primary">${tx.cashbackAmount.toFixed(2)}</TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center h-24">
-                                            No transactions found.
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Account</TableHead>
+                                <TableHead>Details</TableHead>
+                                <TableHead className="text-right">Amount</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredTransactions.length > 0 ? (
+                                filteredTransactions.map(tx => (
+                                    <TableRow key={tx.id}>
+                                        <TableCell className="text-muted-foreground text-xs md:text-sm">
+                                          {format(tx.date, "PP")}
                                         </TableCell>
+                                        <TableCell>
+                                            <div className="font-medium">{tx.broker}</div>
+                                            <div className="text-xs text-muted-foreground">{tx.accountNumber}</div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <p className="max-w-[250px] truncate md:max-w-none md:whitespace-normal">
+                                                {tx.tradeDetails}
+                                            </p>
+                                        </TableCell>
+                                        <TableCell className="text-right font-semibold text-primary">${tx.cashbackAmount.toFixed(2)}</TableCell>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center h-24">
+                                        No transactions found.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
                 </CardContent>
             </Card>
         </div>
