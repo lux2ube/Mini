@@ -180,8 +180,14 @@ export default function MyAccountsPage() {
                     <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="all">All</TabsTrigger>
                         <TabsTrigger value="approved">Approved</TabsTrigger>
-                        <TabsTrigger value="pending">Pending</TabsTrigger>
-                        <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                        <TabsTrigger value="pending">
+                            Pending 
+                            {accountLists.pending.length > 0 && <Badge className="ml-2 bg-amber-500">{accountLists.pending.length}</Badge>}
+                        </TabsTrigger>
+                        <TabsTrigger value="rejected">
+                            Rejected
+                            {accountLists.rejected.length > 0 && <Badge variant="destructive" className="ml-2">{accountLists.rejected.length}</Badge>}
+                        </TabsTrigger>
                     </TabsList>
                     <TabsContent value="all" className="mt-4">
                         {renderAccountList(accountLists.all)}

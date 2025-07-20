@@ -6,7 +6,7 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, Timestamp } from "firebase/firestore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import type { CashbackTransaction } from "@/types";
 import {
@@ -94,13 +94,18 @@ export default function TransactionsPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Transaction History</CardTitle>
-                    <Input 
-                        placeholder="Filter by broker, account #, or details..."
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        className="max-w-sm"
-                    />
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                        <CardTitle>Transaction History</CardTitle>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input 
+                                placeholder="Filter by broker, account, details..."
+                                value={filter}
+                                onChange={(e) => setFilter(e.target.value)}
+                                className="w-full sm:w-auto pl-10"
+                            />
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
