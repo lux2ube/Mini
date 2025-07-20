@@ -2,13 +2,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
     CircleUser,
     Settings,
     LogOut,
     Bell,
     Check,
-    Store,
     MessageCircle,
     User,
     ShieldCheck,
@@ -16,6 +16,10 @@ import {
     Activity,
     ChevronRight,
     Home,
+    Wallet,
+    Briefcase,
+    Store,
+    Gift
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -35,7 +39,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { usePathname } from "next/navigation";
 
 
 function NotificationBell() {
@@ -172,6 +175,44 @@ function SettingsSidebar() {
     )
 }
 
+function BottomNavBar() {
+    const pathname = usePathname();
+    const navItems = [
+        { href: "/dashboard", icon: Home, label: "Home" },
+        { href: "/dashboard/withdraw", icon: Wallet, label: "Wallet" },
+        { href: "/dashboard/store", icon: Store, label: "Store" },
+        { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
+    ];
+
+    const fabItem = { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" };
+
+    return (
+        <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t">
+            <div className="grid h-full grid-cols-5 max-w-lg mx-auto">
+                {navItems.slice(0, 2).map((item) => (
+                    <Link key={item.href} href={item.href} className="inline-flex flex-col items-center justify-center font-medium px-5 hover:bg-muted group">
+                        <item.icon className={cn("h-5 w-5 mb-1 text-muted-foreground group-hover:text-primary", { "text-primary": pathname === item.href })} />
+                        <span className={cn("text-xs text-muted-foreground group-hover:text-primary", { "text-primary": pathname === item.href })}>{item.label}</span>
+                    </Link>
+                ))}
+                
+                <div className="relative flex items-center justify-center">
+                    <Link href={fabItem.href} className="absolute bottom-4 inline-flex items-center justify-center w-14 h-14 font-medium bg-primary rounded-full text-primary-foreground shadow-lg hover:bg-primary/90">
+                        <fabItem.icon className="h-6 w-6" />
+                    </Link>
+                </div>
+
+                {navItems.slice(2).map((item) => (
+                     <Link key={item.href} href={item.href} className="inline-flex flex-col items-center justify-center font-medium px-5 hover:bg-muted group">
+                        <item.icon className={cn("h-5 w-5 mb-1 text-muted-foreground group-hover:text-primary", { "text-primary": pathname.startsWith(item.href) })} />
+                        <span className={cn("text-xs text-muted-foreground group-hover:text-primary", { "text-primary": pathname.startsWith(item.href) })}>{item.label}</span>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    )
+}
+
 export default function DashboardLayout({
     children,
 }: {
@@ -190,15 +231,6 @@ export default function DashboardLayout({
                         </Link>
                         
                         <div className="ml-auto flex items-center gap-2">
-                            <Button asChild variant="ghost" size="icon" className="h-9 w-9">
-                                <Link href="/dashboard"><Home className="h-5 w-5" /></Link>
-                            </Button>
-                            <Button asChild variant="ghost" size="icon" className="h-9 w-9">
-                                <Link href="/dashboard/store"><Store className="h-5 w-5" /></Link>
-                            </Button>
-                            <Button asChild variant="ghost" size="icon" className="h-9 w-9">
-                               <Link href="/contact"><MessageCircle className="h-5 w-5" /></Link>
-                            </Button>
                             <NotificationBell />
                             <Sheet>
                                 <SheetTrigger asChild>
@@ -213,9 +245,10 @@ export default function DashboardLayout({
                             </Sheet>
                         </div>
                     </header>
-                    <main className="flex flex-1 flex-col">
+                    <main className="flex-1 pb-16">
                         {children}
                     </main>
+                    <BottomNavBar />
                 </div>
             </AuthGuard>
         </AuthProvider>
