@@ -20,6 +20,7 @@ import {
     ShoppingBag,
     User,
     History,
+    MessageCircle,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -187,20 +188,24 @@ export default function DashboardLayout({
                             <h1 className="text-base font-semibold font-headline">Cashback Companion</h1>
                         </div>
                         <div className="flex items-center gap-2">
+                            <Button asChild variant="outline" size="icon" className="h-9 w-9">
+                                <Link href="/dashboard/store"><Store className="h-4 w-4" /></Link>
+                            </Button>
+                            <Button variant="outline" size="icon" className="h-9 w-9">
+                                <MessageCircle className="h-4 w-4" />
+                            </Button>
                             <NotificationBell />
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="secondary" size="icon" className="rounded-full h-9 w-9">
+                                    <Button asChild variant="secondary" size="icon" className="rounded-full h-9 w-9">
+                                      <Link href="/dashboard/settings">
                                         <CircleUser className="h-5 w-5" />
                                         <span className="sr-only">Toggle user menu</span>
+                                      </Link>
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <Link href="/dashboard/profile"><DropdownMenuItem><User />Profile</DropdownMenuItem></Link>
-                                    <Link href="/dashboard/settings"><DropdownMenuItem><Settings />Settings</DropdownMenuItem></Link>
-                                    <DropdownMenuItem>Support</DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <Link href="/"><DropdownMenuItem><LogOut/>Logout</DropdownMenuItem></Link>
                                 </DropdownMenuContent>
