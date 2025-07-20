@@ -25,7 +25,7 @@ function AccountCard({ account, totalEarned }: { account: TradingAccount, totalE
         }
     };
     
-    // Mini Visa card design for approved accounts
+    // A premium, well-designed card for approved accounts
     if (account.status === 'Approved') {
         return (
              <Link href={`/dashboard/my-accounts/${account.id}`} className="block">
