@@ -92,22 +92,19 @@ function PromoBanner() {
 }
 
 const quickAccessLinks = [
-    { href: "/dashboard/store", icon: Store, label: "Store" },
     { href: "/dashboard/brokers", icon: Briefcase, label: "Brokers" },
     { href: "/dashboard/withdraw", icon: Wallet, label: "Wallet" },
     { href: "/dashboard/my-accounts", icon: Users, label: "Accounts" },
-    { href: "/dashboard/transactions", icon: History, label: "History" },
     { href: "/dashboard/referrals", icon: Gift, label: "Referrals" },
-    { href: "/dashboard/settings", icon: Settings, label: "Settings" },
 ];
 
 function QuickAccessGrid() {
     return (
         <div className="grid grid-cols-4 gap-2 text-center">
-            {quickAccessLinks.map((link, index) => (
-                 <Link href={link.href} key={link.href} className={index === 0 ? "col-span-4" : ""}>
-                    <div className="flex flex-col items-center justify-center p-2 space-y-1 rounded-lg hover:bg-muted transition-colors">
-                       <div className="p-2 bg-primary/10 rounded-full">
+            {quickAccessLinks.map((link) => (
+                 <Link href={link.href} key={link.href}>
+                    <div className="flex flex-col items-center justify-center p-2 space-y-1 rounded-lg hover:bg-muted transition-colors aspect-square">
+                       <div className="p-3 bg-primary/10 rounded-full">
                          <link.icon className="h-5 w-5 text-primary" />
                        </div>
                        <p className="text-xs text-muted-foreground">{link.label}</p>
