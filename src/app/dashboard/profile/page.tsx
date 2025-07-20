@@ -28,7 +28,7 @@ import { useRouter } from "next/navigation";
 
 
 const profileSchema = z.object({
-    name: z.string().min(3, { message: "Name must be at least 3 characters." }),
+    name: z.string().min(3, { message: "يجب أن يتكون الاسم من 3 أحرف على الأقل." }),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -52,10 +52,10 @@ export default function ProfilePage() {
         setIsProfileSubmitting(true);
         const result = await updateUserProfile(user.uid, values);
         if (result.success) {
-            toast({ type: "success", title: "Success", description: result.message });
+            toast({ type: "success", title: "نجاح", description: result.message });
             refetchUserData();
         } else {
-            toast({ type: "error", title: "Error", description: result.message });
+            toast({ type: "error", title: "خطأ", description: result.message });
         }
         setIsProfileSubmitting(false);
     };
@@ -63,7 +63,7 @@ export default function ProfilePage() {
     const copyToClipboard = (text: string | undefined) => {
         if (text) {
             navigator.clipboard.writeText(text);
-            toast({ title: 'Copied!' });
+            toast({ title: 'تم النسخ!' });
         }
     }
 
@@ -81,9 +81,9 @@ export default function ProfilePage() {
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
             <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 text-sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Settings
+                العودة إلى الإعدادات
             </Button>
-            <PageHeader title="Edit Profile" description="Manage your personal information." />
+            <PageHeader title="تعديل الملف الشخصي" description="إدارة معلوماتك الشخصية." />
 
             <div className="flex flex-col items-center space-y-4">
                 <Avatar className="h-24 w-24">
@@ -96,7 +96,7 @@ export default function ProfilePage() {
                     <p className="text-sm text-muted-foreground">{profile.email}</p>
                     <Badge variant="secondary" className="mt-2">
                         <Star className="mr-2 h-4 w-4 text-amber-500"/>
-                        {profile.tier || 'Bronze'}
+                        {profile.tier || 'برونزي'}
                     </Badge>
                 </div>
             </div>
@@ -106,7 +106,7 @@ export default function ProfilePage() {
                 <form onSubmit={profileForm.handleSubmit(handleProfileSubmit)}>
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">Update Information</CardTitle>
+                            <CardTitle className="text-base">تحديث المعلومات</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                              <FormField
@@ -114,11 +114,11 @@ export default function ProfilePage() {
                                 name="name"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Full Name</FormLabel>
+                                        <FormLabel>الاسم الكامل</FormLabel>
                                         <FormControl>
                                             <div className="relative">
                                                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input placeholder="Your full name" {...field} className="pl-10" />
+                                                <Input placeholder="اسمك الكامل" {...field} className="pl-10" />
                                             </div>
                                         </FormControl>
                                         <FormMessage />
@@ -126,7 +126,7 @@ export default function ProfilePage() {
                                 )}
                             />
                             <div>
-                                <Label>Email Address</Label>
+                                <Label>البريد الإلكتروني</Label>
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <Input readOnly value={profile.email} className="pl-10 bg-muted/70" />
@@ -136,7 +136,7 @@ export default function ProfilePage() {
                         <CardFooter className="p-4 pt-0 justify-end">
                             <Button type="submit" size="sm" disabled={isProfileSubmitting}>
                                 {isProfileSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Save Changes
+                                حفظ التغييرات
                             </Button>
                         </CardFooter>
                     </Card>
@@ -146,11 +146,11 @@ export default function ProfilePage() {
              {/* --- UID & Referral Code Card --- */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Account Identifiers</CardTitle>
+                    <CardTitle className="text-base">معرفات الحساب</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div>
-                        <Label>User ID (UID)</Label>
+                        <Label>معرف المستخدم (UID)</Label>
                         <div className="flex items-center gap-2">
                             <Input readOnly value={profile.uid} className="font-mono text-xs" />
                             <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(profile.uid)}>
@@ -159,7 +159,7 @@ export default function ProfilePage() {
                         </div>
                     </div>
                     <div>
-                        <Label>Your Referral Code</Label>
+                        <Label>رمز الإحالة الخاص بك</Label>
                         <div className="flex items-center gap-2">
                              <div className="relative flex-grow">
                                 <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

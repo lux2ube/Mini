@@ -26,18 +26,18 @@ export default function SettingsPage() {
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
             <Button variant="ghost" onClick={() => router.push('/dashboard')} className="h-auto p-0 text-sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
+                العودة إلى لوحة التحكم
             </Button>
-            <PageHeader title="Settings" description="Manage your account, security, and verification." />
+            <PageHeader title="الإعدادات" description="إدارة حسابك والأمان والتحقق." />
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Welcome to Settings</CardTitle>
+                    <CardTitle className="text-base">مرحبا بك في الإعدادات</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground">
-                        Use the menu to navigate through your profile, security, and verification settings. 
-                        Click the profile icon in the top right corner to open the settings panel at any time.
+                        استخدم القائمة للتنقل عبر ملفك الشخصي وإعدادات الأمان والتحقق. 
+                        انقر فوق أيقونة الملف الشخصي في الزاوية العلوية اليمنى لفتح لوحة الإعدادات في أي وقت.
                     </p>
                 </CardContent>
             </Card>

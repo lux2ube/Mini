@@ -97,6 +97,15 @@ export default function AccountDetailPage() {
             default: return 'outline';
         }
     };
+    
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'Approved': return 'مقبول';
+            case 'Pending': return 'معلق';
+            case 'Rejected': return 'مرفوض';
+            default: return status;
+        }
+    }
 
     if (isLoading) {
         return (
@@ -114,7 +123,7 @@ export default function AccountDetailPage() {
         <div className="container mx-auto px-4 py-4 max-w-2xl space-y-4">
              <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 text-sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to My Accounts
+                العودة إلى حساباتي
             </Button>
             
             <Card>
@@ -122,27 +131,27 @@ export default function AccountDetailPage() {
                     <div className="flex justify-between items-start">
                         <div>
                             <CardTitle>{account.broker}</CardTitle>
-                            <CardDescription>Account: {account.accountNumber}</CardDescription>
+                            <CardDescription>الحساب: {account.accountNumber}</CardDescription>
                         </div>
-                         <Badge variant={getStatusVariant(account.status)}>{account.status}</Badge>
+                         <Badge variant={getStatusVariant(account.status)}>{getStatusText(account.status)}</Badge>
                     </div>
                 </CardHeader>
                 <CardContent>
                     {account.status === 'Rejected' && account.rejectionReason && (
                         <Alert variant="destructive" className="mb-4">
                             <XCircle className="h-4 w-4" />
-                            <AlertTitle>Rejection Reason</AlertTitle>
+                            <AlertTitle>سبب الرفض</AlertTitle>
                             <AlertDescription>{account.rejectionReason}</AlertDescription>
                         </Alert>
                     )}
                     {account.status === 'Approved' && (
                         <p className="text-lg">
-                            Total Cashback Earned: <span className="font-bold text-primary">${totalEarned.toFixed(2)}</span>
+                            إجمالي الكاش باك المكتسب: <span className="font-bold text-primary">${totalEarned.toFixed(2)}</span>
                         </p>
                     )}
                      {account.status === 'Pending' && (
                         <p className="text-sm text-muted-foreground">
-                            This account is currently pending approval. You will be notified once it has been reviewed.
+                            هذا الحساب قيد الموافقة حاليًا. سيتم إعلامك بمجرد مراجعته.
                         </p>
                     )}
                 </CardContent>
@@ -151,9 +160,9 @@ export default function AccountDetailPage() {
             {account.status === 'Approved' && (
                 <Card>
                     <CardHeader>
-                        <CardTitle>Cashback History</CardTitle>
+                        <CardTitle>سجل الكاش باك</CardTitle>
                         <CardDescription>
-                            All transactions for this account.
+                            جميع المعاملات لهذا الحساب.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -161,9 +170,9 @@ export default function AccountDetailPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Date</TableHead>
-                                        <TableHead>Details</TableHead>
-                                        <TableHead className="text-right">Cashback</TableHead>
+                                        <TableHead>التاريخ</TableHead>
+                                        <TableHead>التفاصيل</TableHead>
+                                        <TableHead className="text-right">الكاش باك</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -178,7 +187,7 @@ export default function AccountDetailPage() {
                                     ) : (
                                         <TableRow>
                                             <TableCell colSpan={3} className="text-center h-24">
-                                                No transactions found for this account yet.
+                                                لم يتم العثور على معاملات لهذا الحساب بعد.
                                             </TableCell>
                                         </TableRow>
                                     )}

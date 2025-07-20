@@ -23,11 +23,11 @@ import { Switch } from "@/components/ui/switch";
 import { Loader2, Lock, KeyRound, ArrowLeft } from "lucide-react";
 
 const passwordSchema = z.object({
-    currentPassword: z.string().min(8, "Password must be at least 8 characters."),
-    newPassword: z.string().min(8, "Password must be at least 8 characters."),
-    confirmPassword: z.string().min(8, "Password must be at least 8 characters."),
+    currentPassword: z.string().min(8, "يجب أن تكون كلمة المرور 8 أحرف على الأقل."),
+    newPassword: z.string().min(8, "يجب أن تكون كلمة المرور 8 أحرف على الأقل."),
+    confirmPassword: z.string().min(8, "يجب أن تكون كلمة المرور 8 أحرف على الأقل."),
 }).refine(data => data.newPassword === data.confirmPassword, {
-    message: "New passwords do not match.",
+    message: "كلمات المرور الجديدة غير متطابقة.",
     path: ["confirmPassword"],
 });
 
@@ -51,7 +51,7 @@ export default function SecurityPage() {
         // This is a UI demonstration. Real implementation would require re-authentication.
         setIsPasswordSubmitting(true);
         await new Promise(resolve => setTimeout(resolve, 1500));
-        toast({ type: "success", title: "Password Updated", description: "Your password has been changed successfully." });
+        toast({ type: "success", title: "تم تحديث كلمة المرور", description: "تم تغيير كلمة المرور بنجاح." });
         passwordForm.reset();
         setIsPasswordSubmitting(false);
     };
@@ -60,16 +60,16 @@ export default function SecurityPage() {
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
             <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 text-sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Settings
+                العودة إلى الإعدادات
             </Button>
-            <PageHeader title="Security Center" description="Manage your password and account security." />
+            <PageHeader title="مركز الأمان" description="إدارة كلمة المرور وأمان الحساب." />
 
             {/* Change Password Card */}
             <Form {...passwordForm}>
                 <form onSubmit={passwordForm.handleSubmit(handlePasswordSubmit)}>
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-base">Change Password</CardTitle>
+                            <CardTitle className="text-base">تغيير كلمة المرور</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                            <FormField
@@ -77,7 +77,7 @@ export default function SecurityPage() {
                                 name="currentPassword"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Current Password</FormLabel>
+                                        <FormLabel>كلمة المرور الحالية</FormLabel>
                                         <FormControl>
                                             <div className="relative">
                                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -93,7 +93,7 @@ export default function SecurityPage() {
                                 name="newPassword"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>New Password</FormLabel>
+                                        <FormLabel>كلمة المرور الجديدة</FormLabel>
                                         <FormControl>
                                              <div className="relative">
                                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -109,7 +109,7 @@ export default function SecurityPage() {
                                 name="confirmPassword"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Confirm New Password</FormLabel>
+                                        <FormLabel>تأكيد كلمة المرور الجديدة</FormLabel>
                                         <FormControl>
                                              <div className="relative">
                                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -124,7 +124,7 @@ export default function SecurityPage() {
                          <CardFooter className="p-4 pt-0 justify-end">
                             <Button type="submit" size="sm" disabled={isPasswordSubmitting}>
                                 {isPasswordSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Update Password
+                                تحديث كلمة المرور
                             </Button>
                         </CardFooter>
                     </Card>
@@ -134,14 +134,14 @@ export default function SecurityPage() {
             {/* 2FA Card */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Two-Factor Authentication (2FA)</CardTitle>
-                    <CardDescription className="text-xs">Add an extra layer of security to your account.</CardDescription>
+                    <CardTitle className="text-base">المصادقة الثنائية (2FA)</CardTitle>
+                    <CardDescription className="text-xs">أضف طبقة إضافية من الأمان إلى حسابك.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-center justify-between rounded-lg border p-3">
                          <div className="space-y-0.5">
-                            <p className="font-medium">Authenticator App</p>
-                            <p className="text-xs text-muted-foreground">Status: Disabled</p>
+                            <p className="font-medium">تطبيق المصادقة</p>
+                            <p className="text-xs text-muted-foreground">الحالة: معطل</p>
                         </div>
                         <Switch />
                     </div>

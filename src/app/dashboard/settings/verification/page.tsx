@@ -10,6 +10,16 @@ import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 
 function VerificationItem({ icon: Icon, title, status, onClick }: { icon: React.ElementType, title: string, status: 'Verified' | 'Not Verified' | 'Pending', onClick: () => void }) {
+    
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'Verified': return 'تم التحقق';
+            case 'Not Verified': return 'لم يتم التحقق';
+            case 'Pending': return 'قيد المراجعة';
+            default: return status;
+        }
+    }
+    
     return (
         <Card className="hover:bg-muted/50 transition-colors cursor-pointer" onClick={onClick}>
             <CardContent className="p-4 flex items-center gap-4">
@@ -20,7 +30,7 @@ function VerificationItem({ icon: Icon, title, status, onClick }: { icon: React.
                     <h3 className="font-semibold">{title}</h3>
                 </div>
                 <Badge variant={status === 'Verified' ? 'default' : status === 'Pending' ? 'secondary' : 'destructive'}>
-                    {status}
+                    {getStatusText(status)}
                 </Badge>
                 <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
@@ -52,32 +62,32 @@ export default function VerificationPage() {
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
              <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 text-sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Settings
+                العودة إلى الإعدادات
             </Button>
-            <PageHeader title="Verification Center" description="Secure your account and unlock higher limits." />
+            <PageHeader title="مركز التحقق" description="قم بتأمين حسابك وفتح حدود أعلى." />
 
             <div className="space-y-3">
                 <VerificationItem 
                     icon={Mail}
-                    title="Email Verification"
+                    title="التحقق من البريد الإلكتروني"
                     status={verificationStatus.email as any}
                     onClick={() => {}}
                 />
                 <VerificationItem 
                     icon={Phone}
-                    title="Phone Number Verification"
+                    title="التحقق من رقم الهاتف"
                     status={verificationStatus.phone as any}
                     onClick={() => {}}
                 />
                  <VerificationItem 
                     icon={User}
-                    title="Identity Verification (KYC)"
+                    title="التحقق من الهوية (KYC)"
                     status={verificationStatus.identity as any}
                     onClick={() => {}}
                 />
                  <VerificationItem 
                     icon={Home}
-                    title="Address Verification"
+                    title="التحقق من العنوان"
                     status={verificationStatus.address as any}
                     onClick={() => {}}
                 />

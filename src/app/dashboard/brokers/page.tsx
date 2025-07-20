@@ -54,7 +54,7 @@ export default function BrokersPage() {
     if (brokers.length === 0) {
         return (
           <div className="text-center py-10">
-            <p className="text-muted-foreground text-sm">No brokers found for this category.</p>
+            <p className="text-muted-foreground text-sm">لا يوجد وسطاء في هذه الفئة.</p>
           </div>
         )
     }
@@ -78,11 +78,11 @@ export default function BrokersPage() {
   return (
     <div className="max-w-md mx-auto w-full px-4 py-4 space-y-4">
         <div className="space-y-1">
-            <h1 className="text-xl font-bold">All Cashback</h1>
+            <h1 className="text-xl font-bold">كل الكاش باك</h1>
              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                    placeholder="Search..."
+                    placeholder="بحث..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 h-9"
@@ -92,9 +92,9 @@ export default function BrokersPage() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="forex">FOREX</TabsTrigger>
-          <TabsTrigger value="crypto">CRYPTO</TabsTrigger>
-          <TabsTrigger value="other">OTHER</TabsTrigger>
+          <TabsTrigger value="forex">فوركس</TabsTrigger>
+          <TabsTrigger value="crypto">كريبتو</TabsTrigger>
+          <TabsTrigger value="other">أخرى</TabsTrigger>
         </TabsList>
         <TabsContent value="forex" className="mt-4">
           {renderBrokerList(getBrokersForTab('forex'))}

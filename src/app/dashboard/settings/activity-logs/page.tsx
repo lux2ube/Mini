@@ -33,7 +33,7 @@ export default function UserActivityLogsPage() {
                 setLogs(userLogs);
             } catch (error) {
                 console.error("Failed to fetch logs:", error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch your activity logs.' });
+                toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن جلب سجلات نشاطك.' });
             } finally {
                 setIsLoading(false);
             }
@@ -55,13 +55,13 @@ export default function UserActivityLogsPage() {
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
             <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 text-sm">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Settings
+                العودة إلى الإعدادات
             </Button>
-            <PageHeader title="Your Activity" description="A log of recent security-related events." />
+            <PageHeader title="نشاطك" description="سجل بالأحداث الأخيرة المتعلقة بالأمان." />
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Recent Events</CardTitle>
+                    <CardTitle className="text-base">الأحداث الأخيرة</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {isLoading ? (
@@ -76,13 +76,13 @@ export default function UserActivityLogsPage() {
                                 <div className="pl-4 border-l flex-grow">
                                     <p className="font-semibold text-sm capitalize">{log.event.replace('_', ' ')}</p>
                                     <p className="text-xs text-muted-foreground">
-                                        From {log.geo?.city || 'Unknown City'}, {log.geo?.country || 'Unknown Country'} ({log.ipAddress})
+                                        من {log.geo?.city || 'مدينة غير معروفة'}, {log.geo?.country || 'دولة غير معروفة'} ({log.ipAddress})
                                     </p>
                                 </div>
                             </div>
                         ))
                     ) : (
-                       <p className="text-center text-muted-foreground text-sm py-8">No activity logs found.</p>
+                       <p className="text-center text-muted-foreground text-sm py-8">لم يتم العثور على سجلات نشاط.</p>
                     )}
                 </CardContent>
             </Card>

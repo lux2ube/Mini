@@ -23,16 +23,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 
 const formSchema = z.object({
-  hasAccount: z.enum(["yes", "no"], { required_error: "Please select an option." }),
-  accountNumber: z.string().min(5, { message: 'Account number must be at least 5 characters.' }),
+  hasAccount: z.enum(["yes", "no"], { required_error: "يرجى تحديد خيار." }),
+  accountNumber: z.string().min(5, { message: 'يجب أن يكون رقم الحساب 5 أحرف على الأقل.' }),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
 const STEPS = [
-  { id: 1, name: 'Choose Path', icon: UserPlus },
-  { id: 2, name: 'Instructions', icon: FileText },
-  { id: 3, name: 'Link Account', icon: LinkIcon },
+  { id: 1, name: 'اختر المسار', icon: UserPlus },
+  { id: 2, name: 'التعليمات', icon: FileText },
+  { id: 3, name: 'ربط الحساب', icon: LinkIcon },
 ];
 
 export default function BrokerLinkPage() {
@@ -106,7 +106,7 @@ export default function BrokerLinkPage() {
 
   const processForm = async (data: FormData) => {
     if (!user) {
-      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to add an account.' });
+      toast({ variant: 'destructive', title: 'خطأ', description: 'يجب عليك تسجيل الدخول لإضافة حساب.' });
       return;
     }
     setIsSubmitting(true);
@@ -122,8 +122,8 @@ export default function BrokerLinkPage() {
       if (!querySnapshot.empty) {
         toast({
           variant: 'destructive',
-          title: 'Account Exists',
-          description: 'This trading account number is already linked for this broker.',
+          title: 'الحساب موجود',
+          description: 'رقم حساب التداول هذا مرتبط بالفعل لهذا الوسيط.',
         });
         setIsSubmitting(false);
         return;
@@ -136,11 +136,11 @@ export default function BrokerLinkPage() {
         status: 'Pending',
         createdAt: serverTimestamp(),
       });
-      toast({ title: 'Success!', description: 'Your trading account has been submitted for approval.' });
+      toast({ title: 'نجاح!', description: 'تم تقديم حساب التداول الخاص بك للموافقة.' });
       router.push('/dashboard/my-accounts');
     } catch (error) {
       console.error('Error adding document: ', error);
-      toast({ variant: 'destructive', title: 'Error', description: 'There was a problem submitting your account. Please try again.' });
+      toast({ variant: 'destructive', title: 'خطأ', description: 'حدثت مشكلة أثناء تقديم حسابك. يرجى المحاولة مرة أخرى.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -178,7 +178,7 @@ export default function BrokerLinkPage() {
   return (
     <div className="max-w-md mx-auto w-full px-4 py-4 space-y-4">
       <Button variant="ghost" asChild className="h-auto p-0 text-sm">
-          <Link href={`/dashboard/brokers/${brokerId}`}><ArrowLeft className="mr-2 h-4 w-4" />Back to Details</Link>
+          <Link href={`/dashboard/brokers/${brokerId}`}><ArrowLeft className="mr-2 h-4 w-4" />العودة إلى التفاصيل</Link>
       </Button>
 
       <Card>
@@ -194,14 +194,14 @@ export default function BrokerLinkPage() {
               />
             <div className="flex-1">
               <h1 className="text-lg font-bold font-headline">{brokerName}</h1>
-              <p className="text-xs text-muted-foreground">{broker.basicInfo ? `Founded in ${broker.basicInfo.founded_year}, based in ${broker.basicInfo.headquarters}` : broker.description}</p>
+              <p className="text-xs text-muted-foreground">{broker.basicInfo ? `تأسست عام ${broker.basicInfo.founded_year}، ومقرها في ${broker.basicInfo.headquarters}` : broker.description}</p>
             </div>
           </div>
         </CardContent>
       </Card>
       
       <div className="text-center">
-        <h2 className="text-lg font-bold font-headline">Start Earning Now</h2>
+        <h2 className="text-lg font-bold font-headline">ابدأ في الكسب الآن</h2>
       </div>
 
       <div className="w-full">
@@ -231,11 +231,11 @@ export default function BrokerLinkPage() {
             <div className="space-y-2">
                 <Button type="button" onClick={next} disabled={isSubmitting} className="w-full">
                     {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    {currentStep === STEPS.length ? 'Submit' : 'Next'}
+                    {currentStep === STEPS.length ? 'إرسال' : 'التالي'}
                 </Button>
                 {currentStep > 1 && !action && (
                     <Button type="button" onClick={prev} variant="secondary" className="w-full">
-                        Previous
+                        السابق
                     </Button>
                 )}
             </div>
@@ -250,8 +250,8 @@ function Step1({ brokerName }: { brokerName: string }) {
     return (
         <>
             <CardHeader>
-                <CardTitle className="text-base">Choose Your Path</CardTitle>
-                <CardDescription className="text-xs">Do you already have a trading account with {brokerName}?</CardDescription>
+                <CardTitle className="text-base">اختر مسارك</CardTitle>
+                <CardDescription className="text-xs">هل لديك بالفعل حساب تداول مع {brokerName}؟</CardDescription>
             </CardHeader>
             <CardContent>
                 <FormField
@@ -263,11 +263,11 @@ function Step1({ brokerName }: { brokerName: string }) {
                                 <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-2">
                                     <FormItem className="flex items-center space-x-3 space-y-0 p-3 border rounded-md has-[[data-state=checked]]:border-primary">
                                         <FormControl><RadioGroupItem value="no" id="no" /></FormControl>
-                                        <FormLabel htmlFor="no" className="font-normal cursor-pointer w-full text-sm">No, I need a new account</FormLabel>
+                                        <FormLabel htmlFor="no" className="font-normal cursor-pointer w-full text-sm">لا، أحتاج إلى حساب جديد</FormLabel>
                                     </FormItem>
                                      <FormItem className="flex items-center space-x-3 space-y-0 p-3 border rounded-md has-[[data-state=checked]]:border-primary">
                                         <FormControl><RadioGroupItem value="yes" id="yes" /></FormControl>
-                                        <FormLabel htmlFor="yes" className="font-normal cursor-pointer w-full text-sm">Yes, I have an account</FormLabel>
+                                        <FormLabel htmlFor="yes" className="font-normal cursor-pointer w-full text-sm">نعم، لدي حساب</FormLabel>
                                     </FormItem>
                                 </RadioGroup>
                             </FormControl>
@@ -284,22 +284,22 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
     // Fallback to legacy instructions if new structure doesn't exist.
     const isNewStructure = !!broker.basicInfo;
     const brokerName = isNewStructure ? broker.basicInfo.broker_name : broker.name;
-    const description = isNewStructure ? broker.instructions?.description || "Follow the link to open a new account." : "Follow the link to open a new account.";
+    const description = isNewStructure ? broker.instructions?.description || "اتبع الرابط لفتح حساب جديد." : "اتبع الرابط لفتح حساب جديد.";
     const link = isNewStructure ? broker.cashback?.affiliate_program_link : (broker as any).instructions?.link;
-    const linkText = isNewStructure ? broker.instructions?.linkText || `Open an account with ${brokerName}`: `Open an account with ${brokerName}`;
-    const existingAccountInstructions = isNewStructure ? broker.existingAccountInstructions || "Please contact support to link your existing account under our partner network." : (broker as any).existingAccountInstructions || "Please contact support to link your existing account under our partner network.";
+    const linkText = isNewStructure ? broker.instructions?.linkText || `افتح حسابًا مع ${brokerName}`: `افتح حسابًا مع ${brokerName}`;
+    const existingAccountInstructions = isNewStructure ? broker.existingAccountInstructions || "يرجى الاتصال بالدعم لربط حسابك الحالي تحت شبكة شركائنا." : (broker as any).existingAccountInstructions || "يرجى الاتصال بالدعم لربط حسابك الحالي تحت شبكة شركائنا.";
 
     return (
         <>
             <CardHeader>
-                <CardTitle className="text-base">Instructions</CardTitle>
-                <CardDescription className="text-xs">Follow the relevant instructions.</CardDescription>
+                <CardTitle className="text-base">التعليمات</CardTitle>
+                <CardDescription className="text-xs">اتبع التعليمات ذات الصلة.</CardDescription>
             </CardHeader>
             <CardContent>
                 {hasAccount === 'no' && (
                     <Alert>
                         <UserPlus className="h-4 w-4" />
-                        <AlertTitle>Create New Account</AlertTitle>
+                        <AlertTitle>إنشاء حساب جديد</AlertTitle>
                         <AlertDescription className="space-y-4">
                             <p className="text-xs">{description}</p>
                             <Button asChild size="sm" className="w-full">
@@ -313,7 +313,7 @@ function Step2({ hasAccount, broker }: { hasAccount: string | undefined; broker:
                  {hasAccount === 'yes' && (
                     <Alert>
                         <Info className="h-4 w-4" />
-                        <AlertTitle>Important: Link Existing Account</AlertTitle>
+                        <AlertTitle>هام: ربط الحساب الحالي</AlertTitle>
                         <AlertDescription>
                             <p className="text-xs">{existingAccountInstructions}</p>
                         </AlertDescription>
@@ -329,8 +329,8 @@ function Step3() {
     return (
         <>
             <CardHeader>
-                <CardTitle className="text-base">Link Account</CardTitle>
-                <CardDescription className="text-xs">Enter your trading account number.</CardDescription>
+                <CardTitle className="text-base">ربط الحساب</CardTitle>
+                <CardDescription className="text-xs">أدخل رقم حساب التداول الخاص بك.</CardDescription>
             </CardHeader>
             <CardContent>
                  <FormField
@@ -338,9 +338,9 @@ function Step3() {
                     name="accountNumber"
                     render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Trading Account Number</FormLabel>
+                        <FormLabel>رقم حساب التداول</FormLabel>
                         <FormControl>
-                            <Input placeholder="Enter number" {...field} />
+                            <Input placeholder="أدخل الرقم" {...field} />
                         </FormControl>
                         <FormMessage />
                         </FormItem>

@@ -115,7 +115,7 @@ export default function BrokerPreviewPage() {
     return (
         <div className="container mx-auto px-4 py-4 max-w-2xl space-y-4">
             <Button variant="ghost" asChild className="h-auto p-0 text-sm">
-                <Link href="/dashboard/brokers"><ArrowLeft className="mr-2 h-4 w-4" />Back to Brokers</Link>
+                <Link href="/dashboard/brokers"><ArrowLeft className="mr-2 h-4 w-4" />العودة إلى الوسطاء</Link>
             </Button>
             
             <Card className="overflow-hidden">
@@ -133,69 +133,69 @@ export default function BrokerPreviewPage() {
                         <p className="text-sm text-muted-foreground">{basicInfo.group_entity}</p>
                     </div>
                     <Button asChild size="sm">
-                        <Link href={`/dashboard/brokers/${brokerId}/link`}>Start Earning Cashback</Link>
+                        <Link href={`/dashboard/brokers/${brokerId}/link`}>ابدأ في كسب الكاش باك</Link>
                     </Button>
                 </CardContent>
             </Card>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
-                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Star className="h-4 w-4 text-yellow-500"/> <span className="font-bold">{reputation.wikifx_score?.toFixed(1)}</span><span className="text-xs">WikiFX Score</span></Badge>
-                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Users className="h-4 w-4 text-primary"/> <span className="font-bold">{reputation.verified_users?.toLocaleString()}</span><span className="text-xs">Verified Users</span></Badge>
-                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><ShieldCheck className="h-4 w-4 text-blue-500"/> <span className="font-bold">{regulation.risk_level}</span><span className="text-xs">Risk Level</span></Badge>
-                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Award className="h-4 w-4 text-green-500"/> <span className="font-bold">{basicInfo.founded_year}</span><span className="text-xs">Founded</span></Badge>
+                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Star className="h-4 w-4 text-yellow-500"/> <span className="font-bold">{reputation.wikifx_score?.toFixed(1)}</span><span className="text-xs">تقييم WikiFX</span></Badge>
+                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Users className="h-4 w-4 text-primary"/> <span className="font-bold">{reputation.verified_users?.toLocaleString()}</span><span className="text-xs">مستخدمون موثوقون</span></Badge>
+                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><ShieldCheck className="h-4 w-4 text-blue-500"/> <span className="font-bold">{regulation.risk_level}</span><span className="text-xs">مستوى المخاطرة</span></Badge>
+                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Award className="h-4 w-4 text-green-500"/> <span className="font-bold">{basicInfo.founded_year}</span><span className="text-xs">تأسست</span></Badge>
             </div>
             
-            <DetailCard title="Cashback & Trading" icon={Coins}>
+            <DetailCard title="الكاش باك والتداول" icon={Coins}>
                 <div className="grid md:grid-cols-2 gap-4">
-                    <InfoRow label="Cashback Per Lot" value={`$${cashback.cashback_per_lot?.toFixed(2)}`} />
-                    <InfoRow label="Cashback Frequency" value={cashback.cashback_frequency} />
-                    <InfoRow label="Cashback Accounts" value={join(cashback.cashback_account_type)} />
-                    <InfoRow label="Min. Deposit" value={`$${tradingConditions.min_deposit}`} />
-                    <InfoRow label="Max. Leverage" value={tradingConditions.max_leverage} />
-                    <InfoRow label="Min. Spread" value={`${tradingConditions.min_spread} pips`} />
+                    <InfoRow label="كاش باك لكل لوت" value={`$${cashback.cashback_per_lot?.toFixed(2)}`} />
+                    <InfoRow label="تكرار الكاش باك" value={cashback.cashback_frequency} />
+                    <InfoRow label="حسابات الكاش باك" value={join(cashback.cashback_account_type)} />
+                    <InfoRow label="الحد الأدنى للإيداع" value={`$${tradingConditions.min_deposit}`} />
+                    <InfoRow label="الرافعة المالية القصوى" value={tradingConditions.max_leverage} />
+                    <InfoRow label="الحد الأدنى للسبريد" value={`${tradingConditions.min_spread} نقطة`} />
                 </div>
             </DetailCard>
 
-            <DetailCard title="Regulation & Licensing" icon={ShieldCheck}>
-                <InfoRow label="Regulator(s)" value={join(regulation.regulator_name)} />
+            <DetailCard title="التنظيم والترخيص" icon={ShieldCheck}>
+                <InfoRow label="الجهة المنظمة (الجهات)" value={join(regulation.regulator_name)} />
                  <Separator className="my-2" />
-                <InfoRow label="Regulated In" value={join(regulation.regulated_in)} />
+                <InfoRow label="مرخص في" value={join(regulation.regulated_in)} />
                  <Separator className="my-2" />
-                <InfoRow label="Status" value={regulation.regulation_status} />
+                <InfoRow label="الحالة" value={regulation.regulation_status} />
                  <Separator className="my-2" />
-                <InfoRow label="Offshore Regulation?">
-                    {regulation.offshore_regulation ? 'Yes' : 'No'}
+                <InfoRow label="تنظيم خارجي؟">
+                    {regulation.offshore_regulation ? 'نعم' : 'لا'}
                 </InfoRow>
             </DetailCard>
 
-            <DetailCard title="Account Features" icon={Briefcase}>
+            <DetailCard title="ميزات الحساب" icon={Briefcase}>
                  <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
-                    <BooleanPill value={instruments.crypto_trading} text="Crypto Trading" />
-                    <BooleanPill value={additionalFeatures.copy_trading} text="Copy Trading" />
-                    <BooleanPill value={tradingConditions.swap_free} text="Islamic Accounts" />
-                    <BooleanPill value={additionalFeatures.demo_account} text="Demo Accounts" />
-                    <BooleanPill value={additionalFeatures.education_center} text="Education Center" />
-                    <BooleanPill value={additionalFeatures.trading_contests} text="Trading Contests" />
+                    <BooleanPill value={instruments.crypto_trading} text="تداول العملات المشفرة" />
+                    <BooleanPill value={additionalFeatures.copy_trading} text="نسخ التداول" />
+                    <BooleanPill value={tradingConditions.swap_free} text="حسابات إسلامية" />
+                    <BooleanPill value={additionalFeatures.demo_account} text="حسابات تجريبية" />
+                    <BooleanPill value={additionalFeatures.education_center} text="مركز تعليمي" />
+                    <BooleanPill value={additionalFeatures.trading_contests} text="مسابقات تداول" />
                 </div>
             </DetailCard>
 
-            <DetailCard title="Platforms & Instruments" icon={Gauge}>
-                <InfoRow label="Platforms" value={join(platforms.platforms_supported)} />
+            <DetailCard title="المنصات والأدوات" icon={Gauge}>
+                <InfoRow label="المنصات المدعومة" value={join(platforms.platforms_supported)} />
                  <Separator className="my-2" />
-                <InfoRow label="Instruments">
+                <InfoRow label="الأدوات">
                     <div className="flex gap-2 flex-wrap justify-end">
-                       {instruments.forex_pairs && <Badge variant="secondary">Forex</Badge>}
-                       {instruments.crypto_trading && <Badge variant="secondary">Crypto</Badge>}
-                       {instruments.commodities && <Badge variant="secondary">Commodities</Badge>}
-                       {instruments.indices && <Badge variant="secondary">Indices</Badge>}
-                       {instruments.stocks && <Badge variant="secondary">Stocks</Badge>}
+                       {instruments.forex_pairs && <Badge variant="secondary">فوركس</Badge>}
+                       {instruments.crypto_trading && <Badge variant="secondary">كريبتو</Badge>}
+                       {instruments.commodities && <Badge variant="secondary">سلع</Badge>}
+                       {instruments.indices && <Badge variant="secondary">مؤشرات</Badge>}
+                       {instruments.stocks && <Badge variant="secondary">أسهم</Badge>}
                     </div>
                 </InfoRow>
             </DetailCard>
-             <DetailCard title="Deposits & Withdrawals" icon={Landmark}>
-                <InfoRow label="Payment Methods" value={join(depositsWithdrawals.payment_methods)} />
+             <DetailCard title="الإيداع والسحب" icon={Landmark}>
+                <InfoRow label="طرق الدفع" value={join(depositsWithdrawals.payment_methods)} />
                 <Separator className="my-2" />
-                <InfoRow label="Withdrawal Speed" value={depositsWithdrawals.withdrawal_speed} />
+                <InfoRow label="سرعة السحب" value={depositsWithdrawals.withdrawal_speed} />
              </DetailCard>
              
         </div>

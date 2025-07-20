@@ -44,11 +44,11 @@ function AccountCard({ account, totalEarned }: { account: TradingAccount, totalE
                             </p>
                             <div className="flex justify-between items-end">
                                 <div className="space-y-0 text-left">
-                                     <p className="text-xs text-gray-400 uppercase">Earned</p>
+                                     <p className="text-xs text-gray-400 uppercase">المكتسب</p>
                                      <p className="font-bold text-primary">${totalEarned.toFixed(2)}</p>
                                 </div>
                                 <div className="space-y-0">
-                                     <p className="text-xs text-gray-400 uppercase">Broker</p>
+                                     <p className="text-xs text-gray-400 uppercase">الوسيط</p>
                                      <p className="font-semibold">{account.broker}</p>
                                 </div>
                             </div>
@@ -78,7 +78,7 @@ function AccountCard({ account, totalEarned }: { account: TradingAccount, totalE
                         <Badge variant={getStatusVariant(account.status)} className="gap-1.5 h-6">
                             {account.status === 'Pending' && <Clock className="h-3 w-3" />}
                             {account.status === 'Rejected' && <XCircle className="h-3 w-3" />}
-                            {account.status}
+                            {account.status === 'Approved' ? 'مقبول' : account.status === 'Pending' ? 'معلق' : 'مرفوض'}
                         </Badge>
                     </div>
                     <div className="p-3 bg-muted rounded-lg">
