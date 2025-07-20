@@ -8,8 +8,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -18,11 +16,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import type { Product } from "@/types";
-import { Loader2, ArrowLeft, Phone } from "lucide-react";
+import { Loader2, ArrowLeft, Phone, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { placeOrder } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 
 const purchaseSchema = z.object({
@@ -32,17 +31,18 @@ type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
 function ProductPageSkeleton() {
     return (
-        <div className="container mx-auto px-4 py-4 space-y-4">
-            <Skeleton className="h-8 w-32" />
-            <div className="grid md:grid-cols-2 gap-8">
-                <Skeleton className="aspect-square w-full rounded-lg" />
-                <div className="space-y-3">
-                    <Skeleton className="h-8 w-3/4" />
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+            <Skeleton className="h-8 w-32 mb-6" />
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+                <Skeleton className="w-full aspect-square rounded-2xl" />
+                <div className="space-y-4">
                     <Skeleton className="h-5 w-1/4" />
+                    <Skeleton className="h-10 w-3/4" />
+                    <Skeleton className="h-8 w-1/3" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-4 w-5/6" />
-                    <Skeleton className="h-10 w-full mt-4" />
+                    <Skeleton className="h-12 w-full mt-6 rounded-full" />
                 </div>
             </div>
         </div>
@@ -112,36 +112,44 @@ export default function ProductDetailPage() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-4 space-y-4">
-             <Button variant="ghost" onClick={() => router.back()} className="mb-2 h-auto p-0 text-sm">
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+             <Button variant="ghost" onClick={() => router.back()} className="mb-4 h-auto p-0 text-sm hover:bg-transparent">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Store
             </Button>
-            <div className="grid md:grid-cols-2 gap-8 items-start">
-                <div className="aspect-square relative w-full overflow-hidden rounded-lg border">
-                    <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        fill
-                        className="object-contain"
-                        data-ai-hint="product image"
-                    />
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+                 <div className="relative group">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-primary to-accent rounded-2xl blur-lg opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                    <div className="relative aspect-square w-full bg-background/80 backdrop-blur-sm rounded-2xl p-4 border border-border/20">
+                        <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            fill
+                            className="object-contain"
+                            data-ai-hint="product image"
+                        />
+                    </div>
                 </div>
-                <div className="space-y-3">
-                    <Badge variant="secondary">{product.categoryName}</Badge>
-                    <h1 className="text-2xl font-bold font-headline">{product.name}</h1>
-                    <p className="text-2xl font-bold text-primary">${product.price.toFixed(2)}</p>
-                    <p className="text-sm text-muted-foreground">{product.description}</p>
+
+                <div className="space-y-4">
+                    <Badge variant="outline">{product.categoryName}</Badge>
+                    <h1 className="text-3xl lg:text-4xl font-bold font-headline">{product.name}</h1>
+                    <p className="text-3xl font-bold text-primary">${product.price.toFixed(2)}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>
                     
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button size="lg" className="w-full mt-4" disabled={product.stock <= 0}>
-                                {product.stock > 0 ? 'Buy Now with Cashback' : 'Out of Stock'}
+                            <Button size="lg" className="w-full mt-4 rounded-full h-12 text-base relative overflow-hidden group/btn" disabled={product.stock <= 0}>
+                                <span className="absolute w-0 h-0 transition-all duration-300 ease-out bg-primary-foreground/20 group-hover/btn:w-full group-hover/btn:h-full"></span>
+                                <span className="relative flex items-center gap-2">
+                                    <ShoppingCart className="h-5 w-5"/>
+                                    {product.stock > 0 ? 'Buy Now with Cashback' : 'Out of Stock'}
+                                </span>
                             </Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>Confirm Purchase</DialogTitle>
+                                <DialogTitle>Confirm Purchase: {product.name}</DialogTitle>
                                 <DialogDescription>
                                     Enter your phone number for delivery. ${product.price.toFixed(2)} will be deducted from your available cashback balance.
                                 </DialogDescription>
