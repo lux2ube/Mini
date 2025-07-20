@@ -94,14 +94,26 @@ export default function ReferralsPage() {
             />
             
             <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
-                <CardContent className="p-4 text-center space-y-4">
-                    <p className="font-bold text-2xl text-primary">{referralCode}</p>
-                    <p className="text-sm text-muted-foreground">Share this code with your friends. When they sign up, you both get rewarded!</p>
-                     <div className="flex items-center gap-2">
-                        <Input readOnly value={referralLink || ''} className="text-xs bg-background/50" />
-                        <Button variant="default" size="icon" onClick={() => copyToClipboard(referralLink || '', 'link')}>
-                            <Copy className="h-4 w-4" />
-                        </Button>
+                <CardContent className="p-4 space-y-4">
+                     <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Your Referral Code</p>
+                        <div className="flex items-center gap-2">
+                            <div className="flex-grow p-2 text-center rounded-md border border-dashed border-primary/50 bg-background/50">
+                                <p className="font-bold text-2xl text-primary tracking-widest">{referralCode}</p>
+                            </div>
+                            <Button variant="default" size="icon" onClick={() => copyToClipboard(referralCode || '', 'code')}>
+                                <Copy className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                     <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Your Referral Link</p>
+                         <div className="flex items-center gap-2">
+                            <Input readOnly value={referralLink || ''} className="text-xs bg-background/50" />
+                            <Button variant="default" size="icon" onClick={() => copyToClipboard(referralLink || '', 'link')}>
+                                <LinkIcon className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
