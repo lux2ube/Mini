@@ -36,10 +36,19 @@ function WithdrawalsList({ withdrawals, isLoading }: { withdrawals: Withdrawal[]
             default: return 'outline';
         }
     };
+
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'Completed': return 'مكتمل';
+            case 'Processing': return 'قيد المعالجة';
+            case 'Failed': return 'فشل';
+            default: return status;
+        }
+    };
     
      const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        toast({ title: 'Copied!', description: 'TXID copied to clipboard.' });
+        toast({ title: 'تم النسخ!', description: 'تم نسخ TXID إلى الحافظة.' });
     };
 
     if (isLoading) {
@@ -53,9 +62,9 @@ function WithdrawalsList({ withdrawals, isLoading }: { withdrawals: Withdrawal[]
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="text-xs">Date</TableHead>
-                                <TableHead className="text-xs">Amount</TableHead>
-                                <TableHead className="text-xs">Status</TableHead>
+                                <TableHead className="text-xs">التاريخ</TableHead>
+                                <TableHead className="text-xs">المبلغ</TableHead>
+                                <TableHead className="text-xs">الحالة</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -65,13 +74,13 @@ function WithdrawalsList({ withdrawals, isLoading }: { withdrawals: Withdrawal[]
                                         <TableCell className="text-xs">{format(new Date(w.requestedAt), "PP")}</TableCell>
                                         <TableCell className="font-medium text-xs">${w.amount.toFixed(2)}</TableCell>
                                         <TableCell>
-                                            <Badge variant={getStatusVariant(w.status)}>{w.status}</Badge>
+                                            <Badge variant={getStatusVariant(w.status)}>{getStatusText(w.status)}</Badge>
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24">No withdrawal history.</TableCell>
+                                    <TableCell colSpan={3} className="text-center h-24">لا يوجد سجل سحوبات.</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -101,21 +110,21 @@ export default function WalletHistoryPage() {
     return (
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-4">
              <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 text-sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Wallet
+                <ArrowLeft className="ml-2 h-4 w-4" />
+                العودة إلى المحفظة
             </Button>
             
-            <PageHeader title="Wallet History" description="Your full deposit and withdrawal history." />
+            <PageHeader title="سجل المحفظة" description="سجل الإيداعات والسحوبات الكامل الخاص بك." />
 
             <Tabs defaultValue="withdrawals" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="deposits">Deposits</TabsTrigger>
-                    <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+                    <TabsTrigger value="deposits">الإيداعات</TabsTrigger>
+                    <TabsTrigger value="withdrawals">السحوبات</TabsTrigger>
                 </TabsList>
                 <TabsContent value="deposits" className="mt-4">
                      <Card>
                         <CardContent className="p-10 text-center">
-                            <p className="text-muted-foreground text-sm">No deposit history yet.</p>
+                            <p className="text-muted-foreground text-sm">لا يوجد سجل إيداعات حتى الآن.</p>
                         </CardContent>
                     </Card>
                 </TabsContent>

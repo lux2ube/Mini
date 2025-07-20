@@ -32,7 +32,7 @@ function ProductCard({ product }: { product: Product }) {
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                         data-ai-hint="product image"
                     />
-                     <div className="absolute top-2 right-2">
+                     <div className="absolute top-2 left-2">
                         <Badge variant="default" className="text-sm shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground">
                             ${product.price.toFixed(2)}
                         </Badge>
@@ -44,7 +44,7 @@ function ProductCard({ product }: { product: Product }) {
                 </div>
                 <CardFooter className="p-3 pt-0">
                      <Button asChild size="sm" className="w-full text-xs h-8">
-                        <div>Buy Now</div>
+                        <div>شراء الآن</div>
                     </Button>
                 </CardFooter>
             </Link>
@@ -117,6 +117,17 @@ function MyOrdersList() {
         }
     }
 
+    const getStatusText = (status: Order['status']) => {
+        switch (status) {
+            case 'Delivered': return 'تم التوصيل';
+            case 'Pending': return 'قيد الانتظار';
+            case 'Shipped': return 'تم الشحن';
+            case 'Cancelled': return 'ملغي';
+            default: return status;
+        }
+    };
+
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-full min-h-48">
@@ -132,8 +143,8 @@ function MyOrdersList() {
                     <Card key={order.id}>
                         <CardHeader className="p-4">
                             <div className="flex justify-between items-center">
-                                <CardTitle className="text-sm">Order ID: {order.id.slice(0, 8)}...</CardTitle>
-                                <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
+                                <CardTitle className="text-sm">طلب رقم: {order.id.slice(0, 8)}...</CardTitle>
+                                <Badge variant={getStatusVariant(order.status)}>{getStatusText(order.status)}</Badge>
                             </div>
                             <CardDescription className="text-xs">
                                 {format(order.createdAt, 'PPp')}
@@ -150,7 +161,7 @@ function MyOrdersList() {
                                 />
                                 <div className="flex-grow">
                                     <p className="font-semibold text-sm">{order.productName}</p>
-                                    <p className="text-xs text-muted-foreground">Qty: 1</p>
+                                    <p className="text-xs text-muted-foreground">الكمية: 1</p>
                                 </div>
                                 <p className="font-semibold text-base">${order.price.toFixed(2)}</p>
                             </div>
@@ -160,7 +171,7 @@ function MyOrdersList() {
             ) : (
                 <Card>
                     <CardContent className="p-10 text-center">
-                        <p className="text-muted-foreground text-sm">You haven't placed any orders yet.</p>
+                        <p className="text-muted-foreground text-sm">لم تقم بأي طلبات بعد.</p>
                     </CardContent>
                 </Card>
             )}
@@ -214,7 +225,7 @@ export default function StorePage() {
                     <ProductCard key={product.id} product={product} />
                 ))
              ) : (
-                <p className="col-span-full text-center text-muted-foreground py-10">No products in this category yet.</p>
+                <p className="col-span-full text-center text-muted-foreground py-10">لا توجد منتجات في هذه الفئة بعد.</p>
              )}
         </div>
     );
@@ -224,10 +235,10 @@ export default function StorePage() {
             <div className="container mx-auto px-4 py-6 space-y-6">
                  <Tabs defaultValue="store" className="w-full">
                     <div className="flex justify-between items-center">
-                        <PageHeader title="Store" description="Spend your cashback on awesome products." />
+                        <PageHeader title="المتجر" description="أنفق رصيد الكاش باك على منتجات رائعة." />
                         <TabsList>
-                            <TabsTrigger value="store">Store</TabsTrigger>
-                            <TabsTrigger value="orders">My Orders</TabsTrigger>
+                            <TabsTrigger value="store">المتجر</TabsTrigger>
+                            <TabsTrigger value="orders">طلباتي</TabsTrigger>
                         </TabsList>
                     </div>
                     
@@ -236,7 +247,7 @@ export default function StorePage() {
                             <ScrollArea className="w-full whitespace-nowrap rounded-md pb-4">
                                 <div className="flex items-center gap-2">
                                      <TabsList className="p-1 h-auto">
-                                        <TabsTrigger value="all">All Products</TabsTrigger>
+                                        <TabsTrigger value="all">كل المنتجات</TabsTrigger>
                                         {categories.map(cat => (
                                             <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
                                         ))}

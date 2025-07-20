@@ -22,18 +22,18 @@ type ReferralInfo = Pick<UserProfile, 'uid' | 'name' | 'createdAt'>;
 const howItWorks = [
     {
         icon: Share2,
-        title: "Share Your Link",
-        description: "Copy your unique code or link and send it to your friends."
+        title: "شارك رابطك",
+        description: "انسخ الكود أو الرابط الفريد الخاص بك وأرسله إلى أصدقائك."
     },
     {
         icon: UserPlus,
-        title: "Friend Signs Up",
-        description: "Your friend creates an account using your referral code."
+        title: "صديقك يسجل",
+        description: "صديقك ينشئ حسابًا باستخدام رمز الإحالة الخاص بك."
     },
     {
         icon: Award,
-        title: "Earn Rewards",
-        description: "You both receive points and unlock exclusive benefits."
+        title: "اربحوا المكافآت",
+        description: "تحصلون كلاكما على نقاط وتفتحون مزايا حصرية."
     }
 ]
 
@@ -48,7 +48,7 @@ export default function ReferralsPage() {
 
     const copyToClipboard = (text: string, type: 'link' | 'code') => {
         navigator.clipboard.writeText(text);
-        toast({ title: 'Copied!', description: `Referral ${type} copied to clipboard.` });
+        toast({ title: 'تم النسخ!', description: `تم نسخ ${type === 'link' ? 'رابط' : 'كود'} الإحالة إلى الحافظة.` });
     };
 
     useEffect(() => {
@@ -76,7 +76,7 @@ export default function ReferralsPage() {
                 setReferrals(referredUsersData);
             } catch (error) {
                 console.error("Error fetching referral details:", error);
-                toast({ variant: 'destructive', title: "Error", description: "Could not fetch referral details." });
+                toast({ variant: 'destructive', title: "خطأ", description: "تعذر جلب تفاصيل الإحالة." });
             } finally {
                 setIsLoading(false);
             }
@@ -89,14 +89,14 @@ export default function ReferralsPage() {
     return (
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
             <PageHeader
-                title="Invite & Earn"
-                description="Share the love and get rewarded for every friend you invite."
+                title="ادع واربح"
+                description="شارك الحب واحصل على مكافأة مقابل كل صديق تدعوه."
             />
 
             <div className="grid grid-cols-2 gap-4">
                 <Card>
                     <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Your Referrals</CardTitle>
+                        <CardTitle className="text-sm font-medium">إحالاتك</CardTitle>
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
@@ -105,7 +105,7 @@ export default function ReferralsPage() {
                 </Card>
                  <Card>
                     <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Your Points</CardTitle>
+                        <CardTitle className="text-sm font-medium">نقاطك</CardTitle>
                         <Gift className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
@@ -117,7 +117,7 @@ export default function ReferralsPage() {
             <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
                 <CardContent className="p-4 space-y-4">
                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Your Referral Code</p>
+                        <p className="text-sm text-muted-foreground">كود الإحالة الخاص بك</p>
                         <div className="flex items-center gap-2">
                             <div className="flex-grow p-2 text-center rounded-md border border-dashed border-primary/50 bg-background/50">
                                 <p className="font-bold text-2xl text-primary tracking-widest">{referralCode}</p>
@@ -128,7 +128,7 @@ export default function ReferralsPage() {
                         </div>
                     </div>
                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">Your Referral Link</p>
+                        <p className="text-sm text-muted-foreground">رابط الإحالة الخاص بك</p>
                          <div className="flex items-center gap-2">
                             <Input readOnly value={referralLink || ''} className="text-xs bg-background/50" />
                             <Button variant="default" size="icon" onClick={() => copyToClipboard(referralLink || '', 'link')}>
@@ -142,7 +142,7 @@ export default function ReferralsPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">How It Works</CardTitle>
+                    <CardTitle className="text-base">كيف تعمل</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                    {howItWorks.map((item, index) => (
@@ -161,9 +161,9 @@ export default function ReferralsPage() {
 
             <Card>
                 <CardHeader className="p-4">
-                    <CardTitle className="text-base">Your Referral History</CardTitle>
+                    <CardTitle className="text-base">سجل الإحالات الخاص بك</CardTitle>
                     <CardDescription className="text-xs">
-                        A list of users you've successfully invited.
+                        قائمة بالمستخدمين الذين دعوتهم بنجاح.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -181,14 +181,14 @@ export default function ReferralsPage() {
                                     <div className="flex-grow">
                                         <p className="font-medium text-sm">{ref.name}</p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground text-right">
-                                        Joined {ref.createdAt ? format(ref.createdAt, 'PP') : '-'}
+                                    <p className="text-xs text-muted-foreground text-left">
+                                        انضم في {ref.createdAt ? format(ref.createdAt, 'PP') : '-'}
                                     </p>
                                 </div>
                             ))
                         ) : (
                             <div className="text-center h-24 flex items-center justify-center text-sm text-muted-foreground">
-                                You haven't referred anyone yet.
+                                لم تقم بإحالة أي شخص بعد.
                             </div>
                         )}
                     </div>

@@ -27,7 +27,7 @@ import React from "react";
 
 
 const purchaseSchema = z.object({
-    phoneNumber: z.string().min(10, "Please enter a valid phone number."),
+    phoneNumber: z.string().min(10, "الرجاء إدخال رقم هاتف صحيح."),
 });
 type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
@@ -111,11 +111,11 @@ export default function ProductDetailPage() {
         const result = await placeOrder(user.uid, product.id, data.phoneNumber);
 
         if (result.success) {
-            toast({ title: "Success!", description: result.message });
+            toast({ title: "تم بنجاح!", description: result.message });
             setIsDialogOpen(false);
             router.push('/dashboard/store/orders');
         } else {
-            toast({ variant: 'destructive', title: "Order Failed", description: result.message });
+            toast({ variant: 'destructive', title: "فشل الطلب", description: result.message });
         }
         setIsSubmitting(false);
     }
@@ -167,13 +167,13 @@ export default function ProductDetailPage() {
                         <AnimatedSection>
                              <div className="flex items-baseline gap-4">
                                 <p className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</p>
-                                <span className="text-sm text-muted-foreground">with Cashback Balance</span>
+                                <span className="text-sm text-muted-foreground">باستخدام رصيد الكاش باك</span>
                              </div>
                         </AnimatedSection>
 
                         <AnimatedSection>
                             <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-                                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2"><Info className="h-5 w-5 text-primary"/> Description</h2>
+                                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2"><Info className="h-5 w-5 text-primary"/> الوصف</h2>
                                 <p>{product.description}</p>
                             </div>
                         </AnimatedSection>
@@ -181,8 +181,8 @@ export default function ProductDetailPage() {
                          <AnimatedSection>
                             <DialogTrigger asChild>
                                 <Button size="lg" className="w-full h-12 text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90" disabled={product.stock <= 0}>
-                                    <ShoppingCart className="mr-2 h-5 w-5" />
-                                    {product.stock > 0 ? 'Buy Now' : 'Out of Stock'}
+                                    <ShoppingCart className="ml-2 h-5 w-5" />
+                                    {product.stock > 0 ? 'شراء الآن' : 'نفدت الكمية'}
                                 </Button>
                             </DialogTrigger>
                         </AnimatedSection>
@@ -192,9 +192,9 @@ export default function ProductDetailPage() {
             
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Confirm Purchase: {product.name}</DialogTitle>
+                    <DialogTitle>تأكيد الشراء: {product.name}</DialogTitle>
                     <DialogDescription>
-                        Enter your phone number for delivery. ${product.price.toFixed(2)} will be deducted from your available cashback balance.
+                        أدخل رقم هاتفك للتوصيل. سيتم خصم ${product.price.toFixed(2)} من رصيد الكاش باك المتاح لديك.
                     </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
@@ -204,11 +204,11 @@ export default function ProductDetailPage() {
                             name="phoneNumber"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Phone Number</FormLabel>
+                                    <FormLabel>رقم الهاتف</FormLabel>
                                     <FormControl>
                                         <div className="relative">
-                                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input type="tel" placeholder="e.g., +1 555-123-4567" {...field} className="pl-10" />
+                                            <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input type="tel" placeholder="مثال: +966..." {...field} className="pr-10" />
                                         </div>
                                     </FormControl>
                                     <FormMessage />
@@ -217,11 +217,11 @@ export default function ProductDetailPage() {
                         />
                         <DialogFooter>
                             <DialogClose asChild>
-                                <Button type="button" variant="secondary">Cancel</Button>
+                                <Button type="button" variant="secondary">إلغاء</Button>
                             </DialogClose>
                             <Button type="submit" disabled={isSubmitting}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Confirm Order
+                                {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                                تأكيد الطلب
                             </Button>
                         </DialogFooter>
                     </form>

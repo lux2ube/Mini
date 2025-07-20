@@ -77,6 +77,15 @@ export default function WithdrawalDetailPage() {
             default: return 'outline';
         }
     }
+    
+     const getStatusText = (status: string) => {
+        switch (status) {
+            case 'Completed': return 'مكتمل';
+            case 'Processing': return 'قيد المعالجة';
+            case 'Failed': return 'فشل';
+            default: return status;
+        }
+    }
 
     if (isLoading) {
         return (
@@ -99,36 +108,36 @@ export default function WithdrawalDetailPage() {
     return (
         <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
             <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 text-sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Withdrawals
+                <ArrowLeft className="ml-2 h-4 w-4" />
+                العودة إلى السحوبات
             </Button>
             
-            <PageHeader title="Withdrawal Details" />
+            <PageHeader title="تفاصيل السحب" />
 
             <Card>
                 <CardHeader className="p-4 flex flex-row justify-between items-center">
                     <div>
                         <CardTitle className="text-2xl text-primary">${withdrawal.amount.toFixed(2)}</CardTitle>
-                        <CardDescription>Withdrawal Request</CardDescription>
+                        <CardDescription>طلب سحب</CardDescription>
                     </div>
-                    <Badge variant={getStatusVariant(withdrawal.status)}>{withdrawal.status}</Badge>
+                    <Badge variant={getStatusVariant(withdrawal.status)}>{getStatusText(withdrawal.status)}</Badge>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-4">
-                    <DetailRow icon={Calendar} label="Requested At" value={format(withdrawal.requestedAt, 'PPp')} />
-                    {withdrawal.completedAt && <DetailRow icon={Calendar} label="Completed At" value={format(withdrawal.completedAt, 'PPp')} />}
-                    <DetailRow icon={Wallet} label="Method" value={withdrawal.paymentMethod} />
+                    <DetailRow icon={Calendar} label="تاريخ الطلب" value={format(withdrawal.requestedAt, 'PPp')} />
+                    {withdrawal.completedAt && <DetailRow icon={Calendar} label="تاريخ الإكمال" value={format(withdrawal.completedAt, 'PPp')} />}
+                    <DetailRow icon={Wallet} label="الطريقة" value={withdrawal.paymentMethod} />
                     <div className="space-y-3">
                          {Object.entries(withdrawal.withdrawalDetails).map(([key, value]) => (
                             <DetailRow key={key} icon={Hash} label={formatDetailLabel(key)} value={value} />
                          ))}
                     </div>
-                    {withdrawal.txId && <DetailRow icon={ReceiptText} label="Transaction ID" value={withdrawal.txId} />}
+                    {withdrawal.txId && <DetailRow icon={ReceiptText} label="معرف المعاملة" value={withdrawal.txId} />}
                 </CardContent>
                 {withdrawal.rejectionReason && (
                     <CardFooter className="p-4 pt-0">
                          <Alert variant="destructive">
                             <AlertTriangle className="h-4 w-4" />
-                            <AlertTitle>Rejection Reason</AlertTitle>
+                            <AlertTitle>سبب الرفض</AlertTitle>
                             <AlertDescription>{withdrawal.rejectionReason}</AlertDescription>
                         </Alert>
                     </CardFooter>

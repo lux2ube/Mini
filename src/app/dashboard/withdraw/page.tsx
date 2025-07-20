@@ -28,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge"
-import { Info, Loader2, Copy, Banknote, XCircle, Wallet, Briefcase, History, ArrowDownToLine, ArrowUpFromLine, ChevronRight } from "lucide-react";
+import { Info, Loader2, Copy, Banknote, XCircle, Wallet, Briefcase, History, ArrowDownToLine, ArrowUpFromLine, ChevronLeft } from "lucide-react";
 import type { Withdrawal, PaymentMethod, TradingAccount } from "@/types";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { db } from "@/lib/firebase/config";
@@ -49,7 +49,7 @@ import Link from "next/link";
 
 
 const withdrawalSchema = z.object({
-    amount: z.coerce.number().positive({ message: "Amount must be greater than 0." }),
+    amount: z.coerce.number().positive({ message: "يجب أن يكون المبلغ أكبر من صفر." }),
     withdrawalType: z.enum(['payment_method', 'trading_account']),
     paymentMethodId: z.string().optional(),
     tradingAccountId: z.string().optional(),
@@ -59,7 +59,7 @@ const withdrawalSchema = z.object({
     if (data.withdrawalType === 'trading_account') return !!data.tradingAccountId;
     return false;
 }, {
-    message: "Please select a destination.",
+    message: "الرجاء اختيار وجهة.",
     path: ["paymentMethodId"],
 });
 
@@ -133,7 +133,7 @@ function WithdrawTabContent() {
 
             } catch (error) {
                 console.error("Error fetching withdrawal data:", error);
-                toast({ variant: 'destructive', title: "Error", description: "Failed to load page data."});
+                toast({ variant: 'destructive', title: "خطأ", description: "فشل تحميل بيانات الصفحة."});
             } finally {
                 setIsFetching(false);
             }
@@ -169,14 +169,14 @@ function WithdrawTabContent() {
         if (values.withdrawalType === 'trading_account') {
             const account = userTradingAccounts.find(a => a.id === values.tradingAccountId);
             if (!account) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Selected trading account is invalid.' });
+                toast({ variant: 'destructive', title: 'خطأ', description: 'حساب التداول المحدد غير صالح.' });
                 return;
             }
-            paymentMethodName = "Internal Transfer";
+            paymentMethodName = "تحويل داخلي";
             finalDetails = { broker: account.broker, accountNumber: account.accountNumber };
         } else {
              if (!selectedMethod) {
-                toast({ variant: 'destructive', title: 'Error', description: 'Selected payment method is invalid.' });
+                toast({ variant: 'destructive', title: 'خطأ', description: 'طريقة الدفع المحددة غير صالحة.' });
                 return;
             }
              paymentMethodName = selectedMethod.name;
@@ -189,15 +189,15 @@ function WithdrawTabContent() {
                 selectedMethod.fields.reduce((acc, field) => {
                     let fieldValidation: z.ZodString | z.ZodAny = z.string();
                     if (field.validation.required) {
-                        fieldValidation = fieldValidation.min(1, `${field.label} is required.`);
+                        fieldValidation = fieldValidation.min(1, `${field.label} مطلوب.`);
                     }
                     if (field.validation.minLength) {
-                        fieldValidation = fieldValidation.min(field.validation.minLength, `${field.label} must be at least ${field.validation.minLength} characters.`);
+                        fieldValidation = fieldValidation.min(field.validation.minLength, `${field.label} يجب أن يكون على الأقل ${field.validation.minLength} حرفًا.`);
                     }
                     if (field.validation.regex) {
                         try {
                             const regex = new RegExp(field.validation.regex);
-                            fieldValidation = fieldValidation.regex(regex, field.validation.regexErrorMessage || `Invalid ${field.label}`);
+                            fieldValidation = fieldValidation.regex(regex, field.validation.regexErrorMessage || `تنسيق ${field.label} غير صالح`);
                         } catch (e) {
                             console.error("Invalid regex in payment method config:", e);
                         }
@@ -217,7 +217,7 @@ function WithdrawTabContent() {
         }
         
         if (values.amount > availableBalance) {
-            form.setError("amount", { type: "manual", message: "Withdrawal amount cannot exceed available balance."});
+            form.setError("amount", { type: "manual", message: "مبلغ السحب لا يمكن أن يتجاوز الرصيد المتاح."});
             return;
         }
 
@@ -240,12 +240,12 @@ function WithdrawTabContent() {
             const clientInfo = await getClientSessionInfo();
             await logUserActivity(user.uid, 'withdrawal_request', clientInfo, { amount: values.amount, method: paymentMethodName });
             
-            toast({ title: 'Success!', description: 'Your withdrawal request has been submitted.' });
+            toast({ title: 'تم بنجاح!', description: 'تم تقديم طلب السحب الخاص بك.' });
             form.reset(formDefaultValues);
             fetchData();
         } catch (error) {
             console.error('Error submitting withdrawal: ', error);
-            toast({ variant: 'destructive', title: 'Error', description: 'There was a problem submitting your request.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: 'حدثت مشكلة أثناء تقديم طلبك.' });
         } finally {
             setIsLoading(false);
         }
@@ -253,7 +253,7 @@ function WithdrawTabContent() {
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
-        toast({ title: 'Copied!', description: 'TXID copied to clipboard.' });
+        toast({ title: 'تم النسخ!', description: 'تم نسخ TXID إلى الحافظة.' });
     };
 
     const getStatusVariant = (status: string) => {
@@ -262,6 +262,15 @@ function WithdrawTabContent() {
             case 'Processing': return 'secondary';
             case 'Failed': return 'destructive';
             default: return 'outline';
+        }
+    }
+
+     const getStatusText = (status: string) => {
+        switch (status) {
+            case 'Completed': return 'مكتمل';
+            case 'Processing': return 'قيد المعالجة';
+            case 'Failed': return 'فشل';
+            default: return status;
         }
     }
 
@@ -278,13 +287,13 @@ function WithdrawTabContent() {
             <Card>
                 <CardHeader className="p-4">
                     <CardTitle className="text-2xl">${availableBalance.toFixed(2)}</CardTitle>
-                    <CardDescription className="text-xs">Available to Withdraw</CardDescription>
+                    <CardDescription className="text-xs">متاح للسحب</CardDescription>
                 </CardHeader>
             </Card>
             
             <Card>
                 <CardHeader className="p-4">
-                    <CardTitle className="text-base">New Withdrawal</CardTitle>
+                    <CardTitle className="text-base">سحب جديد</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0">
                     <Form {...form}>
@@ -294,16 +303,16 @@ function WithdrawTabContent() {
                                 name="withdrawalType"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Withdrawal Type</FormLabel>
+                                        <FormLabel>نوع السحب</FormLabel>
                                         <Select onValueChange={(value) => {
                                             field.onChange(value);
                                             form.setValue('paymentMethodId', undefined);
                                             form.setValue('tradingAccountId', undefined);
                                         }} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger><div className="relative pl-10 w-full text-left"><Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue/></div></SelectTrigger></FormControl>
+                                            <FormControl><SelectTrigger><div className="relative pr-10 w-full text-right"><Wallet className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue/></div></SelectTrigger></FormControl>
                                             <SelectContent>
-                                                <SelectItem value="payment_method">Crypto</SelectItem>
-                                                <SelectItem value="trading_account">Trading Account</SelectItem>
+                                                <SelectItem value="payment_method">عملات مشفرة</SelectItem>
+                                                <SelectItem value="trading_account">حساب تداول</SelectItem>
                                             </SelectContent>
                                         </Select>
                                         <FormMessage />
@@ -317,9 +326,9 @@ function WithdrawTabContent() {
                                     name="paymentMethodId"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Withdrawal Method</FormLabel>
+                                            <FormLabel>طريقة السحب</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl><SelectTrigger><div className="relative pl-10 w-full text-left"><Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="Select a method" /></div></SelectTrigger></FormControl>
+                                                <FormControl><SelectTrigger><div className="relative pr-10 w-full text-right"><Wallet className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="اختر طريقة" /></div></SelectTrigger></FormControl>
                                                 <SelectContent>
                                                     {cryptoPaymentMethods.map(method => (
                                                         <SelectItem key={method.id} value={method.id}>
@@ -340,9 +349,9 @@ function WithdrawTabContent() {
                                     name="tradingAccountId"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Trading Account</FormLabel>
+                                            <FormLabel>حساب التداول</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl><SelectTrigger><div className="relative pl-10 w-full text-left"><Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="Select an account" /></div></SelectTrigger></FormControl>
+                                                <FormControl><SelectTrigger><div className="relative pr-10 w-full text-right"><Briefcase className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><SelectValue placeholder="اختر حساب" /></div></SelectTrigger></FormControl>
                                                 <SelectContent>
                                                     {userTradingAccounts.map(acc => (
                                                         <SelectItem key={acc.id} value={acc.id}>
@@ -370,12 +379,12 @@ function WithdrawTabContent() {
                                                  <FormLabel>{customField.label}</FormLabel>
                                                  <FormControl>
                                                     <div className="relative">
-                                                        <Wallet className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <Wallet className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                                         <Input 
                                                             type={customField.type} 
                                                             placeholder={customField.placeholder} 
                                                             {...field}
-                                                            className="pl-10"
+                                                            className="pr-10"
                                                         />
                                                     </div>
                                                  </FormControl>
@@ -391,12 +400,12 @@ function WithdrawTabContent() {
                                 name="amount"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Amount (USD)</FormLabel>
+                                        <FormLabel>المبلغ (بالدولار الأمريكي)</FormLabel>
                                         <FormControl>
                                             <div className="relative">
-                                                <Banknote className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
-                                                <Input type="number" placeholder="0.00" {...field} className="pl-10" />
-                                                <Button type="button" variant="ghost" size="sm" className="absolute right-1 top-1/2 -translate-y-1/2 h-auto py-0.5 px-2" onClick={() => form.setValue('amount', availableBalance)}>Max</Button>
+                                                <Banknote className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
+                                                <Input type="number" placeholder="0.00" {...field} className="pr-10" />
+                                                <Button type="button" variant="ghost" size="sm" className="absolute left-1 top-1/2 -translate-y-1/2 h-auto py-0.5 px-2" onClick={() => form.setValue('amount', availableBalance)}>الحد الأقصى</Button>
                                             </div>
                                         </FormControl>
                                         <FormMessage />
@@ -404,8 +413,8 @@ function WithdrawTabContent() {
                                 )}
                             />
                             <Button type="submit" disabled={isLoading} className="w-full">
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Submit Request
+                                {isLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                                تقديم الطلب
                             </Button>
                         </form>
                     </Form>
@@ -417,7 +426,7 @@ function WithdrawTabContent() {
                 <CardHeader className="p-4">
                     <CardTitle className="text-base flex items-center gap-2">
                         <History className="h-4 w-4 text-muted-foreground" />
-                        Recent Withdrawals
+                        السحوبات الأخيرة
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -425,9 +434,9 @@ function WithdrawTabContent() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="text-xs">Date</TableHead>
-                                <TableHead className="text-xs">Amount</TableHead>
-                                <TableHead className="text-xs">Status / TXID</TableHead>
+                                <TableHead className="text-xs">التاريخ</TableHead>
+                                <TableHead className="text-xs">المبلغ</TableHead>
+                                <TableHead className="text-xs">الحالة / TXID</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -438,7 +447,7 @@ function WithdrawTabContent() {
                                     <TableCell className="font-medium text-xs">${w.amount.toFixed(2)}</TableCell>
                                     <TableCell>
                                         <div className="flex flex-col items-start gap-1">
-                                            <Badge variant={getStatusVariant(w.status)}>{w.status}</Badge>
+                                            <Badge variant={getStatusVariant(w.status)}>{getStatusText(w.status)}</Badge>
                                             {w.txId && (
                                                 <TooltipProvider>
                                                     <Tooltip>
@@ -452,7 +461,7 @@ function WithdrawTabContent() {
                                                             </button>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
-                                                            <p>Copy TXID</p>
+                                                            <p>نسخ TXID</p>
                                                         </TooltipContent>
                                                     </Tooltip>
                                                 </TooltipProvider>
@@ -469,7 +478,7 @@ function WithdrawTabContent() {
                                 ))
                              ) : (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-24 text-xs">No withdrawal history.</TableCell>
+                                    <TableCell colSpan={3} className="text-center h-24 text-xs">لا يوجد سجل سحوبات.</TableCell>
                                 </TableRow>
                              )}
                         </TableBody>
@@ -478,19 +487,19 @@ function WithdrawTabContent() {
                 </CardContent>
                 <CardFooter className="p-2 border-t">
                     <Button asChild variant="ghost" size="sm" className="w-full justify-center text-xs">
-                        <Link href="/dashboard/wallet/history">View All History <ChevronRight className="ml-1 h-4 w-4" /></Link>
+                        <Link href="/dashboard/wallet/history">عرض كل السجل <ChevronLeft className="mr-1 h-4 w-4" /></Link>
                     </Button>
                 </CardFooter>
             </Card>
 
             <Alert>
                 <Info className="h-4 w-4" />
-                <AlertTitle className="text-sm">Important</AlertTitle>
+                <AlertTitle className="text-sm">هام</AlertTitle>
                 <AlertDescription>
                     <ul className="list-disc list-inside space-y-1 text-xs">
-                        <li>Withdrawals are processed within 24 hours.</li>
-                        <li>Ensure the information provided is correct.</li>
-                        <li>Funds sent to a wrong destination cannot be recovered.</li>
+                        <li>تتم معالجة عمليات السحب في غضون 24 ساعة.</li>
+                        <li>تأكد من صحة المعلومات المقدمة.</li>
+                        <li>لا يمكن استرداد الأموال المرسلة إلى وجهة خاطئة.</li>
                     </ul>
                 </AlertDescription>
             </Alert>
@@ -504,31 +513,31 @@ function DepositTabContent() {
             <CardHeader className="p-4">
                 <CardTitle className="text-base flex items-center gap-2">
                     <ArrowDownToLine className="h-4 w-4 text-muted-foreground" />
-                    Deposit Funds
+                    إيداع الأموال
                 </CardTitle>
                  <CardDescription className="text-xs">
-                    Deposit functionality is coming soon.
+                    وظيفة الإيداع ستكون متاحة قريباً.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <p className="text-center text-sm text-muted-foreground py-10">
-                    Please check back later for deposit options.
+                    يرجى التحقق مرة أخرى لاحقًا للحصول على خيارات الإيداع.
                 </p>
             </CardContent>
             <CardHeader className="p-4 border-t">
                 <CardTitle className="text-base flex items-center gap-2">
                     <History className="h-4 w-4 text-muted-foreground" />
-                    Recent Deposits
+                    الإيداعات الأخيرة
                 </CardTitle>
             </CardHeader>
              <CardContent className="p-0">
                  <p className="text-center text-sm text-muted-foreground py-10 px-4">
-                    No deposit history available.
+                    لا يوجد سجل إيداعات متاح.
                 </p>
             </CardContent>
              <CardFooter className="p-2 border-t">
                 <Button asChild variant="ghost" size="sm" className="w-full justify-center text-xs">
-                    <Link href="/dashboard/wallet/history">View All History <ChevronRight className="ml-1 h-4 w-4" /></Link>
+                    <Link href="/dashboard/wallet/history">عرض كل السجل <ChevronLeft className="mr-1 h-4 w-4" /></Link>
                 </Button>
             </CardFooter>
         </Card>
@@ -539,13 +548,13 @@ export default function WalletPage() {
     return (
         <div className="max-w-[400px] mx-auto w-full px-4 py-4 space-y-4">
             <PageHeader
-                title="Wallet"
-                description="Manage your deposits and withdrawals."
+                title="المحفظة"
+                description="إدارة عمليات الإيداع والسحب الخاصة بك."
             />
             <Tabs defaultValue="withdraw" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="deposit">Deposit</TabsTrigger>
-                    <TabsTrigger value="withdraw">Withdraw</TabsTrigger>
+                    <TabsTrigger value="deposit">إيداع</TabsTrigger>
+                    <TabsTrigger value="withdraw">سحب</TabsTrigger>
                 </TabsList>
                 <TabsContent value="deposit" className="mt-4">
                     <DepositTabContent />
