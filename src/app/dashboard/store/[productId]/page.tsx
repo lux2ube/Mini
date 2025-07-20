@@ -182,15 +182,15 @@ export default function ProductDetailPage() {
             </div>
             
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                     <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t z-50">
-                        <div className="container mx-auto max-w-2xl">
-                             <Button size="lg" className="w-full h-12 text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90" disabled={product.stock <= 0}>
+                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-sm border-t z-50">
+                    <div className="container mx-auto max-w-2xl">
+                         <DialogTrigger asChild>
+                            <Button size="lg" className="w-full h-12 text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90" disabled={product.stock <= 0}>
                                 {product.stock > 0 ? 'Proceed to Purchase' : 'Out of Stock'}
                             </Button>
-                        </div>
+                        </DialogTrigger>
                     </div>
-                </DialogTrigger>
+                </div>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Confirm Purchase: {product.name}</DialogTitle>
