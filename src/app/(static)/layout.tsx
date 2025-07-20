@@ -1,6 +1,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Facebook, Twitter, Instagram } from "lucide-react";
 
 function Header() {
     return (
@@ -29,7 +30,7 @@ function Footer() {
     return (
         <footer className="w-full border-t bg-gradient-to-br from-primary/10 via-background to-background text-foreground">
              <div className="max-w-5xl mx-auto px-4 py-8">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center md:text-left">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-8 text-center md:text-left">
                   <div className="col-span-2 md:col-span-1">
                       <Link href="/" className="flex items-center justify-center md:justify-start gap-2 font-semibold">
                           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -64,6 +65,14 @@ function Footer() {
                           <li><Link href="#" className="hover:text-primary">Terms of Service</Link></li>
                       </ul>
                   </div>
+                   <div>
+                        <h3 className="font-semibold mb-2 font-headline">Follow Us</h3>
+                        <div className="flex justify-center md:justify-start gap-4">
+                            <Link href="#" className="text-muted-foreground hover:text-primary"><Facebook className="h-5 w-5" /></Link>
+                            <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter className="h-5 w-5" /></Link>
+                            <Link href="#" className="text-muted-foreground hover:text-primary"><Instagram className="h-5 w-5" /></Link>
+                        </div>
+                   </div>
               </div>
               <div className="text-center text-xs text-muted-foreground pt-8 mt-8 border-t">
                   © {new Date().getFullYear()} Cashback Companion. All rights reserved.
