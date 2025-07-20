@@ -38,7 +38,7 @@ function ProductCard({ product }: { product: Product }) {
                         </Badge>
                     </div>
                 </div>
-                <div className="p-3 flex-grow flex flex-col">
+                <div className="p-3 flex-grow flex flex-col text-right">
                     <h3 className="font-semibold text-sm leading-tight line-clamp-2 flex-grow group-hover:text-primary transition-colors">{product.name}</h3>
                     <p className="text-xs text-muted-foreground mt-1">{product.categoryName}</p>
                 </div>
@@ -141,17 +141,22 @@ function MyOrdersList() {
             {orders.length > 0 ? (
                 orders.map(order => (
                     <Card key={order.id}>
-                        <CardHeader className="p-4">
+                        <CardHeader className="p-4 text-right">
                             <div className="flex justify-between items-center">
-                                <CardTitle className="text-sm">طلب رقم: {order.id.slice(0, 8)}...</CardTitle>
                                 <Badge variant={getStatusVariant(order.status)}>{getStatusText(order.status)}</Badge>
+                                <CardTitle className="text-sm">طلب رقم: ...{order.id.slice(0, 8)}</CardTitle>
                             </div>
                             <CardDescription className="text-xs">
                                 {format(order.createdAt, 'PPp')}
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 text-right">
+                                <p className="font-semibold text-base mr-auto">${order.price.toFixed(2)}</p>
+                                <div className="flex-grow">
+                                    <p className="font-semibold text-sm">{order.productName}</p>
+                                    <p className="text-xs text-muted-foreground">الكمية: 1</p>
+                                </div>
                                 <Image 
                                     src={order.productImage} 
                                     alt={order.productName} 
@@ -159,11 +164,6 @@ function MyOrdersList() {
                                     height={48}
                                     className="rounded-md border aspect-square object-contain bg-white"
                                 />
-                                <div className="flex-grow">
-                                    <p className="font-semibold text-sm">{order.productName}</p>
-                                    <p className="text-xs text-muted-foreground">الكمية: 1</p>
-                                </div>
-                                <p className="font-semibold text-base">${order.price.toFixed(2)}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -235,11 +235,11 @@ export default function StorePage() {
             <div className="container mx-auto px-4 py-6 space-y-6">
                  <Tabs defaultValue="store" className="w-full">
                     <div className="flex justify-between items-center">
-                        <PageHeader title="المتجر" description="أنفق رصيد الكاش باك على منتجات رائعة." />
                         <TabsList>
-                            <TabsTrigger value="store">المتجر</TabsTrigger>
                             <TabsTrigger value="orders">طلباتي</TabsTrigger>
+                            <TabsTrigger value="store">المتجر</TabsTrigger>
                         </TabsList>
+                        <PageHeader title="المتجر" description="أنفق رصيد الكاش باك على منتجات رائعة." />
                     </div>
                     
                     <TabsContent value="store" className="space-y-6">
@@ -247,10 +247,10 @@ export default function StorePage() {
                             <ScrollArea className="w-full whitespace-nowrap rounded-md pb-4">
                                 <div className="flex items-center gap-2">
                                      <TabsList className="p-1 h-auto">
-                                        <TabsTrigger value="all">كل المنتجات</TabsTrigger>
                                         {categories.map(cat => (
                                             <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
                                         ))}
+                                        <TabsTrigger value="all">كل المنتجات</TabsTrigger>
                                     </TabsList>
                                 </div>
                                 <ScrollBar orientation="horizontal" />

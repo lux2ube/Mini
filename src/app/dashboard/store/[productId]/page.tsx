@@ -151,29 +151,29 @@ export default function ProductDetailPage() {
                     </motion.div>
                 </div>
 
-                <Button variant="ghost" onClick={() => router.back()} className="absolute top-4 left-4 z-20 bg-black/20 hover:bg-black/40 text-white h-auto p-2 rounded-full">
+                <Button variant="ghost" onClick={() => router.back()} className="absolute top-4 right-4 z-20 bg-black/20 hover:bg-black/40 text-white h-auto p-2 rounded-full">
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
             </div>
             
             <div className="bg-slate-900">
                 <div className="bg-background rounded-t-3xl pt-8 pb-28">
-                    <div className="container mx-auto px-4 max-w-2xl space-y-8">
+                    <div className="container mx-auto px-4 max-w-2xl space-y-8 text-right">
                         <AnimatedSection>
                             <Badge variant="outline">{product.categoryName}</Badge>
                             <h1 className="text-4xl lg:text-5xl font-bold font-headline mt-2">{product.name}</h1>
                         </AnimatedSection>
                         
                         <AnimatedSection>
-                             <div className="flex items-baseline gap-4">
-                                <p className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</p>
+                             <div className="flex items-baseline gap-4 justify-end">
                                 <span className="text-sm text-muted-foreground">باستخدام رصيد الكاش باك</span>
+                                <p className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</p>
                              </div>
                         </AnimatedSection>
 
                         <AnimatedSection>
                             <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-                                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2"><Info className="h-5 w-5 text-primary"/> الوصف</h2>
+                                <h2 className="text-lg font-semibold text-foreground flex items-center justify-end gap-2">الوصف <Info className="h-5 w-5 text-primary"/></h2>
                                 <p>{product.description}</p>
                             </div>
                         </AnimatedSection>
@@ -191,7 +191,7 @@ export default function ProductDetailPage() {
             </div>
             
             <DialogContent>
-                <DialogHeader>
+                <DialogHeader className="text-right">
                     <DialogTitle>تأكيد الشراء: {product.name}</DialogTitle>
                     <DialogDescription>
                         أدخل رقم هاتفك للتوصيل. سيتم خصم ${product.price.toFixed(2)} من رصيد الكاش باك المتاح لديك.
@@ -208,7 +208,7 @@ export default function ProductDetailPage() {
                                     <FormControl>
                                         <div className="relative">
                                             <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                            <Input type="tel" placeholder="مثال: +966..." {...field} className="pr-10" />
+                                            <Input type="tel" placeholder="مثال: +966..." {...field} className="pr-10 text-right" />
                                         </div>
                                     </FormControl>
                                     <FormMessage />
@@ -216,13 +216,13 @@ export default function ProductDetailPage() {
                             )}
                         />
                         <DialogFooter>
-                            <DialogClose asChild>
-                                <Button type="button" variant="secondary">إلغاء</Button>
-                            </DialogClose>
                             <Button type="submit" disabled={isSubmitting}>
                                 {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                                 تأكيد الطلب
                             </Button>
+                            <DialogClose asChild>
+                                <Button type="button" variant="secondary">إلغاء</Button>
+                            </DialogClose>
                         </DialogFooter>
                     </form>
                 </Form>

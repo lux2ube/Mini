@@ -81,13 +81,13 @@ export default function TransactionsPage() {
     return (
         <div className="container mx-auto px-4 py-4 max-w-4xl space-y-6">
             <PageHeader
-                title="Transactions"
-                description="A complete history of all cashback you've earned."
+                title="المعاملات"
+                description="سجل كامل بجميع الكاش باك الذي كسبته."
             />
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Total Earned</CardTitle>
+                    <CardTitle>إجمالي المكتسب</CardTitle>
                     <CardDescription className="text-3xl font-bold text-primary">${totalEarned.toFixed(2)}</CardDescription>
                 </CardHeader>
             </Card>
@@ -95,14 +95,14 @@ export default function TransactionsPage() {
             <Card>
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                        <CardTitle>Transaction History</CardTitle>
+                        <CardTitle>سجل المعاملات</CardTitle>
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 
-                                placeholder="Filter by broker, account, details..."
+                                placeholder="فلترة حسب الوسيط، الحساب، التفاصيل..."
                                 value={filter}
                                 onChange={(e) => setFilter(e.target.value)}
-                                className="w-full sm:w-auto pl-10"
+                                className="w-full sm:w-auto pr-10"
                             />
                         </div>
                     </div>
@@ -111,10 +111,10 @@ export default function TransactionsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Date</TableHead>
-                                <TableHead>Account</TableHead>
-                                <TableHead>Details</TableHead>
-                                <TableHead className="text-right">Amount</TableHead>
+                                <TableHead className="text-right">التاريخ</TableHead>
+                                <TableHead className="text-right">الحساب</TableHead>
+                                <TableHead className="text-right">التفاصيل</TableHead>
+                                <TableHead className="text-left">المبلغ</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -133,13 +133,13 @@ export default function TransactionsPage() {
                                                 {tx.tradeDetails}
                                             </p>
                                         </TableCell>
-                                        <TableCell className="text-right font-semibold text-primary">${tx.cashbackAmount.toFixed(2)}</TableCell>
+                                        <TableCell className="text-left font-semibold text-primary">${tx.cashbackAmount.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center h-24">
-                                        No transactions found.
+                                        لم يتم العثور على معاملات.
                                     </TableCell>
                                 </TableRow>
                             )}

@@ -384,7 +384,7 @@ function WithdrawTabContent() {
                                                             type={customField.type} 
                                                             placeholder={customField.placeholder} 
                                                             {...field}
-                                                            className="pr-10"
+                                                            className="pr-10 text-right"
                                                         />
                                                     </div>
                                                  </FormControl>
@@ -404,7 +404,7 @@ function WithdrawTabContent() {
                                         <FormControl>
                                             <div className="relative">
                                                 <Banknote className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"/>
-                                                <Input type="number" placeholder="0.00" {...field} className="pr-10" />
+                                                <Input type="number" placeholder="0.00" {...field} className="pr-10 text-right" />
                                                 <Button type="button" variant="ghost" size="sm" className="absolute left-1 top-1/2 -translate-y-1/2 h-auto py-0.5 px-2" onClick={() => form.setValue('amount', availableBalance)}>الحد الأقصى</Button>
                                             </div>
                                         </FormControl>
@@ -434,9 +434,9 @@ function WithdrawTabContent() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="text-xs">التاريخ</TableHead>
-                                <TableHead className="text-xs">المبلغ</TableHead>
-                                <TableHead className="text-xs">الحالة / TXID</TableHead>
+                                <TableHead className="text-right text-xs">التاريخ</TableHead>
+                                <TableHead className="text-right text-xs">المبلغ</TableHead>
+                                <TableHead className="text-right text-xs">الحالة / TXID</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -446,7 +446,7 @@ function WithdrawTabContent() {
                                     <TableCell className="text-muted-foreground text-xs">{format(new Date(w.requestedAt), "PP")}</TableCell>
                                     <TableCell className="font-medium text-xs">${w.amount.toFixed(2)}</TableCell>
                                     <TableCell>
-                                        <div className="flex flex-col items-start gap-1">
+                                        <div className="flex flex-col items-end gap-1">
                                             <Badge variant={getStatusVariant(w.status)}>{getStatusText(w.status)}</Badge>
                                             {w.txId && (
                                                 <TooltipProvider>
@@ -456,8 +456,8 @@ function WithdrawTabContent() {
                                                                 onClick={(e) => { e.stopPropagation(); copyToClipboard(w.txId!) }}
                                                                 className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                                                             >
-                                                                <span className="truncate max-w-[100px]">{w.txId}</span>
                                                                 <Copy className="h-3 w-3" />
+                                                                <span className="truncate max-w-[100px]">{w.txId}</span>
                                                             </button>
                                                         </TooltipTrigger>
                                                         <TooltipContent>
@@ -487,7 +487,7 @@ function WithdrawTabContent() {
                 </CardContent>
                 <CardFooter className="p-2 border-t">
                     <Button asChild variant="ghost" size="sm" className="w-full justify-center text-xs">
-                        <Link href="/dashboard/wallet/history">عرض كل السجل <ChevronLeft className="mr-1 h-4 w-4" /></Link>
+                        <Link href="/dashboard/wallet/history"><ChevronLeft className="mr-1 h-4 w-4" /> عرض كل السجل </Link>
                     </Button>
                 </CardFooter>
             </Card>
@@ -537,7 +537,7 @@ function DepositTabContent() {
             </CardContent>
              <CardFooter className="p-2 border-t">
                 <Button asChild variant="ghost" size="sm" className="w-full justify-center text-xs">
-                    <Link href="/dashboard/wallet/history">عرض كل السجل <ChevronLeft className="mr-1 h-4 w-4" /></Link>
+                    <Link href="/dashboard/wallet/history"><ChevronLeft className="mr-1 h-4 w-4" /> عرض كل السجل </Link>
                 </Button>
             </CardFooter>
         </Card>
