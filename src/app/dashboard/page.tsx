@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { format } from "date-fns";
+import { Badge } from "../ui/badge";
 
 
 interface DashboardStats {
@@ -141,7 +142,7 @@ export default function UserDashboardPage() {
             totalReferrals: user.profile?.referrals?.length || 0,
             referralPoints: user.profile?.points || 0,
           });
-          setTransactions(allTransactions.slice(0, 5));
+          setTransactions(allTransactions);
 
         } catch (error) {
             console.error("Error fetching dashboard stats:", error);
@@ -163,6 +164,15 @@ export default function UserDashboardPage() {
         </div>
     );
   }
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+        case 'Approved': return 'default';
+        case 'Pending': return 'secondary';
+        case 'Rejected': return 'destructive';
+        default: return 'outline';
+    }
+  };
 
   return (
     <div className="flex-1 bg-muted/30">
@@ -207,9 +217,57 @@ export default function UserDashboardPage() {
                                 </div>
                             </div>
                         </CardContent>
+                        <CardFooter className="p-2 border-t border-slate-700 bg-slate-800/50 grid grid-cols-2 gap-2">
+                           <Button asChild variant="secondary" size="sm">
+                               <Link href="/dashboard/withdraw"><Wallet className="mr-2 h-4 w-4" /> Withdraw</Link>
+                           </Button>
+                           <Button asChild size="sm">
+                               <Link href="/dashboard/brokers"><PlusCircle className="mr-2 h-4 w-4" /> Get Cashback</Link>
+                           </Button>
+                        </CardFooter>
                     </Card>
 
                     <div className="space-y-4">
+                         <h2 className="text-lg font-semibold mt-4">My Trading Accounts</h2>
+                          <Card>
+                            <CardContent className="p-0">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="text-xs">Account</TableHead>
+                                            <TableHead className="text-right text-xs">Status</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {stats.linkedAccounts.length > 0 ? (
+                                            stats.linkedAccounts.slice(0, 3).map(acc => (
+                                                <TableRow key={acc.id}>
+                                                    <TableCell>
+                                                        <div className="font-medium text-xs">{acc.broker}</div>
+                                                        <div className="text-xs text-muted-foreground">{acc.accountNumber}</div>
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Badge variant={getStatusVariant(acc.status)}>{acc.status}</Badge>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={2} className="h-24 text-center text-xs text-muted-foreground">
+                                                    No accounts linked yet.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                             <CardFooter className="p-2 border-t">
+                                <Button asChild variant="ghost" size="sm" className="w-full justify-center">
+                                    <Link href="/dashboard/my-accounts">View All Accounts <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                                </Button>
+                             </CardFooter>
+                         </Card>
+
                          <h2 className="text-lg font-semibold mt-4">Recent Transactions</h2>
                          <Card>
                             <CardContent className="p-0">
@@ -223,7 +281,7 @@ export default function UserDashboardPage() {
                                     </TableHeader>
                                     <TableBody>
                                         {transactions.length > 0 ? (
-                                            transactions.map(tx => (
+                                            transactions.slice(0, 5).map(tx => (
                                                 <TableRow key={tx.id}>
                                                     <TableCell className="text-muted-foreground text-xs">{format(tx.date, "PP")}</TableCell>
                                                     <TableCell>
@@ -270,4 +328,3 @@ export default function UserDashboardPage() {
     </div>
   );
 }
-
