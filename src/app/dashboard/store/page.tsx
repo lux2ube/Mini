@@ -18,26 +18,32 @@ import { db } from '@/lib/firebase/config';
 import { collection, query, where, getDocs, Timestamp, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 
 function ProductCard({ product }: { product: Product }) {
     return (
-        <Card className="flex flex-col overflow-hidden">
-            <div className="aspect-square relative w-full">
+        <Card className="flex flex-col overflow-hidden group border-2 border-transparent hover:border-primary transition-all duration-300 hover:shadow-lg">
+            <div className="aspect-square relative w-full overflow-hidden">
                 <Image
                     src={product.imageUrl}
                     alt={product.name}
                     fill
-                    className="object-cover"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
                     data-ai-hint="product image"
                 />
+                 <div className="absolute bottom-2 right-2">
+                    <Badge variant="default" className="text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground">
+                        ${product.price.toFixed(2)}
+                    </Badge>
+                </div>
             </div>
-            <div className="p-2 flex-grow flex flex-col">
-                <h3 className="font-semibold text-xs leading-tight line-clamp-2 flex-grow">{product.name}</h3>
-                <p className="font-bold text-sm text-primary mt-1">${product.price.toFixed(2)}</p>
+            <div className="p-3 flex-grow flex flex-col">
+                <h3 className="font-semibold text-sm leading-tight line-clamp-2 flex-grow group-hover:text-primary transition-colors">{product.name}</h3>
+                <p className="text-xs text-muted-foreground mt-1">{product.categoryName}</p>
             </div>
-            <CardFooter className="p-2 pt-0">
-                <Button asChild size="sm" className="w-full text-xs">
-                    <Link href={`/dashboard/store/${product.id}`}>View</Link>
+            <CardFooter className="p-3 pt-0">
+                <Button asChild size="sm" className="w-full">
+                    <Link href={`/dashboard/store/${product.id}`}>Buy Now</Link>
                 </Button>
             </CardFooter>
         </Card>
@@ -46,14 +52,15 @@ function ProductCard({ product }: { product: Product }) {
 
 function StoreSkeleton() {
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <Skeleton className="h-10 w-full" />
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 md:gap-4">
-                {[...Array(12)].map((_, i) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {[...Array(10)].map((_, i) => (
                     <div key={i} className="space-y-2">
-                        <Skeleton className="aspect-square w-full" />
+                        <Skeleton className="aspect-square w-full rounded-lg" />
                         <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-9 w-full rounded-lg" />
                     </div>
                 ))}
             </div>
@@ -137,7 +144,7 @@ function MyOrdersList() {
                                     alt={order.productName} 
                                     width={48} 
                                     height={48}
-                                    className="rounded-md border aspect-square object-contain"
+                                    className="rounded-md border aspect-square object-contain bg-white"
                                 />
                                 <div className="flex-grow">
                                     <p className="font-semibold text-sm">{order.productName}</p>
@@ -172,7 +179,7 @@ export default function StorePage() {
                     getProducts(),
                     getCategories()
                 ]);
-                setProducts(productsData);
+                setProducts(productsData.filter(p => p.stock > 0)); // Only show items in stock
                 setCategories(categoriesData);
             } catch (error) {
                 console.error("Failed to fetch store data:", error);
@@ -187,7 +194,7 @@ export default function StorePage() {
         return categories.map(category => ({
             ...category,
             products: products.filter(p => p.categoryId === category.id)
-        }));
+        })).filter(category => category.products.length > 0); // Only show categories with products
     }, [products, categories]);
 
     if (isLoading) {
@@ -199,7 +206,7 @@ export default function StorePage() {
     }
 
     const renderGrid = (items: Product[]) => (
-         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 md:gap-4">
+         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
              {items.length > 0 ? (
                 items.map(product => (
                     <ProductCard key={product.id} product={product} />
@@ -211,41 +218,45 @@ export default function StorePage() {
     );
 
     return (
-        <div className="container mx-auto px-4 py-6 space-y-6">
-             <Tabs defaultValue="store" className="w-full">
-                <div className="flex justify-between items-center">
-                    <PageHeader title="Store" description="Spend your cashback on awesome products." />
-                    <TabsList>
-                        <TabsTrigger value="store">Store</TabsTrigger>
-                        <TabsTrigger value="orders">My Orders</TabsTrigger>
-                    </TabsList>
-                </div>
-                
-                <TabsContent value="store" className="space-y-6">
-                     <Tabs defaultValue={categories[0]?.id || 'all'} className="w-full">
-                        <ScrollArea className="w-full whitespace-nowrap rounded-md">
-                            <TabsList className="w-full justify-start p-1 h-auto">
-                                <TabsTrigger value="all">All</TabsTrigger>
-                                {categories.map(cat => (
-                                    <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
-                                ))}
-                            </TabsList>
-                            <ScrollBar orientation="horizontal" />
-                        </ScrollArea>
-                        <TabsContent value="all" className="mt-6">
-                            {renderGrid(products)}
-                        </TabsContent>
-                        {productsByCategory.map(category => (
-                            <TabsContent key={category.id} value={category.id} className="mt-6">
-                            {renderGrid(category.products)}
+        <div className="bg-muted/30 flex-1">
+            <div className="container mx-auto px-4 py-6 space-y-6">
+                 <Tabs defaultValue="store" className="w-full">
+                    <div className="flex justify-between items-center">
+                        <PageHeader title="Store" description="Spend your cashback on awesome products." />
+                        <TabsList>
+                            <TabsTrigger value="store">Store</TabsTrigger>
+                            <TabsTrigger value="orders">My Orders</TabsTrigger>
+                        </TabsList>
+                    </div>
+                    
+                    <TabsContent value="store" className="space-y-6">
+                         <Tabs defaultValue="all" className="w-full">
+                            <ScrollArea className="w-full whitespace-nowrap rounded-md pb-4">
+                                <div className="flex items-center gap-2">
+                                     <TabsList className="p-1 h-auto">
+                                        <TabsTrigger value="all">All Products</TabsTrigger>
+                                        {categories.map(cat => (
+                                            <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                </div>
+                                <ScrollBar orientation="horizontal" />
+                            </ScrollArea>
+                            <TabsContent value="all" className="mt-2">
+                                {renderGrid(products)}
                             </TabsContent>
-                        ))}
-                    </Tabs>
-                </TabsContent>
-                 <TabsContent value="orders">
-                    <MyOrdersList />
-                </TabsContent>
-            </Tabs>
+                            {productsByCategory.map(category => (
+                                <TabsContent key={category.id} value={category.id} className="mt-2">
+                                {renderGrid(category.products)}
+                                </TabsContent>
+                            ))}
+                        </Tabs>
+                    </TabsContent>
+                     <TabsContent value="orders">
+                        <MyOrdersList />
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
     );
 }
