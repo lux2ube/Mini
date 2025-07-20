@@ -4,9 +4,8 @@
 import React, { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Copy, KeyRound, Link as LinkIcon, Users, Gift } from "lucide-react";
+import { Loader2, Copy, KeyRound, Link as LinkIcon, Users, Gift, Share2, UserPlus, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthContext } from '@/hooks/useAuthContext';
@@ -15,8 +14,28 @@ import { db } from "@/lib/firebase/config";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
 import type { UserProfile } from "@/types";
 import { format } from 'date-fns';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Separator } from '@/components/ui/separator';
 
 type ReferralInfo = Pick<UserProfile, 'uid' | 'name' | 'createdAt'>;
+
+const howItWorks = [
+    {
+        icon: Share2,
+        title: "Share Your Link",
+        description: "Copy your unique code or link and send it to your friends."
+    },
+    {
+        icon: UserPlus,
+        title: "Friend Signs Up",
+        description: "Your friend creates an account using your referral code."
+    },
+    {
+        icon: Award,
+        title: "Earn Rewards",
+        description: "You both receive points and unlock exclusive benefits."
+    }
+]
 
 export default function ReferralsPage() {
     const { user } = useAuthContext();
@@ -70,103 +89,81 @@ export default function ReferralsPage() {
     return (
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
             <PageHeader
-                title="Referral Program"
-                description="Invite friends and earn rewards for every successful referral."
+                title="Invite & Earn"
+                description="Share the love and get rewarded for every friend you invite."
             />
             
-            <div className="grid grid-cols-2 gap-4">
-                <Card>
-                    <CardHeader className="p-3 flex flex-row items-center justify-between space-y-0">
-                        <CardTitle className="text-sm font-medium">Total Referrals</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                        <div className="text-2xl font-bold">{user?.profile?.referrals?.length ?? 0}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="p-3 flex flex-row items-center justify-between space-y-0">
-                        <CardTitle className="text-sm font-medium">Points Earned</CardTitle>
-                        <Gift className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="p-3 pt-0">
-                        <div className="text-2xl font-bold">{user?.profile?.points ?? 0}</div>
-                    </CardContent>
-                </Card>
-            </div>
-
-
-            <Card>
-                <CardHeader className="p-4">
-                    <CardTitle className="text-base">Share Your Link</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-4">
-                    <div>
-                         <label className="text-sm font-medium">Your Invite Code</label>
-                         <div className="flex items-center gap-2">
-                             <div className="relative flex-grow">
-                                <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input readOnly value={referralCode} className="font-mono text-sm pl-10" />
-                            </div>
-                             <Button variant="outline" size="icon" onClick={() => copyToClipboard(referralCode, 'code')}>
-                                <Copy className="h-4 w-4" />
-                            </Button>
-                         </div>
-                    </div>
-                     <div>
-                         <label className="text-sm font-medium">Your Invite Link</label>
-                        <div className="flex items-center gap-2">
-                             <div className="relative flex-grow">
-                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input readOnly value={referralLink || ''} className="text-xs pl-10" />
-                            </div>
-                            <Button variant="outline" size="icon" onClick={() => copyToClipboard(referralLink || '', 'link')}>
-                                <Copy className="h-4 w-4" />
-                            </Button>
-                        </div>
+            <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
+                <CardContent className="p-4 text-center space-y-4">
+                    <p className="font-bold text-2xl text-primary">{referralCode}</p>
+                    <p className="text-sm text-muted-foreground">Share this code with your friends. When they sign up, you both get rewarded!</p>
+                     <div className="flex items-center gap-2">
+                        <Input readOnly value={referralLink || ''} className="text-xs bg-background/50" />
+                        <Button variant="default" size="icon" onClick={() => copyToClipboard(referralLink || '', 'link')}>
+                            <Copy className="h-4 w-4" />
+                        </Button>
                     </div>
                 </CardContent>
             </Card>
 
+
             <Card>
-                <CardHeader className="p-4">
-                    <CardTitle className="text-base">Your Referrals</CardTitle>
-                    <CardDescription className="text-xs">
-                        A list of users who have signed up with your code.
-                    </CardDescription>
+                <CardHeader>
+                    <CardTitle className="text-base">How It Works</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                   {howItWorks.map((item, index) => (
+                       <div key={item.title} className="flex items-start gap-4">
+                           <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-primary/10 text-primary font-bold flex items-center justify-center">
+                               <item.icon className="h-5 w-5" />
+                           </div>
+                           <div className="flex-grow">
+                               <h3 className="font-semibold text-sm">{item.title}</h3>
+                               <p className="text-xs text-muted-foreground">{item.description}</p>
+                           </div>
+                       </div>
+                   ))}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader className="p-4 flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle className="text-base">Your Referrals</CardTitle>
+                        <CardDescription className="text-xs">
+                            {user?.profile?.referrals?.length ?? 0} successful invites.
+                        </CardDescription>
+                    </div>
+                     <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Points</p>
+                        <p className="text-2xl font-bold text-primary">{user?.profile?.points ?? 0}</p>
+                    </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="text-xs">Name</TableHead>
-                                    <TableHead className="text-xs text-right">Join Date</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoading ? (
-                                    <TableRow>
-                                        <TableCell colSpan={2} className="text-center h-24">
-                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
-                                        </TableCell>
-                                    </TableRow>
-                                ) : referrals.length > 0 ? (
-                                    referrals.map(ref => (
-                                        <TableRow key={ref.uid}>
-                                            <TableCell className="font-medium text-sm">{ref.name}</TableCell>
-                                            <TableCell className="text-xs text-right">{ref.createdAt ? format(ref.createdAt, 'PP') : '-'}</TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={2} className="text-center h-24 text-sm text-muted-foreground">
-                                            You haven't referred anyone yet.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
+                    <div className="space-y-1 p-2 max-h-80 overflow-y-auto">
+                         {isLoading ? (
+                            <div className="flex justify-center items-center h-24">
+                                <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+                            </div>
+                        ) : referrals.length > 0 ? (
+                            referrals.map(ref => (
+                                <div key={ref.uid} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50">
+                                    <Avatar>
+                                        <AvatarFallback>{ref.name ? ref.name.charAt(0).toUpperCase() : '?'}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-grow">
+                                        <p className="font-medium text-sm">{ref.name}</p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground text-right">
+                                        Joined {ref.createdAt ? format(ref.createdAt, 'PP') : '-'}
+                                    </p>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center h-24 flex items-center justify-center text-sm text-muted-foreground">
+                                You haven't referred anyone yet.
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
