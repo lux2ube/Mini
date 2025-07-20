@@ -2,34 +2,17 @@
 "use client";
 
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { Loader2, ChevronRight, ShieldCheck, UserCheck, Lock, Activity } from "lucide-react";
+import { Loader2, UserCheck, Lock, Activity, ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-
-function SettingsItem({ href, icon: Icon, title, description }: { href: string, icon: React.ElementType, title: string, description: string }) {
-    return (
-        <Link href={href}>
-            <Card className="hover:bg-muted/50 transition-colors">
-                <CardContent className="p-4 flex items-center gap-4">
-                    <div className="p-2 bg-primary/10 rounded-md">
-                        <Icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <div className="flex-grow">
-                        <h3 className="font-semibold">{title}</h3>
-                        <p className="text-xs text-muted-foreground">{description}</p>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                </CardContent>
-            </Card>
-        </Link>
-    );
-}
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
 
 export default function SettingsPage() {
     const { user, isLoading } = useAuthContext();
+    const router = useRouter();
 
     if (isLoading || !user?.profile) {
         return (
@@ -38,58 +21,26 @@ export default function SettingsPage() {
             </div>
         );
     }
-
-    const { profile } = user;
-    const isVerified = profile.isVerified ?? false;
-
+    
     return (
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
+            <Button variant="ghost" onClick={() => router.push('/dashboard')} className="h-auto p-0 text-sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Dashboard
+            </Button>
             <PageHeader title="Settings" description="Manage your account, security, and verification." />
 
-            <Link href="/dashboard/profile">
-                 <Card className="hover:bg-muted/50 transition-colors">
-                    <CardContent className="p-4 flex items-center gap-4">
-                        <Avatar className="h-16 w-16">
-                            <AvatarFallback className="text-2xl bg-primary/20 text-primary font-bold">
-                                {profile.name ? profile.name.charAt(0).toUpperCase() : '?'}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-grow space-y-1">
-                            <h2 className="font-bold text-lg">{profile.name}</h2>
-                            <div className="flex items-center gap-2">
-                                <Badge variant={isVerified ? "default" : "secondary"}>
-                                    <ShieldCheck className="mr-1.5 h-3 w-3" />
-                                    {isVerified ? "Verified" : "Not Verified"}
-                                 </Badge>
-                                 <Badge variant="outline">{profile.tier || 'Bronze'}</Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground font-mono pt-1">UID: {profile.uid.slice(0, 12)}...</p>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                    </CardContent>
-                </Card>
-            </Link>
-
-            <div className="space-y-3">
-               <SettingsItem 
-                    href="/dashboard/settings/verification"
-                    icon={UserCheck}
-                    title="Verification Center"
-                    description="Complete KYC, email, and phone verification."
-               />
-               <SettingsItem 
-                    href="/dashboard/settings/security"
-                    icon={Lock}
-                    title="Security Center"
-                    description="Manage password and two-factor authentication."
-               />
-                <SettingsItem 
-                    href="/dashboard/settings/activity-logs"
-                    icon={Activity}
-                    title="Activity Logs"
-                    description="Review your recent account activity."
-               />
-            </div>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="text-base">Welcome to Settings</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                        Use the menu to navigate through your profile, security, and verification settings. 
+                        Click the profile icon in the top right corner to open the settings panel at any time.
+                    </p>
+                </CardContent>
+            </Card>
         </div>
     );
 }
