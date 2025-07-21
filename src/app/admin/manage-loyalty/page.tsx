@@ -43,6 +43,17 @@ const ruleSchema = z.object({
 
 type RuleFormData = z.infer<typeof ruleSchema>;
 
+const defaultRules: Omit<PointsRule, 'id'>[] = [
+    { action: 'approve_account', points: 50, isDollarBased: false, description: 'For linking and approving a new trading account.' },
+    { action: 'cashback_earned', points: 1, isDollarBased: true, description: 'Earn 1 point for every $1 of cashback received.' },
+    { action: 'store_purchase', points: 1, isDollarBased: true, description: 'Earn 1 point for every $1 spent in the store.' },
+    { action: 'referral_signup', points: 25, isDollarBased: false, description: 'For referring a new user who signs up.' },
+    { action: 'referral_becomes_active', points: 100, isDollarBased: false, description: 'When your referral links their first approved account.' },
+    { action: 'referral_becomes_trader', points: 250, isDollarBased: false, description: 'When your referral receives their first cashback.' },
+    { action: 'referral_commission', points: 1, isDollarBased: true, description: 'Earn points from your referral\'s cashback, based on your tier.' }
+];
+
+
 function LoyaltyTiersManager() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -178,9 +189,26 @@ function PointsRulesManager() {
 
     const fetchRules = async () => {
         setIsLoading(true);
-        const data = await getPointsRules();
-        setRules(data);
-        setIsLoading(false);
+        try {
+            const data = await getPointsRules();
+            // If no rules exist, seed them from the defaults
+            if (data.length === 0) {
+                console.log("No rules found. Seeding default rules...");
+                for (const rule of defaultRules) {
+                    await addPointsRule(rule);
+                }
+                // Refetch after seeding
+                const seededData = await getPointsRules();
+                setRules(seededData);
+                 toast({ title: "نجاح", description: "تم إنشاء قواعد الولاء الافتراضية بنجاح." });
+            } else {
+                setRules(data);
+            }
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن تحميل قواعد الولاء.'});
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     useEffect(() => {

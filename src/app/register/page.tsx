@@ -54,20 +54,21 @@ export default function RegisterPage() {
       const user = userCredential.user;
       
       const finalReferralCode = (referralCode || referralCodeFromUrl || '').trim();
-      let referrerProfile: { uid: string, data: any } | null = null;
       
-      if (finalReferralCode) {
-        const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode));
-        const referrerSnapshot = await getDocs(referrerQuery);
-        if (!referrerSnapshot.empty) {
-          const doc = referrerSnapshot.docs[0];
-          referrerProfile = { uid: doc.id, data: doc.data() };
-        } else {
-          console.warn("Referral code not found:", finalReferralCode);
-        }
-      }
-
       await runTransaction(db, async (transaction) => {
+        let referrerProfile: { uid: string, data: any } | null = null;
+      
+        if (finalReferralCode) {
+            const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode));
+            const referrerSnapshot = await getDocs(referrerQuery); // Use getDocs within transaction scope
+            if (!referrerSnapshot.empty) {
+                const doc = referrerSnapshot.docs[0];
+                referrerProfile = { uid: doc.id, data: doc.data() };
+            } else {
+                console.warn("Referral code not found:", finalReferralCode);
+            }
+        }
+
         const counterRef = doc(db, 'counters', 'userCounter');
         const counterSnap = await transaction.get(counterRef);
         const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;

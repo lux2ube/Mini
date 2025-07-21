@@ -243,20 +243,22 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
 
 export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected', reason?: string) {
   try {
-    const accountRef = doc(db, 'tradingAccounts', accountId);
+    let accountData: TradingAccount | null = null;
     
     await runTransaction(db, async (transaction) => {
+        const accountRef = doc(db, 'tradingAccounts', accountId);
         const accountSnap = await transaction.get(accountRef);
         if (!accountSnap.exists()) throw new Error("لم يتم العثور على الحساب");
-        const accountData = accountSnap.data() as TradingAccount;
+        
+        const currentData = accountSnap.data() as TradingAccount;
+        accountData = currentData; // Store for use outside transaction
 
-        // Prevent re-processing
-        if (accountData.status !== 'Pending') {
-            throw new Error(`لا يمكن تحديث الحساب. الحالة الحالية هي ${accountData.status}.`);
+        if (currentData.status !== 'Pending') {
+            throw new Error(`لا يمكن تحديث الحساب. الحالة الحالية هي ${currentData.status}.`);
         }
 
         const updateData: { status: 'Approved' | 'Rejected', rejectionReason?: string } = { status };
-        let message = `تم ${status === 'Approved' ? 'الموافقة على' : 'رفض'} حساب التداول الخاص بك ${accountData.accountNumber}.`;
+        let message = `تم ${status === 'Approved' ? 'الموافقة على' : 'رفض'} حساب التداول الخاص بك ${currentData.accountNumber}.`;
 
         if (status === 'Rejected') {
             if (!reason) throw new Error("سبب الرفض مطلوب.");
@@ -267,21 +269,25 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
         }
 
         transaction.update(accountRef, updateData);
-        await createNotification(transaction, accountData.userId, message, 'account', '/dashboard/my-accounts');
+        await createNotification(transaction, currentData.userId, message, 'account', '/dashboard/my-accounts');
+    });
 
-        // Award points on approval
-        if (status === 'Approved') {
-            await awardPoints(transaction, accountData.userId, 'approve_account');
+    // --- Post-transaction logic for awarding points ---
+    if (status === 'Approved' && accountData) {
+        const finalAccountData = accountData; // Ensure non-null for TS
+        await runTransaction(db, async (transaction) => {
+            // Award points to the user for getting an account approved
+            await awardPoints(transaction, finalAccountData.userId, 'approve_account');
 
-            // --- Check referrer status ---
-            const userRef = doc(db, 'users', accountData.userId);
+            // Check if this user was referred and award points to their referrer
+            const userRef = doc(db, 'users', finalAccountData.userId);
             const userSnap = await transaction.get(userRef);
             if (userSnap.exists() && userSnap.data().referredBy) {
                 const referrerId = userSnap.data().referredBy;
                 await awardPoints(transaction, referrerId, 'referral_becomes_active');
             }
-        }
-    });
+        });
+    }
 
     return { success: true, message: `تم تحديث حالة الحساب إلى ${status}.` };
   } catch (error) {
