@@ -1,13 +1,12 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useParams, notFound, useRouter } from 'next/navigation';
 import Image from "next/image";
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { motion, useInView } from "framer-motion";
 import React from "react";
 
 import { Button } from "@/components/ui/button";
@@ -65,7 +64,7 @@ function PurchaseForm({ product, onPurchaseSuccess }: { product: Product; onPurc
     return (
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-                <Button size="lg" className="w-full h-12 text-base shadow-lg bg-gradient-to-r from-primary to-accent text-primary-foreground hover:from-primary/90 hover:to-accent/90" disabled={product.stock <= 0}>
+                <Button size="lg" className="w-full h-12 text-base shadow-lg" disabled={product.stock <= 0}>
                     <ShoppingCart className="ml-2 h-5 w-5" />
                     {product.stock > 0 ? 'شراء الآن' : 'نفدت الكمية'}
                 </Button>
@@ -128,21 +127,6 @@ function ProductPageSkeleton() {
     )
 }
 
-const AnimatedSection = ({ children }: { children: React.ReactNode }) => {
-    const ref = React.useRef(null);
-    const isInView = useInView(ref, { once: true, amount: 0.3 });
-
-    return (
-        <motion.div
-            ref={ref}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: isInView ? 1 : 0, y: isInView ? 0 : 30 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-        >
-            {children}
-        </motion.div>
-    );
-}
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -191,17 +175,15 @@ export default function ProductDetailPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
 
             <div className="min-h-[60vh] relative z-10 flex flex-col justify-center items-center container mx-auto px-4 py-12 text-center">
-                <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}>
-                    <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        width={256}
-                        height={256}
-                        className="object-contain drop-shadow-2xl"
-                        priority
-                        data-ai-hint="product image"
-                    />
-                </motion.div>
+                <Image
+                    src={product.imageUrl}
+                    alt={product.name}
+                    width={256}
+                    height={256}
+                    className="object-contain drop-shadow-2xl"
+                    priority
+                    data-ai-hint="product image"
+                />
             </div>
 
             <Button variant="ghost" onClick={() => router.back()} className="absolute top-4 right-4 z-20 bg-black/20 hover:bg-black/40 text-white h-auto p-2 rounded-full">
@@ -211,32 +193,31 @@ export default function ProductDetailPage() {
             <div className="bg-slate-900">
                 <div className="bg-background rounded-t-3xl pt-8 pb-28">
                     <div className="container mx-auto px-4 max-w-2xl space-y-8 text-right">
-                        <AnimatedSection>
+                        <div>
                             <Badge variant="outline">{product.categoryName}</Badge>
                             <h1 className="text-4xl lg:text-5xl font-bold font-headline mt-2">{product.name}</h1>
-                        </AnimatedSection>
+                        </div>
                         
-                        <AnimatedSection>
+                         <div>
                              <div className="flex items-baseline gap-4 justify-end">
                                 <span className="text-sm text-muted-foreground">باستخدام رصيد الكاش باك</span>
                                 <p className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</p>
                              </div>
-                        </AnimatedSection>
+                        </div>
 
-                        <AnimatedSection>
+                        <div>
                             <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
                                 <h2 className="text-lg font-semibold text-foreground flex items-center justify-end gap-2">الوصف <Info className="h-5 w-5 text-primary"/></h2>
                                 <p>{product.description}</p>
                             </div>
-                        </AnimatedSection>
+                        </div>
 
-                         <AnimatedSection>
+                        <div>
                             <PurchaseForm product={product} onPurchaseSuccess={() => { /* Can add logic here if needed */ }} />
-                        </AnimatedSection>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     );
 }
-
