@@ -1,23 +1,16 @@
 
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { Loader2, ArrowLeft, Star, Gem, Target, CheckCircle } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import type { LoyaltyTier, UserProfile } from '@/types';
+import type { LoyaltyTier } from '@/types';
 import { useRouter } from 'next/navigation';
-
-const loyaltyTiers: LoyaltyTier[] = [
-    { name: 'New', monthlyPointsRequired: 0, referralCommissionPercent: 0, storeDiscountPercent: 0 },
-    { name: 'Bronze', monthlyPointsRequired: 100, referralCommissionPercent: 5, storeDiscountPercent: 2 },
-    { name: 'Silver', monthlyPointsRequired: 500, referralCommissionPercent: 10, storeDiscountPercent: 5 },
-    { name: 'Gold', monthlyPointsRequired: 2000, referralCommissionPercent: 15, storeDiscountPercent: 10 },
-    { name: 'Diamond', monthlyPointsRequired: 10000, referralCommissionPercent: 25, storeDiscountPercent: 20 },
-];
+import { getLoyaltyTiers } from '@/app/admin/actions';
 
 const earningMethods = [
     { title: "ربط حساب تداول", points: "+50 نقطة لكل حساب" },
@@ -26,23 +19,40 @@ const earningMethods = [
     { title: "دعوة صديق", points: "+25 نقطة لكل صديق" },
 ];
 
-const getTierDetails = (tierName: UserProfile['tier']): LoyaltyTier => {
-    return loyaltyTiers.find(t => t.name === tierName) || loyaltyTiers[0];
-};
-
-const getNextTier = (currentTierName: UserProfile['tier']): LoyaltyTier | null => {
-    const currentIndex = loyaltyTiers.findIndex(t => t.name === currentTierName);
-    if (currentIndex < loyaltyTiers.length - 1) {
-        return loyaltyTiers[currentIndex + 1];
-    }
-    return null;
-};
-
 export default function LoyaltyPage() {
-    const { user, isLoading } = useAuthContext();
+    const { user, isLoading: isUserLoading } = useAuthContext();
+    const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
-    if (isLoading || !user || !user.profile) {
+    useEffect(() => {
+        async function fetchTiers() {
+            setIsLoading(true);
+            try {
+                const data = await getLoyaltyTiers();
+                setTiers(data);
+            } catch (error) {
+                console.error("Failed to fetch loyalty tiers", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchTiers();
+    }, []);
+
+    const getTierDetails = (tierName: string): LoyaltyTier => {
+        return tiers.find(t => t.name === tierName) || tiers[0];
+    };
+
+    const getNextTier = (currentTierName: string): LoyaltyTier | null => {
+        const currentIndex = tiers.findIndex(t => t.name === currentTierName);
+        if (currentIndex !== -1 && currentIndex < tiers.length - 1) {
+            return tiers[currentIndex + 1];
+        }
+        return null;
+    };
+
+    if (isUserLoading || isLoading || !user || !user.profile || tiers.length === 0) {
         return (
             <div className="flex items-center justify-center h-full min-h-[calc(100vh-theme(spacing.14))]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -57,7 +67,7 @@ export default function LoyaltyPage() {
     const totalPoints = user.profile.points || 0;
 
     const progress = nextTier ? Math.min((monthlyPoints / nextTier.monthlyPointsRequired) * 100, 100) : 100;
-    const pointsNeeded = nextTier ? nextTier.monthlyPointsRequired - monthlyPoints : 0;
+    const pointsNeeded = nextTier ? Math.max(0, nextTier.monthlyPointsRequired - monthlyPoints) : 0;
 
     return (
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
@@ -98,7 +108,7 @@ export default function LoyaltyPage() {
                         <div className="space-y-3">
                             <Progress value={progress} />
                             <div className="flex justify-between text-sm">
-                                <span className="font-semibold text-primary">{monthlyPoints.toLocaleString()} نقطة</span>
+                                <span className="font-semibold text-primary">{(monthlyPoints || 0).toLocaleString()} نقطة</span>
                                 <span className="text-muted-foreground">الهدف: {nextTier.monthlyPointsRequired.toLocaleString()} نقطة</span>
                             </div>
                             <p className="text-center text-sm text-muted-foreground">
@@ -118,7 +128,7 @@ export default function LoyaltyPage() {
                         <Star className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">{(totalPoints || 0).toLocaleString()}</div>
                     </CardContent>
                 </Card>
                  <Card>
@@ -127,7 +137,7 @@ export default function LoyaltyPage() {
                         <Target className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-2xl font-bold">{monthlyPoints.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">{(monthlyPoints || 0).toLocaleString()}</div>
                     </CardContent>
                 </Card>
             </div>
@@ -139,7 +149,7 @@ export default function LoyaltyPage() {
                 <CardContent className="space-y-3">
                     {earningMethods.map(method => (
                         <div key={method.title} className="flex items-center p-3 rounded-md bg-muted/50">
-                            <CheckCircle className="h-5 w-5 text-primary ml-3" />
+                            <CheckCircle className="h-5 w-5 text-primary mr-3" />
                             <div className="flex-grow">
                                 <p className="font-medium text-sm">{method.title}</p>
                             </div>

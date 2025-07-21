@@ -14,12 +14,12 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { getLoyaltyTiers, updateLoyaltyTiers, getPointsRules, addPointsRule, updatePointsRule, deletePointsRule } from "../actions";
-import { PlusCircle, Loader2, Edit, Trash2, Save, Gem, Star, Percent } from "lucide-react";
+import { PlusCircle, Loader2, Edit, Trash2, Save, Gem } from "lucide-react";
 import type { LoyaltyTier, PointsRule, PointsRuleAction } from "@/types";
 import { POINTS_RULE_ACTIONS } from "@/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const tierSchema = z.object({
   name: z.enum(['New', 'Bronze', 'Silver', 'Gold', 'Diamond']),
@@ -44,13 +44,13 @@ const ruleSchema = z.object({
 type RuleFormData = z.infer<typeof ruleSchema>;
 
 const defaultRules: Omit<PointsRule, 'id'>[] = [
-    { action: 'approve_account', points: 50, isDollarBased: false, description: 'For linking and approving a new trading account.' },
-    { action: 'cashback_earned', points: 1, isDollarBased: true, description: 'Earn 1 point for every $1 of cashback received.' },
-    { action: 'store_purchase', points: 1, isDollarBased: true, description: 'Earn 1 point for every $1 spent in the store.' },
-    { action: 'referral_signup', points: 25, isDollarBased: false, description: 'For referring a new user who signs up.' },
-    { action: 'referral_becomes_active', points: 100, isDollarBased: false, description: 'When your referral links their first approved account.' },
-    { action: 'referral_becomes_trader', points: 250, isDollarBased: false, description: 'When your referral receives their first cashback.' },
-    { action: 'referral_commission', points: 1, isDollarBased: true, description: 'Earn points from your referral\'s cashback, based on your tier.' }
+    { action: 'approve_account', points: 50, isDollarBased: false, description: 'مقابل ربط والموافقة على حساب تداول جديد.' },
+    { action: 'cashback_earned', points: 1, isDollarBased: true, description: 'اربح نقطة واحدة مقابل كل 1$ من الكاش باك المستلم.' },
+    { action: 'store_purchase', points: 1, isDollarBased: true, description: 'اربح نقطة واحدة مقابل كل 1$ يتم إنفاقه في المتجر.' },
+    { action: 'referral_signup', points: 25, isDollarBased: false, description: 'مقابل إحالة مستخدم جديد يقوم بالتسجيل.' },
+    { action: 'referral_becomes_active', points: 100, isDollarBased: false, description: 'عندما يقوم أحد المحالين بربط أول حساب معتمد له.' },
+    { action: 'referral_becomes_trader', points: 250, isDollarBased: false, description: 'عندما يتلقى أحد المحالين أول كاش باك له.' },
+    { action: 'referral_commission', points: 1, isDollarBased: true, description: 'اربح نقاطًا من الكاش باك الخاص بالمحالين، بناءً على مستواك.' }
 ];
 
 
@@ -67,11 +67,19 @@ function LoyaltyTiersManager() {
   const { fields } = useFieldArray({ control: form.control, name: "tiers" });
 
   useEffect(() => {
-    getLoyaltyTiers().then(data => {
-      form.reset({ tiers: data });
-      setIsLoading(false);
-    });
-  }, [form]);
+    async function fetchTiers() {
+      setIsLoading(true);
+      try {
+        const data = await getLoyaltyTiers();
+        form.reset({ tiers: data });
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن تحميل مستويات الولاء.'});
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    fetchTiers();
+  }, [form, toast]);
 
   const onSubmit = async (data: TiersFormData) => {
     setIsSubmitting(true);
@@ -99,7 +107,7 @@ function LoyaltyTiersManager() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-4">
               {fields.map((field, index) => (
-                <Card key={field.id} className="p-4">
+                <Card key={field.id} className="p-4 bg-muted/50">
                    <h3 className="font-semibold mb-2 flex items-center gap-2"><Gem className="h-4 w-4 text-primary" /> مستوى {field.name}</h3>
                    <div className="grid md:grid-cols-3 gap-4">
                        <FormField control={form.control} name={`tiers.${index}.monthlyPointsRequired`} render={({ field }) => (
@@ -117,7 +125,7 @@ function LoyaltyTiersManager() {
             </div>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              <Save className="ml-2 h-4 w-4" /> حفظ المستويات
+              <Save className="mr-2 h-4 w-4" /> حفظ المستويات
             </Button>
           </form>
         </Form>
@@ -171,7 +179,7 @@ function PointsRuleForm({ rule, onSuccess, onCancel }: { rule?: PointsRule | nul
                 <DialogFooter>
                     <Button type="button" variant="secondary" onClick={onCancel}>إلغاء</Button>
                     <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {rule ? "حفظ التغييرات" : "إنشاء قاعدة"}
                     </Button>
                 </DialogFooter>
@@ -190,7 +198,7 @@ function PointsRulesManager() {
     const fetchRules = async () => {
         setIsLoading(true);
         try {
-            const data = await getPointsRules();
+            let data = await getPointsRules();
             // If no rules exist, seed them from the defaults
             if (data.length === 0) {
                 console.log("No rules found. Seeding default rules...");
@@ -198,12 +206,10 @@ function PointsRulesManager() {
                     await addPointsRule(rule);
                 }
                 // Refetch after seeding
-                const seededData = await getPointsRules();
-                setRules(seededData);
+                data = await getPointsRules();
                  toast({ title: "نجاح", description: "تم إنشاء قواعد الولاء الافتراضية بنجاح." });
-            } else {
-                setRules(data);
             }
+            setRules(data);
         } catch (error) {
             toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن تحميل قواعد الولاء.'});
         } finally {
@@ -249,7 +255,7 @@ function PointsRulesManager() {
                         <CardTitle>إدارة قواعد النقاط</CardTitle>
                         <CardDescription>حدد كيف يمكن للمستخدمين كسب نقاط الولاء.</CardDescription>
                     </div>
-                    <Button onClick={handleAdd}><PlusCircle className="ml-2 h-4 w-4" /> إضافة قاعدة</Button>
+                    <Button onClick={handleAdd}><PlusCircle className="mr-2 h-4 w-4" /> إضافة قاعدة</Button>
                 </CardHeader>
                 <CardContent>
                      {isLoading ? (
