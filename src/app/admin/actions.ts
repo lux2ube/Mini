@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { db } from '@/lib/firebase/config';
@@ -532,8 +531,6 @@ export async function placeOrder(
         return await runTransaction(db, async (transaction) => {
             // --- ALL READS MUST HAPPEN FIRST ---
             const productRef = doc(db, 'products', productId);
-            const userRef = doc(db, 'users', userId);
-            
             const productSnap = await transaction.get(productRef);
 
             if (!productSnap.exists()) throw new Error("لم يتم العثور على المنتج.");
@@ -742,3 +739,5 @@ export async function deleteBlogPost(id: string) {
         return { success: false, message: 'فشل حذف المقال.' };
     }
 }
+
+    

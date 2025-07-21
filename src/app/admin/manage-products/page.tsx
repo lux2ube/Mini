@@ -62,9 +62,9 @@ function ProductForm({ product, categories, onSuccess, onCancel }: { product?: P
             name: "",
             description: "",
             price: 0,
-            imageUrl: "",
+            imageUrl: "https://ycoincash.com/wp-content/uploads/2024/05/courses-1-scaled.jpg",
             categoryId: undefined,
-            stock: 0,
+            stock: 1000,
         },
     });
 
@@ -284,3 +284,5 @@ export default function ManageProductsPage() {
         </Dialog>
     );
 }
+
+    

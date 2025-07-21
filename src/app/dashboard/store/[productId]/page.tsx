@@ -22,6 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { placeOrder } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card"
+import { CardContent } from "@/components/ui/card"
 
 const purchaseSchema = z.object({
     userName: z.string().min(3, "الاسم الكامل مطلوب."),
@@ -147,8 +149,8 @@ function PurchaseForm({ product, onPurchaseSuccess }: { product: Product; onPurc
 function ProductPageSkeleton() {
     return (
         <div className="w-full animate-pulse">
-            <div className="h-[50vh] bg-muted flex items-center justify-center">
-                 <Skeleton className="h-48 w-48 rounded-lg" />
+            <div className="h-[50vh] bg-slate-900/10 flex items-center justify-center">
+                 <Skeleton className="h-48 w-48 rounded-lg bg-slate-200" />
             </div>
             <div className="container mx-auto px-4 py-8 space-y-6 max-w-2xl">
                  <Skeleton className="h-6 w-1/4" />
@@ -201,57 +203,48 @@ export default function ProductDetailPage() {
     }
 
     return (
-        <div className="w-full bg-slate-900 text-white relative">
-             <div 
-                className="absolute inset-0 bg-cover bg-center opacity-20"
-                style={{ backgroundImage: `url(${product.imageUrl})`}}
-            ></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
+        <div className="bg-slate-900 text-white">
+            <div className="relative">
+                 <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-10"
+                    style={{ backgroundImage: `url(https://ycoincash.com/wp-content/uploads/2024/05/courses-1-scaled.jpg)`}}
+                ></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
 
-            <div className="min-h-[60vh] relative z-10 flex flex-col justify-center items-center container mx-auto px-4 py-12 text-center">
-                <Image
-                    src={product.imageUrl}
-                    alt={product.name}
-                    width={256}
-                    height={256}
-                    className="object-contain drop-shadow-2xl"
-                    priority
-                    data-ai-hint="product image"
-                />
+                <div className="relative container mx-auto px-4 pt-16 pb-8 text-center">
+                     <Button variant="ghost" onClick={() => router.back()} className="absolute top-4 right-4 z-20 bg-black/20 hover:bg-black/40 text-white h-auto p-2 rounded-full">
+                        <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                    <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
+                        {product.categoryName}
+                    </Badge>
+                     <h1 className="text-3xl font-bold font-headline mt-2 text-shadow-lg shadow-black/50">{product.name}</h1>
+                </div>
             </div>
 
-            <Button variant="ghost" onClick={() => router.back()} className="absolute top-4 right-4 z-20 bg-black/20 hover:bg-black/40 text-white h-auto p-2 rounded-full">
-                <ArrowLeft className="h-5 w-5" />
-            </Button>
-            
-            <div className="bg-slate-900">
-                <div className="bg-background rounded-t-3xl pt-8 pb-28">
-                    <div className="container mx-auto px-4 max-w-2xl space-y-8 text-right">
-                        <div>
-                            <Badge variant="outline">{product.categoryName}</Badge>
-                            <h1 className="text-4xl lg:text-5xl font-bold font-headline mt-2">{product.name}</h1>
-                        </div>
-                        
-                         <div>
-                             <div className="flex items-baseline gap-4 justify-end">
-                                <span className="text-sm text-muted-foreground">باستخدام رصيد الكاش باك</span>
+            <div className="bg-background text-foreground rounded-t-3xl pb-28 relative z-10">
+                <div className="container mx-auto p-6 max-w-2xl space-y-6 text-right">
+                    
+                    <Card>
+                        <CardContent className="p-4 space-y-3">
+                            <div>
+                                <p className="text-sm text-muted-foreground">السعر باستخدام رصيد الكاش باك</p>
                                 <p className="text-4xl font-bold text-primary">${product.price.toFixed(2)}</p>
-                             </div>
-                        </div>
-
-                        <div>
-                            <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
-                                <h2 className="text-lg font-semibold text-foreground flex items-center justify-end gap-2">الوصف <Info className="h-5 w-5 text-primary"/></h2>
+                            </div>
+                             <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+                                <h2 className="text-base font-semibold text-foreground flex items-center justify-end gap-2">الوصف <Info className="h-5 w-5 text-primary"/></h2>
                                 <p>{product.description}</p>
                             </div>
-                        </div>
+                        </CardContent>
+                    </Card>
 
-                        <div>
-                            <PurchaseForm product={product} onPurchaseSuccess={() => { /* Can add logic here if needed */ }} />
-                        </div>
+                    <div>
+                        <PurchaseForm product={product} onPurchaseSuccess={() => { /* Can add logic here if needed */ }} />
                     </div>
                 </div>
             </div>
         </div>
     );
 }
+
+    

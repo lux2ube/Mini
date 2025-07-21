@@ -68,6 +68,15 @@ export default function ManageCategoriesPage() {
 
     useEffect(() => {
         fetchCategories();
+        // Add a default "Courses" category if it doesn't exist
+        const addDefaultCategory = async () => {
+            const existingCategories = await getCategories();
+            if (!existingCategories.some(cat => cat.name === "الكورسات")) {
+                await addCategory({ name: "الكورسات", description: "الدورات التعليمية والتدريبية" });
+                fetchCategories();
+            }
+        };
+        addDefaultCategory();
     }, []);
 
     const onSubmit = async (data: FormData) => {
@@ -219,3 +228,5 @@ export default function ManageCategoriesPage() {
         </div>
     );
 }
+
+    
