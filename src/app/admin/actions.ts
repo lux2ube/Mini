@@ -236,6 +236,38 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
   }
 }
 
+export async function adminAddTradingAccount(userId: string, brokerName: string, accountNumber: string) {
+    try {
+        const q = query(
+            collection(db, 'tradingAccounts'),
+            where('broker', '==', brokerName),
+            where('accountNumber', '==', accountNumber)
+        );
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+            return {
+                success: false,
+                message: 'رقم حساب التداول هذا مرتبط بالفعل لهذا الوسيط.',
+            };
+        }
+
+        await addDoc(collection(db, 'tradingAccounts'), {
+            userId: userId,
+            broker: brokerName,
+            accountNumber: accountNumber,
+            status: 'Approved',
+            createdAt: serverTimestamp(),
+        });
+        
+        return { success: true, message: 'تمت إضافة الحساب والموافقة عليه بنجاح.' };
+    } catch (error) {
+        console.error('Error adding trading account: ', error);
+        const errorMessage = error instanceof Error ? error.message : "حدث خطأ غير معروف";
+        return { success: false, message: `فشل إضافة الحساب: ${errorMessage}` };
+    }
+}
+
 // User Management
 export async function getUsers(): Promise<UserProfile[]> {
   const usersSnapshot = await getDocs(collection(db, 'users'));
@@ -724,15 +756,21 @@ export async function getUserDetails(userId: string) {
 
         const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", userId));
         const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", userId));
+        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", userId));
+        const ordersQuery = query(collection(db, "orders"), where("userId", "==", userId));
         
         const [
             balanceData,
             accountsSnapshot,
-            transactionsSnapshot
+            transactionsSnapshot,
+            withdrawalsSnapshot,
+            ordersSnapshot
         ] = await Promise.all([
             getUserBalance(userId),
             getDocs(accountsQuery),
             getDocs(transactionsQuery),
+            getDocs(withdrawalsQuery),
+            getDocs(ordersQuery),
         ]);
 
         const tradingAccounts = accountsSnapshot.docs.map(doc => {
@@ -744,6 +782,16 @@ export async function getUserDetails(userId: string) {
             const data = doc.data();
             return { id: doc.id, ...data, date: (data.date as Timestamp).toDate() } as CashbackTransaction;
         }).sort((a, b) => b.date.getTime() - a.date.getTime());
+
+        const withdrawals = withdrawalsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { id: doc.id, ...data, requestedAt: (data.requestedAt as Timestamp).toDate(), completedAt: data.completedAt ? (data.completedAt as Timestamp).toDate() : undefined } as Withdrawal;
+        }).sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+
+        const orders = ordersSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { id: doc.id, ...data, createdAt: (data.createdAt as Timestamp).toDate() } as Order;
+        }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
         // Fetch referrer name
         let referredByName = null;
@@ -769,6 +817,8 @@ export async function getUserDetails(userId: string) {
             balance: balanceData,
             tradingAccounts,
             cashbackTransactions,
+            withdrawals,
+            orders,
             referredByName,
             referralsWithNames,
         };
