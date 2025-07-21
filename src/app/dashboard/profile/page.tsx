@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { updateUserProfile } from "@/app/admin/actions";
+import { updateUser } from "@/app/admin/actions";
 import { useRouter } from "next/navigation";
 
 
@@ -50,7 +50,7 @@ export default function ProfilePage() {
     const handleProfileSubmit = async (values: ProfileFormValues) => {
         if (!user) return;
         setIsProfileSubmitting(true);
-        const result = await updateUserProfile(user.uid, values);
+        const result = await updateUser(user.uid, values);
         if (result.success) {
             toast({ type: "success", title: "نجاح", description: result.message });
             refetchUserData();

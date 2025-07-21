@@ -17,22 +17,20 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import type { Product } from "@/types";
-import { Loader2, ArrowLeft, Phone, ShoppingCart, Info } from "lucide-react";
+import { Loader2, ArrowLeft, Phone, ShoppingCart, Info, User, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { placeOrder } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
 
-// Schema for the purchase form validation
 const purchaseSchema = z.object({
-    phoneNumber: z.string().min(10, "الرجاء إدخال رقم هاتف صحيح."),
+    userName: z.string().min(3, "الاسم الكامل مطلوب."),
+    userEmail: z.string().email("الرجاء إدخال بريد إلكتروني صحيح."),
+    deliveryPhoneNumber: z.string().min(10, "الرجاء إدخال رقم هاتف صحيح."),
 });
 type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
 
-// --- Self-Contained Purchase Form Component ---
-// This component manages its own dialog state and form state,
-// ensuring the form context is never broken.
 function PurchaseForm({ product, onPurchaseSuccess }: { product: Product; onPurchaseSuccess: () => void; }) {
     const router = useRouter();
     const { user } = useAuthContext();
@@ -42,13 +40,17 @@ function PurchaseForm({ product, onPurchaseSuccess }: { product: Product; onPurc
     
     const form = useForm<PurchaseFormValues>({
         resolver: zodResolver(purchaseSchema),
-        defaultValues: { phoneNumber: "" }
+        defaultValues: { 
+            userName: user?.profile?.name || "",
+            userEmail: user?.profile?.email || "",
+            deliveryPhoneNumber: "" 
+        }
     });
     
     const handlePurchase = async (data: PurchaseFormValues) => {
         if (!user || !product) return;
         setIsSubmitting(true);
-        const result = await placeOrder(user.uid, product.id, data.phoneNumber);
+        const result = await placeOrder(user.uid, product.id, data);
 
         if (result.success) {
             toast({ title: "تم بنجاح!", description: result.message });
@@ -75,15 +77,47 @@ function PurchaseForm({ product, onPurchaseSuccess }: { product: Product; onPurc
                         <DialogHeader className="text-right">
                             <DialogTitle>تأكيد الشراء: {product.name}</DialogTitle>
                             <DialogDescription>
-                                أدخل رقم هاتفك للتوصيل. سيتم خصم ${product.price.toFixed(2)} من رصيد الكاش باك المتاح لديك.
+                                سيتم خصم ${product.price.toFixed(2)} من رصيد الكاش باك المتاح لديك. أدخل التفاصيل الخاصة بك للتسليم.
                             </DialogDescription>
                         </DialogHeader>
                         <FormField
                             control={form.control}
-                            name="phoneNumber"
+                            name="userName"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>رقم الهاتف</FormLabel>
+                                    <FormLabel>الاسم الكامل</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input placeholder="اسمك الكامل" {...field} className="pr-10 text-right" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="userEmail"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>البريد الإلكتروني</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                            <Input type="email" placeholder="بريدك الإلكتروني" {...field} className="pr-10 text-right" />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="deliveryPhoneNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>رقم هاتف التوصيل</FormLabel>
                                     <FormControl>
                                         <div className="relative">
                                             <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

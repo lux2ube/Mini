@@ -255,7 +255,7 @@ export async function getUsers(): Promise<UserProfile[]> {
   });
 }
 
-export async function updateUserProfile(userId: string, data: { name: string }) {
+export async function updateUser(userId: string, data: { name: string }) {
     try {
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, { name: data.name });
@@ -523,7 +523,11 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
     }
 }
 
-export async function placeOrder(userId: string, productId: string, phoneNumber: string) {
+export async function placeOrder(
+    userId: string,
+    productId: string,
+    formData: { userName: string; userEmail: string; deliveryPhoneNumber: string }
+) {
     try {
         return await runTransaction(db, async (transaction) => {
             // --- ALL READS MUST HAPPEN FIRST ---
@@ -531,13 +535,10 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
             const userRef = doc(db, 'users', userId);
             
             const productSnap = await transaction.get(productRef);
-            const userSnap = await transaction.get(userRef);
 
             if (!productSnap.exists()) throw new Error("لم يتم العثور على المنتج.");
-            if (!userSnap.exists()) throw new Error("لم يتم العثور على المستخدم.");
             
             const product = productSnap.data() as Product;
-            const userData = userSnap.data();
 
             // Perform balance check within transaction for consistency
             const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
@@ -588,11 +589,11 @@ export async function placeOrder(userId: string, productId: string, phoneNumber:
                 productName: product.name,
                 productImage: product.imageUrl,
                 price: product.price,
-                deliveryPhoneNumber: phoneNumber,
+                deliveryPhoneNumber: formData.deliveryPhoneNumber,
                 status: 'Pending',
                 createdAt: serverTimestamp(),
-                userName: userData?.name || 'N/A',
-                userEmail: userData?.email || 'N/A',
+                userName: formData.userName,
+                userEmail: formData.userEmail,
             });
 
             // 3. Create notification
