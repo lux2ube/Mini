@@ -87,7 +87,8 @@ export default function RegisterPage() {
             referredBy: referrerProfile ? referrerProfile.uid : null,
             referrals: [],
             points: 0,
-            tier: 'Bronze',
+            tier: 'New',
+            monthlyPoints: 0,
         };
         transaction.set(newUserDocRef, newUserProfile);
         

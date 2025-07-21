@@ -24,12 +24,13 @@ export interface UserProfile {
     // New profile fields
     phoneNumber?: string;
     phoneNumberVerified?: boolean;
-    // Referral fields
+    // Referral and Loyalty fields
     referralCode?: string;
     referredBy?: string | null; // UID of the user who referred this person
     referrals?: string[]; // Array of UIDs of users this person has referred
-    points?: number;
-    tier?: 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+    points: number; // Changed from optional to required
+    tier: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond'; // Added 'New' tier
+    monthlyPoints: number; // Points earned this month
 }
 
 /**
@@ -328,3 +329,22 @@ export interface BlogPost {
     createdAt: Date;
     updatedAt: Date;
 }
+
+// Loyalty & Points System
+export interface LoyaltyTier {
+  name: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+  monthlyPointsRequired: number;
+  referralCommissionPercent: number;
+  storeDiscountPercent: number;
+}
+
+export interface PointsRule {
+  id: string;
+  action: 'approve_account' | 'cashback_earned' | 'store_purchase' | 'referral_signup' | 'referral_becomes_active' | 'referral_becomes_trader' | 'referral_commission';
+  points: number;
+  isDollarBased: boolean; // True if points are per dollar, false if a fixed amount
+  description: string;
+}
+
+// Definition of a user's status based on their activity
+export type UserStatus = 'New' | 'Active' | 'Trader' | 'Partner' | 'Active Partner' | 'Active Trader';

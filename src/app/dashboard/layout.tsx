@@ -21,7 +21,8 @@ import {
     Store,
     Gift,
     SunMoon,
-    Languages
+    Languages,
+    Gem,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 
 
 function NotificationBell() {
@@ -175,6 +177,10 @@ function SettingsSidebar() {
                             <div className="flex-grow">
                                 <h3 className="font-semibold">{user?.profile?.name}</h3>
                                 <p className="text-xs text-muted-foreground">{user?.profile?.email}</p>
+                                <Badge variant="secondary" className="mt-1 gap-1.5">
+                                    <Gem className="h-3 w-3 text-primary" />
+                                    {user?.profile?.tier || 'برونزي'}
+                                </Badge>
                             </div>
                         </CardContent>
                     </Card>
@@ -194,6 +200,16 @@ function SettingsSidebar() {
                             <ChevronLeft className="h-4 w-4 mr-auto" />
                         </Link>
                     ))}
+                    <Link
+                        href="/dashboard/loyalty"
+                        className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10", {
+                                "bg-primary/10 text-primary": pathname === '/dashboard/loyalty',
+                            })}
+                    >
+                        <Gem className="h-5 w-5" />
+                        <p className="text-sm font-medium">برنامج الولاء</p>
+                        <ChevronLeft className="h-4 w-4 mr-auto" />
+                    </Link>
                 </nav>
                 
                 <Separator />
