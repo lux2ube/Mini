@@ -12,7 +12,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
@@ -22,8 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { placeOrder } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card"
-import { CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card";
 
 const purchaseSchema = z.object({
     userName: z.string().min(3, "الاسم الكامل مطلوب."),
@@ -32,13 +31,11 @@ const purchaseSchema = z.object({
 });
 type PurchaseFormValues = z.infer<typeof purchaseSchema>;
 
-
 function PurchaseForm({ product, onPurchaseSuccess }: { product: Product; onPurchaseSuccess: () => void; }) {
-    const router = useRouter();
     const { user } = useAuthContext();
     const { toast } = useToast();
+    const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
     
     const form = useForm<PurchaseFormValues>({
         resolver: zodResolver(purchaseSchema),
@@ -57,16 +54,15 @@ function PurchaseForm({ product, onPurchaseSuccess }: { product: Product; onPurc
         if (result.success) {
             toast({ title: "تم بنجاح!", description: result.message });
             onPurchaseSuccess();
-            setIsDialogOpen(false); // Close dialog on success
             router.push('/dashboard/store/orders');
         } else {
             toast({ variant: 'destructive', title: "فشل الطلب", description: result.message });
         }
         setIsSubmitting(false);
-    }
+    };
 
     return (
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog>
             <DialogTrigger asChild>
                 <Button size="lg" className="w-full h-12 text-base shadow-lg" disabled={product.stock <= 0}>
                     <ShoppingCart className="ml-2 h-5 w-5" />
@@ -74,14 +70,14 @@ function PurchaseForm({ product, onPurchaseSuccess }: { product: Product; onPurc
                 </Button>
             </DialogTrigger>
             <DialogContent>
+                <DialogHeader className="text-right">
+                    <DialogTitle>تأكيد الشراء: {product.name}</DialogTitle>
+                    <DialogDescription>
+                        سيتم خصم ${product.price.toFixed(2)} من رصيد الكاش باك المتاح لديك. أدخل التفاصيل الخاصة بك للتسليم.
+                    </DialogDescription>
+                </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(handlePurchase)} className="space-y-4">
-                        <DialogHeader className="text-right">
-                            <DialogTitle>تأكيد الشراء: {product.name}</DialogTitle>
-                            <DialogDescription>
-                                سيتم خصم ${product.price.toFixed(2)} من رصيد الكاش باك المتاح لديك. أدخل التفاصيل الخاصة بك للتسليم.
-                            </DialogDescription>
-                        </DialogHeader>
                         <FormField
                             control={form.control}
                             name="userName"
@@ -135,9 +131,6 @@ function PurchaseForm({ product, onPurchaseSuccess }: { product: Product; onPurc
                                 {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                                 تأكيد الطلب
                             </Button>
-                            <DialogClose asChild>
-                                <Button type="button" variant="secondary">إلغاء</Button>
-                            </DialogClose>
                         </DialogFooter>
                     </form>
                 </Form>
@@ -162,7 +155,6 @@ function ProductPageSkeleton() {
         </div>
     )
 }
-
 
 export default function ProductDetailPage() {
     const params = useParams();
@@ -207,7 +199,7 @@ export default function ProductDetailPage() {
             <div className="relative">
                  <div 
                     className="absolute inset-0 bg-cover bg-center opacity-10"
-                    style={{ backgroundImage: `url(https://ycoincash.com/wp-content/uploads/2024/05/courses-1-scaled.jpg)`}}
+                    style={{ backgroundImage: `url(${product.imageUrl})`}}
                 ></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/80 to-transparent"></div>
 
@@ -239,12 +231,10 @@ export default function ProductDetailPage() {
                     </Card>
 
                     <div>
-                        <PurchaseForm product={product} onPurchaseSuccess={() => { /* Can add logic here if needed */ }} />
+                        <PurchaseForm product={product} onPurchaseSuccess={() => {}} />
                     </div>
                 </div>
             </div>
         </div>
     );
 }
-
-    
