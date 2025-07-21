@@ -53,8 +53,11 @@ export default function LoyaltyPage() {
     const currentTier = getTierDetails(user.profile.tier);
     const nextTier = getNextTier(user.profile.tier);
     
-    const progress = nextTier ? Math.min((user.profile.monthlyPoints / nextTier.monthlyPointsRequired) * 100, 100) : 100;
-    const pointsNeeded = nextTier ? nextTier.monthlyPointsRequired - user.profile.monthlyPoints : 0;
+    const monthlyPoints = user.profile.monthlyPoints || 0;
+    const totalPoints = user.profile.points || 0;
+
+    const progress = nextTier ? Math.min((monthlyPoints / nextTier.monthlyPointsRequired) * 100, 100) : 100;
+    const pointsNeeded = nextTier ? nextTier.monthlyPointsRequired - monthlyPoints : 0;
 
     return (
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
@@ -95,7 +98,7 @@ export default function LoyaltyPage() {
                         <div className="space-y-3">
                             <Progress value={progress} />
                             <div className="flex justify-between text-sm">
-                                <span className="font-semibold text-primary">{user.profile.monthlyPoints.toLocaleString()} نقطة</span>
+                                <span className="font-semibold text-primary">{monthlyPoints.toLocaleString()} نقطة</span>
                                 <span className="text-muted-foreground">الهدف: {nextTier.monthlyPointsRequired.toLocaleString()} نقطة</span>
                             </div>
                             <p className="text-center text-sm text-muted-foreground">
@@ -115,7 +118,7 @@ export default function LoyaltyPage() {
                         <Star className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-2xl font-bold">{user.profile.points.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">{totalPoints.toLocaleString()}</div>
                     </CardContent>
                 </Card>
                  <Card>
@@ -124,7 +127,7 @@ export default function LoyaltyPage() {
                         <Target className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                        <div className="text-2xl font-bold">{user.profile.monthlyPoints.toLocaleString()}</div>
+                        <div className="text-2xl font-bold">{monthlyPoints.toLocaleString()}</div>
                     </CardContent>
                 </Card>
             </div>
