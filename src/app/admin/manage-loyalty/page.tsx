@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -195,7 +195,7 @@ function PointsRulesManager() {
     const [editingRule, setEditingRule] = useState<PointsRule | null>(null);
     const { toast } = useToast();
 
-    const fetchRules = async () => {
+    const fetchRules = useCallback(async () => {
         setIsLoading(true);
         try {
             let data = await getPointsRules();
@@ -215,11 +215,11 @@ function PointsRulesManager() {
         } finally {
             setIsLoading(false);
         }
-    }
+    }, [toast]);
 
     useEffect(() => {
         fetchRules();
-    }, []);
+    }, [fetchRules]);
 
     const handleEdit = (rule: PointsRule) => {
         setEditingRule(rule);
