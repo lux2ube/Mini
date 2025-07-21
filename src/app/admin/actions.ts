@@ -2,8 +2,8 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule } from '@/types';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment } from 'firebase/firestore';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
@@ -50,7 +50,7 @@ async function createNotification(
     transaction: any, // Can be a transaction or the db instance
     userId: string, 
     message: string, 
-    type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store', 
+    type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store' | 'loyalty', 
     link?: string
 ) {
     // We use a transaction to create the notification if one is provided
@@ -190,6 +190,43 @@ export async function updateBrokerOrder(orderedIds: string[]) {
     }
 }
 
+// Point Awarding Engine
+export async function awardPoints(
+    transaction: any, 
+    userId: string, 
+    action: PointsRuleAction, 
+    amountValue?: number // e.g., cashback amount or order price
+) {
+    const rulesQuery = query(collection(db, 'pointsRules'), where('action', '==', action));
+    const rulesSnap = await getDocs(rulesQuery);
+
+    if (rulesSnap.empty) {
+        console.warn(`No points rule found for action: ${action}`);
+        return;
+    }
+
+    const rule = rulesSnap.docs[0].data() as PointsRule;
+    let pointsToAward = rule.points;
+
+    if (rule.isDollarBased) {
+        if (typeof amountValue !== 'number') {
+            console.warn(`Dollar-based rule '${action}' requires an amountValue.`);
+            return;
+        }
+        pointsToAward = Math.floor(amountValue * rule.points);
+    }
+    
+    if (pointsToAward <= 0) return;
+
+    const userRef = doc(db, 'users', userId);
+    transaction.update(userRef, {
+        points: increment(pointsToAward),
+        monthlyPoints: increment(pointsToAward)
+    });
+
+    await createNotification(transaction, userId, `لقد ربحت ${pointsToAward} نقطة! ${rule.description}`, 'loyalty', '/dashboard/loyalty');
+}
+
 
 // Trading Account Management
 export async function getTradingAccounts(): Promise<TradingAccount[]> {
@@ -213,6 +250,11 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
         if (!accountSnap.exists()) throw new Error("لم يتم العثور على الحساب");
         const accountData = accountSnap.data() as TradingAccount;
 
+        // Prevent re-processing
+        if (accountData.status !== 'Pending') {
+            throw new Error(`لا يمكن تحديث الحساب. الحالة الحالية هي ${accountData.status}.`);
+        }
+
         const updateData: { status: 'Approved' | 'Rejected', rejectionReason?: string } = { status };
         let message = `تم ${status === 'Approved' ? 'الموافقة على' : 'رفض'} حساب التداول الخاص بك ${accountData.accountNumber}.`;
 
@@ -226,6 +268,19 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
 
         transaction.update(accountRef, updateData);
         await createNotification(transaction, accountData.userId, message, 'account', '/dashboard/my-accounts');
+
+        // Award points on approval
+        if (status === 'Approved') {
+            await awardPoints(transaction, accountData.userId, 'approve_account');
+
+            // --- Check referrer status ---
+            const userRef = doc(db, 'users', accountData.userId);
+            const userSnap = await transaction.get(userRef);
+            if (userSnap.exists() && userSnap.data().referredBy) {
+                const referrerId = userSnap.data().referredBy;
+                await awardPoints(transaction, referrerId, 'referral_becomes_active');
+            }
+        }
     });
 
     return { success: true, message: `تم تحديث حالة الحساب إلى ${status}.` };
@@ -238,26 +293,29 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
 
 export async function adminAddTradingAccount(userId: string, brokerName: string, accountNumber: string) {
     try {
-        const q = query(
-            collection(db, 'tradingAccounts'),
-            where('broker', '==', brokerName),
-            where('accountNumber', '==', accountNumber)
-        );
-        const querySnapshot = await getDocs(q);
+        await runTransaction(db, async (transaction) => {
+            const q = query(
+                collection(db, 'tradingAccounts'),
+                where('broker', '==', brokerName),
+                where('accountNumber', '==', accountNumber)
+            );
+            const querySnapshot = await getDocs(q);
 
-        if (!querySnapshot.empty) {
-            return {
-                success: false,
-                message: 'رقم حساب التداول هذا مرتبط بالفعل لهذا الوسيط.',
-            };
-        }
+            if (!querySnapshot.empty) {
+                throw new Error('رقم حساب التداول هذا مرتبط بالفعل لهذا الوسيط.');
+            }
 
-        await addDoc(collection(db, 'tradingAccounts'), {
-            userId: userId,
-            broker: brokerName,
-            accountNumber: accountNumber,
-            status: 'Approved',
-            createdAt: serverTimestamp(),
+            const newAccountRef = doc(collection(db, 'tradingAccounts'));
+            transaction.set(newAccountRef, {
+                userId: userId,
+                broker: brokerName,
+                accountNumber: accountNumber,
+                status: 'Approved',
+                createdAt: serverTimestamp(),
+            });
+
+             // Award points for manual admin approval
+            await awardPoints(transaction, userId, 'approve_account');
         });
         
         return { success: true, message: 'تمت إضافة الحساب والموافقة عليه بنجاح.' };
@@ -305,6 +363,34 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 
             const message = `لقد تلقيت ${data.cashbackAmount.toFixed(2)}$ كاش باك للحساب ${data.accountNumber}.`;
             await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
+
+            // Award points for cashback
+            await awardPoints(transaction, data.userId, 'cashback_earned', data.cashbackAmount);
+
+            // --- Check referrer status ---
+            const userRef = doc(db, 'users', data.userId);
+            const userSnap = await transaction.get(userRef);
+            if (userSnap.exists() && userSnap.data().referredBy) {
+                const referrerId = userSnap.data().referredBy;
+                await awardPoints(transaction, referrerId, 'referral_becomes_trader');
+
+                // Award commission to referrer
+                const referrerRef = doc(db, 'users', referrerId);
+                const referrerSnap = await transaction.get(referrerRef);
+                const tiers = await getLoyaltyTiers();
+
+                if (referrerSnap.exists()) {
+                    const referrerProfile = referrerSnap.data() as UserProfile;
+                    const referrerTier = tiers.find(t => t.name === referrerProfile.tier) || tiers[0];
+                    const commissionPercent = referrerTier.referralCommissionPercent;
+
+                    if(commissionPercent > 0) {
+                        const commissionAmount = data.cashbackAmount * (commissionPercent / 100);
+                         await awardPoints(transaction, referrerId, 'referral_commission', commissionAmount);
+                         // Note: We are awarding commission as points. You could also create a separate commission transaction.
+                    }
+                }
+            }
         });
 
         return { success: true, message: 'تمت إضافة معاملة الكاش باك بنجاح.' };
@@ -605,6 +691,8 @@ export async function placeOrder(
                  geoInfo: { ip }
             }, { productId: productId, price: product.price });
 
+            // 5. Award points for store purchase
+            await awardPoints(transaction, userId, 'store_purchase', product.price);
 
             return { success: true, message: 'تم تقديم الطلب بنجاح!' };
         });

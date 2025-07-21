@@ -17,7 +17,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timestamp, getDoc } from "firebase/firestore"; 
 import { Loader2, User, Mail, Lock, KeyRound } from 'lucide-react';
 import { generateReferralCode } from '@/lib/referral';
-import { logUserActivity } from '../admin/actions';
+import { logUserActivity, awardPoints } from '../admin/actions';
 import { getClientSessionInfo } from '@/lib/device-info';
 
 export default function RegisterPage() {
@@ -95,12 +95,13 @@ export default function RegisterPage() {
         if (referrerProfile) {
           const referrerDocRef = doc(db, "users", referrerProfile.uid);
           const currentReferrals = referrerProfile.data.referrals || [];
-          const currentPoints = referrerProfile.data.points || 0;
-
+          
           transaction.update(referrerDocRef, {
             referrals: [...currentReferrals, user.uid],
-            points: currentPoints + 10,
           });
+          
+          // Award points to the referrer for the new signup
+          await awardPoints(transaction, referrerProfile.uid, 'referral_signup');
         }
         
         transaction.set(counterRef, { lastId: newClientId }, { merge: true });

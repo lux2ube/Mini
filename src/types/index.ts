@@ -227,7 +227,7 @@ export interface Notification {
     id: string;
     userId: string;
     message: string;
-    type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store';
+    type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store' | 'loyalty';
     isRead: boolean;
     createdAt: Date;
     link?: string;
