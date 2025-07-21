@@ -518,7 +518,8 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
         return { success: true, message: 'تم تحديث حالة الطلب.' };
     } catch (error) {
         console.error("Error updating order status:", error);
-        return { success: false, message: 'فشل تحديث حالة الطلب.' };
+        const errorMessage = error instanceof Error ? error.message : "حدث خطأ غير معروف";
+        return { success: false, message: `فشل تحديث حالة الطلب: ${errorMessage}` };
     }
 }
 
@@ -529,52 +530,25 @@ export async function placeOrder(
 ) {
     try {
         return await runTransaction(db, async (transaction) => {
-            // --- ALL READS MUST HAPPEN FIRST ---
+            // --- READS ---
             const productRef = doc(db, 'products', productId);
             const productSnap = await transaction.get(productRef);
 
-            if (!productSnap.exists()) throw new Error("لم يتم العثور على المنتج.");
-            
+            if (!productSnap.exists()) throw new Error("Product not found.");
             const product = productSnap.data() as Product;
 
-            // Perform balance check within transaction for consistency
-            const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
-            const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', userId));
-            const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
+            // Balance check
+            const { availableBalance } = await getUserBalance(userId);
 
-            const [transactionsSnap, withdrawalsSnap, ordersSnap] = await Promise.all([
-                transaction.get(transactionsQuery),
-                transaction.get(withdrawalsQuery),
-                transaction.get(ordersQuery)
-            ]);
-
-            const totalEarned = transactionsSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
-            let pendingWithdrawals = 0;
-            let completedWithdrawals = 0;
-            withdrawalsSnap.docs.forEach(doc => {
-                const withdrawal = doc.data() as Withdrawal;
-                if (withdrawal.status === 'Processing') {
-                    pendingWithdrawals += withdrawal.amount;
-                } else if (withdrawal.status === 'Completed') {
-                    completedWithdrawals += withdrawal.amount;
-                }
-            });
-            const totalSpentOnOrders = ordersSnap.docs
-                .filter(doc => doc.data().status !== 'Cancelled')
-                .reduce((sum, doc) => sum + doc.data().price, 0);
-            
-            const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals - totalSpentOnOrders;
-
-
-            // --- VALIDATION AND LOGIC ---
+            // --- VALIDATION & LOGIC ---
             if (product.stock <= 0) {
-                return { success: false, message: 'هذا المنتج غير متوفر حالياً.' };
+                throw new Error("This product is currently out of stock.");
             }
             if (availableBalance < product.price) {
-                return { success: false, message: 'رصيد غير كافٍ لشراء هذا المنتج.' };
+                throw new Error("You do not have enough available balance to purchase this item.");
             }
 
-            // --- ALL WRITES HAPPEN LAST ---
+            // --- WRITES ---
             // 1. Decrement stock
             transaction.update(productRef, { stock: product.stock - 1 });
 
@@ -586,19 +560,17 @@ export async function placeOrder(
                 productName: product.name,
                 productImage: product.imageUrl,
                 price: product.price,
-                deliveryPhoneNumber: formData.deliveryPhoneNumber,
                 status: 'Pending',
                 createdAt: serverTimestamp(),
-                userName: formData.userName,
-                userEmail: formData.userEmail,
+                userName: formData.userName, // Use form data
+                userEmail: formData.userEmail, // Use form data
+                deliveryPhoneNumber: formData.deliveryPhoneNumber, // Use form data
             });
 
             // 3. Create notification
             await createNotification(transaction, userId, `تم تقديم طلبك لـ ${product.name}.`, 'store', '/dashboard/store/orders');
             
-            // 4. Log the activity (This will be missing client-side info)
-            // Consider if a separate client-side triggered log is needed here
-            // For now, we log what we can server-side.
+            // 4. Log the activity
             const headersList = headers();
             const ip = headersList.get('x-forwarded-for') ?? 'unknown';
             await logUserActivity(userId, 'store_purchase', {
@@ -611,7 +583,7 @@ export async function placeOrder(
         });
     } catch (error) {
         console.error('Error placing order:', error);
-        const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير متوقع.';
+        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while placing your order.';
         return { success: false, message: errorMessage };
     }
 }
@@ -739,5 +711,3 @@ export async function deleteBlogPost(id: string) {
         return { success: false, message: 'فشل حذف المقال.' };
     }
 }
-
-    
