@@ -53,9 +53,8 @@ async function createNotification(
     type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store' | 'loyalty', 
     link?: string
 ) {
-    // We use a transaction to create the notification if one is provided
     const notificationsCollection = collection(db, 'notifications');
-    const newNotifRef = doc(notificationsCollection); // Generate a new doc ref
+    const newNotifRef = doc(notificationsCollection);
     transaction.set(newNotifRef, {
         userId,
         message,
@@ -191,40 +190,46 @@ export async function updateBrokerOrder(orderedIds: string[]) {
 }
 
 // Point Awarding Engine
-export async function awardPoints(
-    transaction: any, 
+async function awardPoints(
     userId: string, 
     action: PointsRuleAction, 
     amountValue?: number // e.g., cashback amount or order price
 ) {
-    const rulesQuery = query(collection(db, 'pointsRules'), where('action', '==', action));
-    const rulesSnap = await getDocs(rulesQuery);
+    try {
+        await runTransaction(db, async (transaction) => {
+            const rulesQuery = query(collection(db, 'pointsRules'), where('action', '==', action));
+            const rulesSnap = await getDocs(rulesQuery); // This read is safe inside the transaction
 
-    if (rulesSnap.empty) {
-        console.warn(`No points rule found for action: ${action}`);
-        return;
+            if (rulesSnap.empty) {
+                console.warn(`No points rule found for action: ${action}`);
+                return;
+            }
+
+            const rule = rulesSnap.docs[0].data() as PointsRule;
+            let pointsToAward = rule.points;
+
+            if (rule.isDollarBased) {
+                if (typeof amountValue !== 'number') {
+                    console.warn(`Dollar-based rule '${action}' requires an amountValue.`);
+                    return;
+                }
+                pointsToAward = Math.floor(amountValue * rule.points);
+            }
+            
+            if (pointsToAward <= 0) return;
+
+            const userRef = doc(db, 'users', userId);
+            transaction.update(userRef, {
+                points: increment(pointsToAward),
+                monthlyPoints: increment(pointsToAward)
+            });
+
+            await createNotification(transaction, userId, `لقد ربحت ${pointsToAward} نقطة! ${rule.description}`, 'loyalty', '/dashboard/loyalty');
+        });
+    } catch (error) {
+         console.error(`Failed to award points for action ${action} to user ${userId}:`, error);
+         // Don't rethrow, as this should not block the main flow.
     }
-
-    const rule = rulesSnap.docs[0].data() as PointsRule;
-    let pointsToAward = rule.points;
-
-    if (rule.isDollarBased) {
-        if (typeof amountValue !== 'number') {
-            console.warn(`Dollar-based rule '${action}' requires an amountValue.`);
-            return;
-        }
-        pointsToAward = Math.floor(amountValue * rule.points);
-    }
-    
-    if (pointsToAward <= 0) return;
-
-    const userRef = doc(db, 'users', userId);
-    transaction.update(userRef, {
-        points: increment(pointsToAward),
-        monthlyPoints: increment(pointsToAward)
-    });
-
-    await createNotification(transaction, userId, `لقد ربحت ${pointsToAward} نقطة! ${rule.description}`, 'loyalty', '/dashboard/loyalty');
 }
 
 
@@ -242,59 +247,62 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
 }
 
 export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected', reason?: string) {
-  try {
     let accountData: TradingAccount | null = null;
     
-    await runTransaction(db, async (transaction) => {
-        const accountRef = doc(db, 'tradingAccounts', accountId);
-        const accountSnap = await transaction.get(accountRef);
-        if (!accountSnap.exists()) throw new Error("لم يتم العثور على الحساب");
-        
-        const currentData = accountSnap.data() as TradingAccount;
-        accountData = currentData; // Store for use outside transaction
-
-        if (currentData.status !== 'Pending') {
-            throw new Error(`لا يمكن تحديث الحساب. الحالة الحالية هي ${currentData.status}.`);
-        }
-
-        const updateData: { status: 'Approved' | 'Rejected', rejectionReason?: string } = { status };
-        let message = `تم ${status === 'Approved' ? 'الموافقة على' : 'رفض'} حساب التداول الخاص بك ${currentData.accountNumber}.`;
-
-        if (status === 'Rejected') {
-            if (!reason) throw new Error("سبب الرفض مطلوب.");
-            updateData.rejectionReason = reason;
-            message += ` السبب: ${reason}`;
-        } else {
-             updateData.rejectionReason = ""; // Clear reason on approval
-        }
-
-        transaction.update(accountRef, updateData);
-        await createNotification(transaction, currentData.userId, message, 'account', '/dashboard/my-accounts');
-    });
-
-    // --- Post-transaction logic for awarding points ---
-    if (status === 'Approved' && accountData) {
-        const finalAccountData = accountData; // Ensure non-null for TS
+    // --- Step 1: Perform the critical status update in a clean transaction ---
+    try {
         await runTransaction(db, async (transaction) => {
-            // Award points to the user for getting an account approved
-            await awardPoints(transaction, finalAccountData.userId, 'approve_account');
+            const accountRef = doc(db, 'tradingAccounts', accountId);
+            const accountSnap = await transaction.get(accountRef);
+            if (!accountSnap.exists()) throw new Error("لم يتم العثور على الحساب");
+            
+            const currentData = accountSnap.data() as TradingAccount;
+            accountData = currentData; 
+
+            if (currentData.status !== 'Pending') {
+                throw new Error(`لا يمكن تحديث الحساب. الحالة الحالية هي ${currentData.status}.`);
+            }
+
+            const updateData: { status: 'Approved' | 'Rejected', rejectionReason?: string } = { status };
+            let message = `تم ${status === 'Approved' ? 'الموافقة على' : 'رفض'} حساب التداول الخاص بك ${currentData.accountNumber}.`;
+
+            if (status === 'Rejected') {
+                if (!reason) throw new Error("سبب الرفض مطلوب.");
+                updateData.rejectionReason = reason;
+                message += ` السبب: ${reason}`;
+            } else {
+                updateData.rejectionReason = ""; 
+            }
+
+            transaction.update(accountRef, updateData);
+            await createNotification(transaction, currentData.userId, message, 'account', '/dashboard/my-accounts');
+        });
+    } catch (error) {
+        console.error("Error updating account status:", error);
+        const errorMessage = error instanceof Error ? error.message : "حدث خطأ غير معروف";
+        return { success: false, message: `فشل تحديث حالة الحساب: ${errorMessage}` };
+    }
+
+    // --- Step 2: Award points outside the main transaction ---
+    if (status === 'Approved' && accountData) {
+        try {
+            const finalAccountData = accountData; // Ensure non-null for TS
+            await awardPoints(finalAccountData.userId, 'approve_account');
 
             // Check if this user was referred and award points to their referrer
             const userRef = doc(db, 'users', finalAccountData.userId);
-            const userSnap = await transaction.get(userRef);
+            const userSnap = await getDoc(userRef);
             if (userSnap.exists() && userSnap.data().referredBy) {
                 const referrerId = userSnap.data().referredBy;
-                await awardPoints(transaction, referrerId, 'referral_becomes_active');
+                await awardPoints(referrerId, 'referral_becomes_active');
             }
-        });
+        } catch (pointError) {
+             console.error("Account status updated, but failed to award points:", pointError);
+             // The main operation succeeded, so we don't return an error to the user here.
+        }
     }
 
     return { success: true, message: `تم تحديث حالة الحساب إلى ${status}.` };
-  } catch (error) {
-    console.error("Error updating account status:", error);
-    const errorMessage = error instanceof Error ? error.message : "حدث خطأ غير معروف";
-    return { success: false, message: `فشل تحديث حالة الحساب: ${errorMessage}` };
-  }
 }
 
 export async function adminAddTradingAccount(userId: string, brokerName: string, accountNumber: string) {
@@ -319,10 +327,10 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
                 status: 'Approved',
                 createdAt: serverTimestamp(),
             });
-
-             // Award points for manual admin approval
-            await awardPoints(transaction, userId, 'approve_account');
         });
+
+        // Award points separately after the transaction succeeds
+        await awardPoints(userId, 'approve_account');
         
         return { success: true, message: 'تمت إضافة الحساب والموافقة عليه بنجاح.' };
     } catch (error) {
@@ -360,6 +368,7 @@ export async function updateUser(userId: string, data: { name: string }) {
 // Cashback Management
 export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id' | 'date'>) {
     try {
+        // Main transaction for cashback
         await runTransaction(db, async (transaction) => {
             const newTransactionRef = doc(collection(db, 'cashbackTransactions'));
             transaction.set(newTransactionRef, {
@@ -369,35 +378,35 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 
             const message = `لقد تلقيت ${data.cashbackAmount.toFixed(2)}$ كاش باك للحساب ${data.accountNumber}.`;
             await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
+        });
 
-            // Award points for cashback
-            await awardPoints(transaction, data.userId, 'cashback_earned', data.cashbackAmount);
+        // Award points and handle referral logic separately
+        await awardPoints(data.userId, 'cashback_earned', data.cashbackAmount);
 
-            // --- Check referrer status ---
-            const userRef = doc(db, 'users', data.userId);
-            const userSnap = await transaction.get(userRef);
-            if (userSnap.exists() && userSnap.data().referredBy) {
-                const referrerId = userSnap.data().referredBy;
-                await awardPoints(transaction, referrerId, 'referral_becomes_trader');
+        const userRef = doc(db, 'users', data.userId);
+        const userSnap = await getDoc(userRef);
 
-                // Award commission to referrer
-                const referrerRef = doc(db, 'users', referrerId);
-                const referrerSnap = await transaction.get(referrerRef);
-                const tiers = await getLoyaltyTiers();
+        if (userSnap.exists() && userSnap.data().referredBy) {
+            const referrerId = userSnap.data().referredBy;
+            await awardPoints(referrerId, 'referral_becomes_trader');
 
-                if (referrerSnap.exists()) {
-                    const referrerProfile = referrerSnap.data() as UserProfile;
-                    const referrerTier = tiers.find(t => t.name === referrerProfile.tier) || tiers[0];
-                    const commissionPercent = referrerTier.referralCommissionPercent;
+            const referrerRef = doc(db, 'users', referrerId);
+            const referrerSnap = await getDoc(referrerRef);
+            const tiers = await getLoyaltyTiers();
 
-                    if(commissionPercent > 0) {
-                        const commissionAmount = data.cashbackAmount * (commissionPercent / 100);
-                         await awardPoints(transaction, referrerId, 'referral_commission', commissionAmount);
-                         // Note: We are awarding commission as points. You could also create a separate commission transaction.
+            if (referrerSnap.exists()) {
+                const referrerProfile = referrerSnap.data() as UserProfile;
+                const referrerTier = tiers.find(t => t.name === referrerProfile.tier) || tiers[0];
+                const commissionPercent = referrerTier.referralCommissionPercent;
+
+                if(commissionPercent > 0) {
+                    const commissionAmount = data.cashbackAmount * (commissionPercent / 100);
+                    if (commissionAmount > 0) {
+                        await awardPoints(referrerId, 'referral_commission', commissionAmount);
                     }
                 }
             }
-        });
+        }
 
         return { success: true, message: 'تمت إضافة معاملة الكاش باك بنجاح.' };
     } catch (error) {
@@ -443,9 +452,8 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
 
 export async function approveWithdrawal(withdrawalId: string, txId: string) {
     try {
-        const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
-        
         await runTransaction(db, async (transaction) => {
+            const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
             const withdrawalSnap = await transaction.get(withdrawalRef);
             if (!withdrawalSnap.exists()) throw new Error("لم يتم العثور على طلب السحب");
             const withdrawalData = withdrawalSnap.data() as Withdrawal;
@@ -454,7 +462,7 @@ export async function approveWithdrawal(withdrawalId: string, txId: string) {
                 status: 'Completed',
                 completedAt: serverTimestamp(),
                 txId: txId,
-                rejectionReason: "", // Clear reason on approval
+                rejectionReason: "",
             });
 
             const message = `تم إكمال طلب السحب الخاص بك بمبلغ ${withdrawalData.amount.toFixed(2)}$.`;
@@ -470,9 +478,8 @@ export async function approveWithdrawal(withdrawalId: string, txId: string) {
 
 export async function rejectWithdrawal(withdrawalId: string, reason: string) {
      try {
-        const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
-        
         await runTransaction(db, async (transaction) => {
+            const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
             const withdrawalSnap = await transaction.get(withdrawalRef);
             if (!withdrawalSnap.exists()) throw new Error("لم يتم العثور على طلب السحب");
             const withdrawalData = withdrawalSnap.data() as Withdrawal;
@@ -617,7 +624,6 @@ export async function getOrders(): Promise<Order[]> {
 export async function updateOrderStatus(orderId: string, status: Order['status']) {
     try {
         await runTransaction(db, async (transaction) => {
-            // --- ALL READS MUST HAPPEN FIRST ---
             const orderRef = doc(db, 'orders', orderId);
             const orderSnap = await transaction.get(orderRef);
             if (!orderSnap.exists()) {
@@ -625,11 +631,8 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
             }
             const orderData = orderSnap.data() as Order;
 
-            // --- ALL WRITES HAPPEN LAST ---
-            // 1. Update the order status
             transaction.update(orderRef, { status });
 
-            // 2. Create a notification for the user
             const message = `تم تحديث حالة طلبك لـ "${orderData.productName}" إلى ${status}.`;
             await createNotification(transaction, orderData.userId, message, 'store', '/dashboard/store/orders');
         });
@@ -648,30 +651,22 @@ export async function placeOrder(
     formData: { userName: string; userEmail: string; deliveryPhoneNumber: string }
 ) {
     try {
-        return await runTransaction(db, async (transaction) => {
-            // --- READS ---
+        let product: Product | null = null;
+        
+        await runTransaction(db, async (transaction) => {
             const productRef = doc(db, 'products', productId);
             const productSnap = await transaction.get(productRef);
 
             if (!productSnap.exists()) throw new Error("Product not found.");
-            const product = productSnap.data() as Product;
+            product = productSnap.data() as Product;
 
-            // Balance check
             const { availableBalance } = await getUserBalance(userId);
 
-            // --- VALIDATION & LOGIC ---
-            if (product.stock <= 0) {
-                throw new Error("This product is currently out of stock.");
-            }
-            if (availableBalance < product.price) {
-                throw new Error("You do not have enough available balance to purchase this item.");
-            }
+            if (product.stock <= 0) throw new Error("This product is currently out of stock.");
+            if (availableBalance < product.price) throw new Error("You do not have enough available balance to purchase this item.");
 
-            // --- WRITES ---
-            // 1. Decrement stock
-            transaction.update(productRef, { stock: product.stock - 1 });
+            transaction.update(productRef, { stock: increment(-1) });
 
-            // 2. Create order
             const orderRef = doc(collection(db, 'orders'));
             transaction.set(orderRef, {
                 userId,
@@ -681,27 +676,21 @@ export async function placeOrder(
                 price: product.price,
                 status: 'Pending',
                 createdAt: serverTimestamp(),
-                userName: formData.userName, // Use form data
-                userEmail: formData.userEmail, // Use form data
-                deliveryPhoneNumber: formData.deliveryPhoneNumber, // Use form data
+                userName: formData.userName,
+                userEmail: formData.userEmail,
+                deliveryPhoneNumber: formData.deliveryPhoneNumber,
             });
 
-            // 3. Create notification
             await createNotification(transaction, userId, `تم تقديم طلبك لـ ${product.name}.`, 'store', '/dashboard/store/orders');
-            
-            // 4. Log the activity
-            const headersList = headers();
-            const ip = headersList.get('x-forwarded-for') ?? 'unknown';
-            await logUserActivity(userId, 'store_purchase', {
-                 deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
-                 geoInfo: { ip }
-            }, { productId: productId, price: product.price });
-
-            // 5. Award points for store purchase
-            await awardPoints(transaction, userId, 'store_purchase', product.price);
-
-            return { success: true, message: 'تم تقديم الطلب بنجاح!' };
         });
+
+        if (product) {
+            const clientInfo = await getClientSessionInfo();
+            await logUserActivity(userId, 'store_purchase', clientInfo, { productId, price: product.price });
+            await awardPoints(userId, 'store_purchase', product.price);
+        }
+
+        return { success: true, message: 'تم تقديم الطلب بنجاح!' };
     } catch (error) {
         console.error('Error placing order:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while placing your order.';
@@ -930,9 +919,12 @@ export async function getLoyaltyTiers(): Promise<LoyaltyTier[]> {
     const docRef = doc(db, 'settings', 'loyaltyTiers');
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
-        // The document stores an object where keys are tier names
         const data = docSnap.data();
-        return Object.values(data) as LoyaltyTier[];
+        const tiersArray = Object.values(data) as LoyaltyTier[];
+        // Ensure consistent order
+        const tierOrder: LoyaltyTier['name'][] = ['New', 'Bronze', 'Silver', 'Gold', 'Diamond'];
+        tiersArray.sort((a, b) => tierOrder.indexOf(a.name) - tierOrder.indexOf(b.name));
+        return tiersArray;
     }
     // Return default settings if not found
     return [

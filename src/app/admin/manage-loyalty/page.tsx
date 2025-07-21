@@ -202,12 +202,12 @@ function PointsRulesManager() {
             // If no rules exist, seed them from the defaults
             if (data.length === 0) {
                 console.log("No rules found. Seeding default rules...");
-                for (const rule of defaultRules) {
-                    await addPointsRule(rule);
-                }
+                const seedPromises = defaultRules.map(rule => addPointsRule(rule));
+                await Promise.all(seedPromises);
+                
                 // Refetch after seeding
                 data = await getPointsRules();
-                 toast({ title: "نجاح", description: "تم إنشاء قواعد الولاء الافتراضية بنجاح." });
+                toast({ title: "نجاح", description: "تم إنشاء قواعد الولاء الافتراضية بنجاح." });
             }
             setRules(data);
         } catch (error) {
