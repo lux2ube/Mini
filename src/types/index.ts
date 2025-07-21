@@ -28,9 +28,9 @@ export interface UserProfile {
     referralCode?: string;
     referredBy?: string | null; // UID of the user who referred this person
     referrals?: string[]; // Array of UIDs of users this person has referred
-    points: number; // Changed from optional to required
-    tier: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond'; // Added 'New' tier
-    monthlyPoints: number; // Points earned this month
+    points: number; 
+    tier: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+    monthlyPoints: number; 
 }
 
 /**
@@ -338,9 +338,21 @@ export interface LoyaltyTier {
   storeDiscountPercent: number;
 }
 
+export const POINTS_RULE_ACTIONS = [
+    'approve_account',
+    'cashback_earned',
+    'store_purchase',
+    'referral_signup',
+    'referral_becomes_active',
+    'referral_becomes_trader',
+    'referral_commission'
+] as const;
+
+export type PointsRuleAction = typeof POINTS_RULE_ACTIONS[number];
+
 export interface PointsRule {
   id: string;
-  action: 'approve_account' | 'cashback_earned' | 'store_purchase' | 'referral_signup' | 'referral_becomes_active' | 'referral_becomes_trader' | 'referral_commission';
+  action: PointsRuleAction;
   points: number;
   isDollarBased: boolean; // True if points are per dollar, false if a fixed amount
   description: string;

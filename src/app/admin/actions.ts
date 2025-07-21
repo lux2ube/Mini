@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction } from 'firebase/firestore';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
@@ -826,5 +826,82 @@ export async function getUserDetails(userId: string) {
         console.error("Error fetching user details:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         return { error: errorMessage };
+    }
+}
+
+// Loyalty System Management
+
+// Get all loyalty tiers configuration
+export async function getLoyaltyTiers(): Promise<LoyaltyTier[]> {
+    const docRef = doc(db, 'settings', 'loyaltyTiers');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        // The document stores an object where keys are tier names
+        const data = docSnap.data();
+        return Object.values(data) as LoyaltyTier[];
+    }
+    // Return default settings if not found
+    return [
+        { name: 'New', monthlyPointsRequired: 0, referralCommissionPercent: 0, storeDiscountPercent: 0 },
+        { name: 'Bronze', monthlyPointsRequired: 100, referralCommissionPercent: 5, storeDiscountPercent: 2 },
+        { name: 'Silver', monthlyPointsRequired: 500, referralCommissionPercent: 10, storeDiscountPercent: 5 },
+        { name: 'Gold', monthlyPointsRequired: 2000, referralCommissionPercent: 15, storeDiscountPercent: 10 },
+        { name: 'Diamond', monthlyPointsRequired: 10000, referralCommissionPercent: 25, storeDiscountPercent: 20 },
+    ];
+}
+
+// Update all loyalty tiers
+export async function updateLoyaltyTiers(tiers: LoyaltyTier[]) {
+    try {
+        const tiersObject = tiers.reduce((acc, tier) => {
+            acc[tier.name] = tier;
+            return acc;
+        }, {} as Record<string, LoyaltyTier>);
+        
+        const docRef = doc(db, 'settings', 'loyaltyTiers');
+        await setDoc(docRef, tiersObject);
+        return { success: true, message: 'تم تحديث مستويات الولاء بنجاح.' };
+    } catch (error) {
+        console.error("Error updating loyalty tiers:", error);
+        return { success: false, message: 'فشل تحديث مستويات الولاء.' };
+    }
+}
+
+// Get all points rules
+export async function getPointsRules(): Promise<PointsRule[]> {
+    const snapshot = await getDocs(query(collection(db, 'pointsRules'), orderBy('action')));
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PointsRule));
+}
+
+// Add a new points rule
+export async function addPointsRule(data: Omit<PointsRule, 'id'>) {
+    try {
+        await addDoc(collection(db, 'pointsRules'), data);
+        return { success: true, message: 'تمت إضافة القاعدة بنجاح.' };
+    } catch (error) {
+        console.error("Error adding points rule:", error);
+        return { success: false, message: 'فشل إضافة القاعدة.' };
+    }
+}
+
+// Update a points rule
+export async function updatePointsRule(id: string, data: Partial<PointsRule>) {
+    try {
+        await updateDoc(doc(db, 'pointsRules', id), data);
+        return { success: true, message: 'تم تحديث القاعدة بنجاح.' };
+    } catch (error) {
+        console.error("Error updating points rule:", error);
+        return { success: false, message: 'فشل تحديث القاعدة.' };
+    }
+}
+
+// Delete a points rule
+export async function deletePointsRule(id: string) {
+    try {
+        await deleteDoc(doc(db, 'pointsRules', id));
+        return { success: true, message: 'تم حذف القاعدة بنجاح.' };
+    } catch (error) {
+        console.error("Error deleting points rule:", error);
+        return { success: false, message: 'فشل حذف القاعدة.' };
     }
 }
