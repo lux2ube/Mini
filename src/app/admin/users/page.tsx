@@ -2,12 +2,12 @@
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getUsers } from '../actions';
 import type { UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Loader2, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 type EnrichedUser = UserProfile & { referredByName?: string };
 
 export default function ManageUsersPage() {
+    const router = useRouter();
     const [users, setUsers] = useState<EnrichedUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -104,7 +105,6 @@ export default function ManageUsersPage() {
                                         <TableHead>معرف العميل</TableHead>
                                         <TableHead>الاسم</TableHead>
                                         <TableHead>البريد الإلكتروني</TableHead>
-                                        <TableHead>Firebase UID</TableHead>
                                         <TableHead>تاريخ الانضمام</TableHead>
                                         <TableHead>الإحالات</TableHead>
                                         <TableHead>النقاط</TableHead>
@@ -113,11 +113,14 @@ export default function ManageUsersPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {filteredUsers.map(user => (
-                                        <TableRow key={user.uid}>
+                                        <TableRow 
+                                            key={user.uid} 
+                                            onClick={() => router.push(`/admin/users/${user.uid}`)}
+                                            className="cursor-pointer"
+                                        >
                                             <TableCell className="font-mono text-xs">{user.clientId || 'N/A'}</TableCell>
                                             <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                                             <TableCell>{user.email || 'N/A'}</TableCell>
-                                            <TableCell className="font-mono text-xs truncate max-w-xs">{user.uid}</TableCell>
                                             <TableCell>{getSafeDate(user.createdAt)}</TableCell>
                                             <TableCell>{user.referrals?.length || 0}</TableCell>
                                             <TableCell>{user.points || 0}</TableCell>

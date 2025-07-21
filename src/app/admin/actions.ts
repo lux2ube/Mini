@@ -23,11 +23,6 @@ export async function logUserActivity(
             timestamp: new Date(),
             ipAddress: clientInfo.geoInfo.ip || 'unknown',
             userAgent,
-            geo: {
-                country: clientInfo.geoInfo.country,
-                region: clientInfo.geoInfo.region,
-                city: clientInfo.geoInfo.city,
-            },
             device: clientInfo.deviceInfo,
             details,
         };
@@ -709,5 +704,77 @@ export async function deleteBlogPost(id: string) {
     } catch (error) {
         console.error("Error deleting blog post:", error);
         return { success: false, message: 'فشل حذف المقال.' };
+    }
+}
+
+// CRM User Detail Fetcher
+export async function getUserDetails(userId: string) {
+    try {
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await getDoc(userRef);
+
+        if (!userSnap.exists()) {
+            throw new Error("لم يتم العثور على المستخدم");
+        }
+        
+        const userProfile = { uid: userSnap.id, ...userSnap.data() } as UserProfile;
+        if(userProfile.createdAt && userProfile.createdAt instanceof Timestamp) {
+            userProfile.createdAt = userProfile.createdAt.toDate();
+        }
+
+        const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", userId));
+        const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", userId));
+        
+        const [
+            balanceData,
+            accountsSnapshot,
+            transactionsSnapshot
+        ] = await Promise.all([
+            getUserBalance(userId),
+            getDocs(accountsQuery),
+            getDocs(transactionsQuery),
+        ]);
+
+        const tradingAccounts = accountsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { id: doc.id, ...data, createdAt: (data.createdAt as Timestamp).toDate() } as TradingAccount;
+        });
+
+        const cashbackTransactions = transactionsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return { id: doc.id, ...data, date: (data.date as Timestamp).toDate() } as CashbackTransaction;
+        }).sort((a, b) => b.date.getTime() - a.date.getTime());
+
+        // Fetch referrer name
+        let referredByName = null;
+        if (userProfile.referredBy) {
+            const referrerSnap = await getDoc(doc(db, 'users', userProfile.referredBy));
+            if (referrerSnap.exists()) {
+                referredByName = referrerSnap.data().name;
+            }
+        }
+
+        // Fetch names of referred users
+        let referralsWithNames = [];
+        if (userProfile.referrals && userProfile.referrals.length > 0) {
+            const referralPromises = userProfile.referrals.map(uid => getDoc(doc(db, 'users', uid)));
+            const referralSnaps = await Promise.all(referralPromises);
+            referralsWithNames = referralSnaps
+                .filter(snap => snap.exists())
+                .map(snap => ({ uid: snap.id, name: snap.data()?.name || 'مستخدم غير معروف' }));
+        }
+        
+        return {
+            userProfile,
+            balance: balanceData,
+            tradingAccounts,
+            cashbackTransactions,
+            referredByName,
+            referralsWithNames,
+        };
+    } catch (error) {
+        console.error("Error fetching user details:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { error: errorMessage };
     }
 }
