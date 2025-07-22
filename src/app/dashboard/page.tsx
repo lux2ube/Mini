@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -11,8 +12,8 @@ import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getCountFromServer, getDocs, Timestamp, orderBy, limit } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
-import type { BannerSettings, TradingAccount, CashbackTransaction } from "@/types";
-import { getBannerSettings, getUserBalance } from "../admin/actions";
+import type { BannerSettings, TradingAccount, CashbackTransaction, FeedbackForm } from "@/types";
+import { getBannerSettings, getUserBalance, getActiveFeedbackFormForUser } from "../admin/actions";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,6 +29,7 @@ import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { getClientSessionInfo } from "@/lib/device-info";
+import { UserFeedbackForm } from "@/components/user/FeedbackForm";
 
 
 interface DashboardStats {
@@ -149,6 +151,7 @@ export default function UserDashboardPage() {
   });
   const [transactions, setTransactions] = useState<CashbackTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [activeFeedbackForm, setActiveFeedbackForm] = useState<FeedbackForm | null>(null);
 
   // PWA Install Prompt Logic
   useEffect(() => {
@@ -200,10 +203,11 @@ export default function UserDashboardPage() {
       if (user) {
         setIsLoading(true);
         try {
-          const [balanceData, accountsSnapshot, transactionsSnapshot] = await Promise.all([
+          const [balanceData, accountsSnapshot, transactionsSnapshot, feedbackForm] = await Promise.all([
             getUserBalance(user.uid),
             getDocs(query(collection(db, "tradingAccounts"), where("userId", "==", user.uid))),
-            getDocs(query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid)))
+            getDocs(query(collection(db, "cashbackTransactions"), where("userId", "==", user.uid))),
+            getActiveFeedbackFormForUser(user.uid)
           ]);
           
           const linkedAccounts = accountsSnapshot.docs.map(doc => {
@@ -229,6 +233,7 @@ export default function UserDashboardPage() {
             referralPoints: user.profile?.points || 0,
           });
           setTransactions(allTransactions);
+          setActiveFeedbackForm(feedbackForm);
 
         } catch (error) {
             console.error("Error fetching dashboard stats:", error);
@@ -274,6 +279,7 @@ export default function UserDashboardPage() {
         <div className="container mx-auto px-4 py-4 space-y-4 max-w-2xl">
             
             <PromoBanner />
+            <UserFeedbackForm form={activeFeedbackForm} />
 
             <Tabs defaultValue="wallet" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">

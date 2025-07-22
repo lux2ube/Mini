@@ -1,9 +1,10 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment } from 'firebase/firestore';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
@@ -1116,5 +1117,59 @@ export async function deleteFeedbackForm(id: string) {
     } catch (error) {
         console.error("Error deleting feedback form:", error);
         return { success: false, message: 'فشل حذف النموذج.' };
+    }
+}
+
+// Get the first active feedback form for a user that they haven't responded to yet.
+export async function getActiveFeedbackFormForUser(userId: string): Promise<FeedbackForm | null> {
+    const activeFormsQuery = query(collection(db, 'feedbackForms'), where('status', '==', 'active'), orderBy('createdAt', 'desc'));
+    const activeFormsSnap = await getDocs(activeFormsQuery);
+    if (activeFormsSnap.empty) {
+        return null;
+    }
+
+    const userResponsesQuery = query(collection(db, 'feedbackResponses'), where('userId', '==', userId));
+    const userResponsesSnap = await getDocs(userResponsesQuery);
+    const respondedFormIds = new Set(userResponsesSnap.docs.map(doc => doc.data().formId));
+
+    for (const formDoc of activeFormsSnap.docs) {
+        if (!respondedFormIds.has(formDoc.id)) {
+            const data = formDoc.data();
+            return {
+                id: formDoc.id,
+                ...data,
+                createdAt: (data.createdAt as Timestamp).toDate(),
+            } as FeedbackForm;
+        }
+    }
+
+    return null; // User has responded to all active forms
+}
+
+export async function submitFeedbackResponse(
+    userId: string,
+    formId: string,
+    answers: Record<string, any>
+): Promise<{ success: boolean, message: string }> {
+    try {
+        await runTransaction(db, async (transaction) => {
+            const formRef = doc(db, 'feedbackForms', formId);
+            const responseRef = doc(collection(db, 'feedbackResponses'));
+
+            const responsePayload: Omit<FeedbackResponse, 'id'> = {
+                formId,
+                userId,
+                submittedAt: new Date(),
+                answers,
+            };
+
+            transaction.set(responseRef, responsePayload);
+            transaction.update(formRef, { responseCount: increment(1) });
+        });
+
+        return { success: true, message: "شكرا لملاحظاتك!" };
+    } catch (error) {
+        console.error("Error submitting feedback:", error);
+        return { success: false, message: "فشل إرسال الملاحظات." };
     }
 }
