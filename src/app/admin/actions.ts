@@ -1128,8 +1128,17 @@ export async function getActiveFeedbackFormForUser(userId: string): Promise<Feed
         return null;
     }
 
+    // Convert to Date objects before sorting
+    const activeForms = activeFormsSnap.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp).toDate(),
+        } as FeedbackForm;
+    });
+    
     // Sort in-memory to avoid composite index
-    const activeForms = activeFormsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeedbackForm));
     activeForms.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
 
 
@@ -1139,11 +1148,7 @@ export async function getActiveFeedbackFormForUser(userId: string): Promise<Feed
 
     for (const form of activeForms) {
         if (!respondedFormIds.has(form.id)) {
-            const data = form;
-            return {
-                ...data,
-                createdAt: (data.createdAt as Timestamp).toDate(),
-            } as FeedbackForm;
+            return form;
         }
     }
 
