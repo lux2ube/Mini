@@ -18,6 +18,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { format } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 
 const formSchema = z.object({
   message: z.string().min(10, "يجب أن تكون الرسالة 10 أحرف على الأقل."),
@@ -200,5 +201,3 @@ export default function ManageNotificationsPage() {
         </div>
     );
 }
-
-    
