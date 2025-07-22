@@ -115,7 +115,17 @@ export async function getBannerSettings(): Promise<BannerSettings> {
         return docSnap.data() as BannerSettings;
     }
     // Return default settings if not found
-    return { scriptCode: '', isEnabled: false };
+    return { 
+        isEnabled: false,
+        type: 'text',
+        title: "",
+        text: "",
+        ctaText: "",
+        ctaLink: "",
+        scriptCode: "",
+        targetTiers: [],
+        targetCountries: [],
+     };
 }
 
 export async function updateBannerSettings(settings: BannerSettings) {

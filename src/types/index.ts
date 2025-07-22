@@ -6,8 +6,18 @@ import type { Timestamp } from "firebase/firestore";
  * Represents the settings for the promotional banner.
  */
 export interface BannerSettings {
-    scriptCode: string;
     isEnabled: boolean;
+    type: 'script' | 'text';
+    // Text Banner Fields
+    title?: string;
+    text?: string;
+    ctaText?: string;
+    ctaLink?: string;
+    // Script Banner Fields
+    scriptCode?: string;
+    // Targeting Fields
+    targetTiers?: ('New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond')[];
+    targetCountries?: string[]; // Array of ISO 3166-1 alpha-2 country codes
 }
 
 /**

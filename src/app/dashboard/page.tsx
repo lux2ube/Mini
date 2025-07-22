@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/table"
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { getClientSessionInfo } from "@/lib/device-info";
 
 
 interface DashboardStats {
@@ -40,57 +42,96 @@ interface DashboardStats {
 
 function PromoBanner() {
     const bannerContainerRef = useRef<HTMLDivElement>(null);
+    const { user } = useAuthContext();
     const [settings, setSettings] = useState<BannerSettings | null>(null);
+    const [isBannerVisible, setIsBannerVisible] = useState(false);
 
     useEffect(() => {
         getBannerSettings().then(setSettings);
     }, []);
-    
+
     useEffect(() => {
-        const container = bannerContainerRef.current;
-        if (!container || !settings?.isEnabled || !settings.scriptCode) {
+        if (!settings || !settings.isEnabled || !user?.profile) {
+            setIsBannerVisible(false);
             return;
         }
 
-        container.innerHTML = ''; // Clear previous content
-        
+        const checkTargeting = async () => {
+            const { targetTiers, targetCountries } = settings;
+            
+            // Tier check
+            const tierMatch = !targetTiers || targetTiers.length === 0 || targetTiers.includes(user.profile!.tier);
+
+            // Country check
+            let countryMatch = !targetCountries || targetCountries.length === 0;
+            if (targetCountries && targetCountries.length > 0) {
+                const { geoInfo } = await getClientSessionInfo();
+                countryMatch = geoInfo.country ? targetCountries.includes(geoInfo.country) : false;
+            }
+
+            setIsBannerVisible(tierMatch && countryMatch);
+        };
+
+        checkTargeting();
+    }, [settings, user]);
+    
+    useEffect(() => {
+        const container = bannerContainerRef.current;
+        if (!container || !isBannerVisible || settings?.type !== 'script' || !settings.scriptCode) {
+            return;
+        }
+
+        container.innerHTML = '';
         const template = document.createElement('template');
         template.innerHTML = settings.scriptCode.trim();
-        
         const scriptNode = template.content.firstChild;
 
         if (scriptNode instanceof HTMLScriptElement) {
              const script = document.createElement('script');
-             if (scriptNode.src) {
-                script.src = scriptNode.src;
-             }
-             if (scriptNode.id) {
-                script.id = scriptNode.id;
-             }
+             if (scriptNode.src) script.src = scriptNode.src;
+             if (scriptNode.id) script.id = scriptNode.id;
              script.async = scriptNode.async;
              script.innerHTML = scriptNode.innerHTML;
-             
-             // Handle any other attributes on the original script
              for(let i = 0; i < scriptNode.attributes.length; i++) {
                  const attr = scriptNode.attributes[i];
                  if(attr.name !== 'src' && attr.name !== 'id' && attr.name !== 'async') {
                     script.setAttribute(attr.name, attr.value);
                  }
              }
-             
              container.appendChild(script);
         } else {
-             // If it's not a script (e.g., an iframe or div), just append it
              container.appendChild(template.content.cloneNode(true));
         }
 
-    }, [settings]);
+    }, [settings, isBannerVisible]);
 
-    if (!settings?.isEnabled || !settings.scriptCode) {
+    if (!isBannerVisible) {
         return null;
     }
 
-    return <div ref={bannerContainerRef} className="my-4 w-full flex justify-center"></div>;
+    if (settings?.type === 'text') {
+        return (
+            <Alert className="my-4">
+                {settings.title && <AlertTitle>{settings.title}</AlertTitle>}
+                {settings.text && <AlertDescription>{settings.text}</AlertDescription>}
+                {settings.ctaText && settings.ctaLink && (
+                    <div className="mt-4">
+                        <Button asChild>
+                            <a href={settings.ctaLink} target="_blank" rel="noopener noreferrer">
+                                {settings.ctaText}
+                            </a>
+                        </Button>
+                    </div>
+                )}
+            </Alert>
+        )
+    }
+
+    if (settings?.type === 'script') {
+        return <div ref={bannerContainerRef} className="my-4 w-full flex justify-center"></div>;
+    }
+
+    return null;
 }
 
 
