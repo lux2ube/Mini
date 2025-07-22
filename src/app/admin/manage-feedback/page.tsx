@@ -39,6 +39,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import Link from 'next/link';
 
 const questionSchema = z.object({
   id: z.string().default(() => crypto.randomUUID()),
@@ -77,12 +78,10 @@ function FeedbackFormDialog({ form: existingForm, isOpen, onOpenChange, onSucces
 
   const formMethods = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    // Use existingForm data if available, otherwise use structured default values.
-    // Ensure all fields are initialized to non-undefined values.
     defaultValues: existingForm ? {
-        ...defaultFormValues, // Start with defaults
-        ...existingForm, // Override with existing data
-        description: existingForm.description || "", // Ensure description is a string
+        ...defaultFormValues,
+        ...existingForm,
+        description: existingForm.description || "",
     } : defaultFormValues,
   });
 
@@ -91,7 +90,6 @@ function FeedbackFormDialog({ form: existingForm, isOpen, onOpenChange, onSucces
     name: "questions",
   });
   
-  // Reset form when the dialog is opened with new data
   useEffect(() => {
     formMethods.reset(existingForm ? { ...defaultFormValues, ...existingForm, description: existingForm.description || "" } : defaultFormValues);
   }, [isOpen, existingForm, formMethods]);
@@ -222,7 +220,7 @@ export default function ManageFeedbackPage() {
     };
 
     const handleAdd = () => {
-        setEditingForm(null); // Set to null for a new form
+        setEditingForm(null);
         setIsDialogOpen(true);
     }
     
@@ -274,7 +272,11 @@ export default function ManageFeedbackPage() {
                                     <TableRow key={form.id}>
                                         <TableCell className="font-medium">{form.title}</TableCell>
                                         <TableCell><span className={`px-2 py-1 rounded-full text-xs ${form.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>{form.status === 'active' ? 'نشط' : 'غير نشط'}</span></TableCell>
-                                        <TableCell>{form.responseCount || 0}</TableCell>
+                                        <TableCell>
+                                            <Link href={`/admin/manage-feedback/${form.id}`} className="hover:underline text-primary">
+                                                {form.responseCount || 0}
+                                            </Link>
+                                        </TableCell>
                                         <TableCell>{format(form.createdAt, "PP")}</TableCell>
                                         <TableCell className="text-left space-x-2">
                                             <Button size="sm" variant="outline" disabled><Send className="ml-2 h-4 w-4" /> إرسال</Button>

@@ -4,7 +4,7 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment } from 'firebase/firestore';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
@@ -1072,7 +1072,7 @@ export async function deletePointsRule(id: string) {
     }
 }
 
-// Feedback Form Management
+// Feedback System Management
 export async function getFeedbackForms(): Promise<FeedbackForm[]> {
     const snapshot = await getDocs(query(collection(db, 'feedbackForms'), orderBy('createdAt', 'desc')));
     return snapshot.docs.map(doc => {
@@ -1111,7 +1111,6 @@ export async function updateFeedbackForm(id: string, data: Partial<Omit<Feedback
 
 export async function deleteFeedbackForm(id: string) {
     try {
-        // In a real app, you might want to also delete all responses associated with this form.
         await deleteDoc(doc(db, 'feedbackForms', id));
         return { success: true, message: 'تم حذف النموذج بنجاح.' };
     } catch (error) {
@@ -1119,6 +1118,47 @@ export async function deleteFeedbackForm(id: string) {
         return { success: false, message: 'فشل حذف النموذج.' };
     }
 }
+
+export async function getFeedbackFormById(formId: string): Promise<FeedbackForm | null> {
+    const docRef = doc(db, 'feedbackForms', formId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+        return null;
+    }
+    const data = docSnap.data();
+    return {
+        id: docSnap.id,
+        ...data,
+        createdAt: (data.createdAt as Timestamp).toDate(),
+    } as FeedbackForm;
+}
+
+export async function getFeedbackResponses(formId: string): Promise<EnrichedFeedbackResponse[]> {
+    const responsesQuery = query(collection(db, 'feedbackResponses'), where('formId', '==', formId));
+    const responsesSnap = await getDocs(responsesQuery);
+
+    const responses = responsesSnap.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            submittedAt: (data.submittedAt as Timestamp).toDate(),
+        } as FeedbackResponse;
+    });
+
+    const userIds = [...new Set(responses.map(r => r.userId))];
+    if (userIds.length === 0) return [];
+
+    const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds));
+    const usersSnap = await getDocs(usersQuery);
+    const usersMap = new Map(usersSnap.docs.map(d => [d.id, d.data() as UserProfile]));
+
+    return responses.map(response => ({
+        ...response,
+        userName: usersMap.get(response.userId)?.name || 'مستخدم غير معروف'
+    }));
+}
+
 
 // Get the first active feedback form for a user that they haven't responded to yet.
 export async function getActiveFeedbackFormForUser(userId: string): Promise<FeedbackForm | null> {
@@ -1128,7 +1168,6 @@ export async function getActiveFeedbackFormForUser(userId: string): Promise<Feed
         return null;
     }
 
-    // Convert to Date objects before sorting
     const activeForms = activeFormsSnap.docs.map(doc => {
         const data = doc.data();
         return {
@@ -1138,9 +1177,7 @@ export async function getActiveFeedbackFormForUser(userId: string): Promise<Feed
         } as FeedbackForm;
     });
     
-    // Sort in-memory to avoid composite index
     activeForms.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
-
 
     const userResponsesQuery = query(collection(db, 'feedbackResponses'), where('userId', '==', userId));
     const userResponsesSnap = await getDocs(userResponsesQuery);
@@ -1152,7 +1189,7 @@ export async function getActiveFeedbackFormForUser(userId: string): Promise<Feed
         }
     }
 
-    return null; // User has responded to all active forms
+    return null;
 }
 
 export async function submitFeedbackResponse(

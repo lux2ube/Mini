@@ -408,3 +408,7 @@ export interface FeedbackResponse {
   submittedAt: Date;
   answers: Record<string, any>; // question.id -> answer
 }
+
+export interface EnrichedFeedbackResponse extends FeedbackResponse {
+    userName: string;
+}
