@@ -2,19 +2,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, FormProvider } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { getFeedbackForms, addFeedbackForm, updateFeedbackForm, deleteFeedbackForm } from "../actions";
-import { PlusCircle, Loader2, Edit, Trash2, Send, List, Shield, Type, GripVertical } from "lucide-react";
-import type { FeedbackForm } from "@/types";
+import { PlusCircle, Loader2, Edit, Trash2, Send, List, Shield, Type, GripVertical, Check, Star } from "lucide-react";
+import type { FeedbackForm, FeedbackQuestion } from "@/types";
 import { format } from "date-fns";
 import {
   Table,
@@ -56,21 +56,34 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-function FeedbackFormDialog({ form: existingForm, onSuccess }: { form?: FeedbackForm | null; onSuccess: () => void; }) {
-  const [isOpen, setIsOpen] = useState(!!existingForm);
+const defaultQuestionValues: FeedbackQuestion = {
+    id: '',
+    text: '',
+    type: 'text',
+    options: []
+};
+
+const defaultFormValues: FormData = {
+    title: "",
+    description: "",
+    status: 'inactive',
+    questions: [],
+};
+
+
+function FeedbackFormDialog({ form: existingForm, isOpen, onOpenChange, onSuccess }: { form?: FeedbackForm | null; isOpen: boolean; onOpenChange: (open: boolean) => void; onSuccess: () => void; }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const formMethods = useForm<FormData>({
     resolver: zodResolver(formSchema),
+    // Use existingForm data if available, otherwise use structured default values.
+    // Ensure all fields are initialized to non-undefined values.
     defaultValues: existingForm ? {
-        ...existingForm,
-    } : {
-      title: "",
-      description: "",
-      status: 'inactive',
-      questions: [],
-    },
+        ...defaultFormValues, // Start with defaults
+        ...existingForm, // Override with existing data
+        description: existingForm.description || "", // Ensure description is a string
+    } : defaultFormValues,
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -78,10 +91,10 @@ function FeedbackFormDialog({ form: existingForm, onSuccess }: { form?: Feedback
     name: "questions",
   });
   
-  const handleClose = () => {
-    formMethods.reset();
-    onSuccess(); // To signal parent to clear editing state
-  }
+  // Reset form when the dialog is opened with new data
+  useEffect(() => {
+    formMethods.reset(existingForm ? { ...defaultFormValues, ...existingForm, description: existingForm.description || "" } : defaultFormValues);
+  }, [isOpen, existingForm, formMethods]);
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -91,24 +104,29 @@ function FeedbackFormDialog({ form: existingForm, onSuccess }: { form?: Feedback
 
     if (result.success) {
       toast({ title: "نجاح", description: result.message });
-      handleClose();
+      onSuccess();
     } else {
       toast({ variant: "destructive", title: "خطأ", description: result.message });
     }
     setIsSubmitting(false);
   };
 
-  const addQuestion = () => {
-    append({ id: crypto.randomUUID(), text: "", type: "text", options: [] });
+  const addQuestion = (type: FeedbackQuestion['type']) => {
+    append({ 
+        id: crypto.randomUUID(), 
+        text: "", 
+        type: type, 
+        options: type === 'multiple-choice' ? [''] : [] 
+    });
   };
   
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{existingForm ? "تعديل" : "إنشاء"} نموذج ملاحظات</DialogTitle>
           </DialogHeader>
-          <Form {...formMethods}>
+          <FormProvider {...formMethods}>
             <form onSubmit={formMethods.handleSubmit(onSubmit)} className="space-y-6 p-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={formMethods.control} name="title" render={({ field }) => (<FormItem><FormLabel>عنوان النموذج</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
@@ -120,6 +138,7 @@ function FeedbackFormDialog({ form: existingForm, onSuccess }: { form?: Feedback
 
               <div>
                   <h3 className="text-lg font-medium">الأسئلة</h3>
+                  <p className="text-sm text-muted-foreground">أضف أسئلة إلى النموذج الخاص بك.</p>
               </div>
               <div className="space-y-4">
                   {fields.map((field, index) => (
@@ -130,22 +149,34 @@ function FeedbackFormDialog({ form: existingForm, onSuccess }: { form?: Feedback
                                   <FormItem><FormLabel>نص السؤال</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                               )}/>
                               <FormField control={formMethods.control} name={`questions.${index}.type`} render={({ field }) => (
-                                  <FormItem><FormLabel>نوع السؤال</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="text">نصي</SelectItem><SelectItem value="rating">تقييم (1-5)</SelectItem><SelectItem value="multiple-choice">اختيار من متعدد</SelectItem></SelectContent></Select><FormMessage /></FormItem>
+                                  <FormItem><FormLabel>نوع السؤال</FormLabel>
+                                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="text"><div className="flex items-center gap-2"><Type/> نصي</div></SelectItem>
+                                        <SelectItem value="rating"><div className="flex items-center gap-2"><Star/> تقييم (1-5)</div></SelectItem>
+                                        <SelectItem value="multiple-choice"><div className="flex items-center gap-2"><Check/> اختيار من متعدد</div></SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage /></FormItem>
                               )}/>
                           </div>
                       </Card>
                   ))}
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={addQuestion}><PlusCircle className="ml-2 h-4 w-4"/> إضافة سؤال</Button>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => addQuestion('text')}><PlusCircle className="ml-2 h-4 w-4"/> إضافة سؤال نصي</Button>
+                <Button type="button" variant="outline" size="sm" onClick={() => addQuestion('rating')}><PlusCircle className="ml-2 h-4 w-4"/> إضافة تقييم</Button>
+              </div>
               <DialogFooter className="pt-4">
-                <Button type="button" variant="secondary" onClick={handleClose}>إلغاء</Button>
+                <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>إلغاء</Button>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                   {existingForm ? "حفظ التغييرات" : "إنشاء نموذج"}
                 </Button>
               </DialogFooter>
             </form>
-          </Form>
+          </FormProvider>
         </DialogContent>
     </Dialog>
   );
@@ -155,6 +186,7 @@ function FeedbackFormDialog({ form: existingForm, onSuccess }: { form?: Feedback
 export default function ManageFeedbackPage() {
     const [forms, setForms] = useState<FeedbackForm[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingForm, setEditingForm] = useState<FeedbackForm | null>(null);
     const { toast } = useToast();
 
@@ -186,13 +218,16 @@ export default function ManageFeedbackPage() {
 
     const handleEdit = (form: FeedbackForm) => {
         setEditingForm(form);
+        setIsDialogOpen(true);
     };
 
     const handleAdd = () => {
-        setEditingForm({} as FeedbackForm); // Trigger dialog with empty object
+        setEditingForm(null); // Set to null for a new form
+        setIsDialogOpen(true);
     }
     
     const handleFormSuccess = () => {
+        setIsDialogOpen(false);
         setEditingForm(null);
         fetchForms();
     };
@@ -209,7 +244,12 @@ export default function ManageFeedbackPage() {
                 </Button>
             </div>
             
-            {editingForm && <FeedbackFormDialog form={editingForm} onSuccess={handleFormSuccess} />}
+            <FeedbackFormDialog 
+                form={editingForm} 
+                isOpen={isDialogOpen}
+                onOpenChange={setIsDialogOpen}
+                onSuccess={handleFormSuccess} 
+            />
             
             <Card>
                 <CardHeader>
