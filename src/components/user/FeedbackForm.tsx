@@ -73,22 +73,22 @@ export function UserFeedbackForm({ form: activeForm }: { form: FeedbackForm | nu
                     <FormItem>
                         <FormLabel>{question.text}</FormLabel>
                         <FormControl>
-                            <>
-                                {question.type === 'text' && <Textarea {...field} />}
-                                {question.type === 'rating' && <RatingInput value={field.value} onChange={field.onChange} />}
-                                {question.type === 'multiple-choice' && (
-                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="space-y-1">
-                                        {question.options?.map(opt => (
-                                            <FormItem key={opt} className="flex items-center space-x-3 space-y-0">
-                                                <FormControl>
-                                                    <RadioGroupItem value={opt} />
-                                                </FormControl>
-                                                <FormLabel className="font-normal">{opt}</FormLabel>
-                                            </FormItem>
-                                        ))}
-                                    </RadioGroup>
-                                )}
-                            </>
+                            {question.type === 'text' ? (
+                                <Textarea {...field} />
+                            ) : question.type === 'rating' ? (
+                                <RatingInput value={field.value} onChange={field.onChange} />
+                            ) : question.type === 'multiple-choice' ? (
+                                <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="space-y-1">
+                                    {question.options?.map(opt => (
+                                        <FormItem key={opt} className="flex items-center space-x-3 space-y-0">
+                                            <FormControl>
+                                                <RadioGroupItem value={opt} />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">{opt}</FormLabel>
+                                        </FormItem>
+                                    ))}
+                                </RadioGroup>
+                            ) : null}
                         </FormControl>
                         <FormMessage />
                     </FormItem>
