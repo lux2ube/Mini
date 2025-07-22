@@ -383,4 +383,28 @@ export interface PointsRule {
 // Definition of a user's status based on their activity
 export type UserStatus = 'New' | 'Active' | 'Trader' | 'Partner' | 'Active Partner' | 'Active Trader';
 
-    
+// Feedback System
+export interface FeedbackQuestion {
+  id: string;
+  text: string;
+  type: 'text' | 'rating' | 'multiple-choice'; // Example types
+  options?: string[]; // For multiple-choice
+}
+
+export interface FeedbackForm {
+  id: string;
+  title: string;
+  description: string;
+  questions: FeedbackQuestion[];
+  status: 'active' | 'inactive';
+  createdAt: Date;
+  responseCount: number;
+}
+
+export interface FeedbackResponse {
+  id: string;
+  formId: string;
+  userId: string;
+  submittedAt: Date;
+  answers: Record<string, any>; // question.id -> answer
+}

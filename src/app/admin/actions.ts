@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment } from 'firebase/firestore';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
@@ -200,45 +200,53 @@ export async function updateBrokerOrder(orderedIds: string[]) {
 }
 
 // Point Awarding Engine
-async function awardPoints(
-    userId: string, 
-    action: PointsRuleAction, 
+export async function awardPoints(
+    transactionOrDb: any,
+    userId: string,
+    action: PointsRuleAction,
     amountValue?: number // e.g., cashback amount or order price
 ) {
-    try {
-        await runTransaction(db, async (transaction) => {
-            const rulesQuery = query(collection(db, 'pointsRules'), where('action', '==', action));
-            const rulesSnap = await getDocs(rulesQuery); // This read is safe inside the transaction
+    const execute = async (transaction: any) => {
+        const rulesQuery = query(collection(db, 'pointsRules'), where('action', '==', action));
+        const rulesSnap = await getDocs(rulesQuery); // This read is safe inside a transaction if it comes first or uses the transaction object for reading which getDocs doesn't support directly. For simplicity, we read outside if not in a transaction.
 
-            if (rulesSnap.empty) {
-                console.warn(`No points rule found for action: ${action}`);
+        if (rulesSnap.empty) {
+            console.warn(`No points rule found for action: ${action}`);
+            return;
+        }
+
+        const rule = rulesSnap.docs[0].data() as PointsRule;
+        let pointsToAward = rule.points;
+
+        if (rule.isDollarBased) {
+            if (typeof amountValue !== 'number') {
+                console.warn(`Dollar-based rule '${action}' requires an amountValue.`);
                 return;
             }
+            pointsToAward = Math.floor(amountValue * rule.points);
+        }
 
-            const rule = rulesSnap.docs[0].data() as PointsRule;
-            let pointsToAward = rule.points;
+        if (pointsToAward <= 0) return;
 
-            if (rule.isDollarBased) {
-                if (typeof amountValue !== 'number') {
-                    console.warn(`Dollar-based rule '${action}' requires an amountValue.`);
-                    return;
-                }
-                pointsToAward = Math.floor(amountValue * rule.points);
-            }
-            
-            if (pointsToAward <= 0) return;
-
-            const userRef = doc(db, 'users', userId);
-            transaction.update(userRef, {
-                points: increment(pointsToAward),
-                monthlyPoints: increment(pointsToAward)
-            });
-
-            await createNotification(transaction, userId, `لقد ربحت ${pointsToAward} نقطة! ${rule.description}`, 'loyalty', '/dashboard/loyalty');
+        const userRef = doc(db, 'users', userId);
+        transaction.update(userRef, {
+            points: increment(pointsToAward),
+            monthlyPoints: increment(pointsToAward)
         });
-    } catch (error) {
-         console.error(`Failed to award points for action ${action} to user ${userId}:`, error);
-         // Don't rethrow, as this should not block the main flow.
+
+        await createNotification(transaction, userId, `لقد ربحت ${pointsToAward} نقطة! ${rule.description}`, 'loyalty', '/dashboard/loyalty');
+    };
+
+    // Check if we are in a transaction
+    if (transactionOrDb && typeof transactionOrDb.get === 'function') {
+        await execute(transactionOrDb);
+    } else {
+        try {
+            await runTransaction(db, execute);
+        } catch (error) {
+            console.error(`Failed to award points for action ${action} to user ${userId}:`, error);
+            // Don't rethrow, as this should not block the main flow.
+        }
     }
 }
 
@@ -297,14 +305,14 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
     if (status === 'Approved' && accountData) {
         try {
             const finalAccountData = accountData; // Ensure non-null for TS
-            await awardPoints(finalAccountData.userId, 'approve_account');
+            await awardPoints(db, finalAccountData.userId, 'approve_account');
 
             // Check if this user was referred and award points to their referrer
             const userRef = doc(db, 'users', finalAccountData.userId);
             const userSnap = await getDoc(userRef);
             if (userSnap.exists() && userSnap.data().referredBy) {
                 const referrerId = userSnap.data().referredBy;
-                await awardPoints(referrerId, 'referral_becomes_active');
+                await awardPoints(db, referrerId, 'referral_becomes_active');
             }
         } catch (pointError) {
              console.error("Account status updated, but failed to award points:", pointError);
@@ -337,10 +345,11 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
                 status: 'Approved',
                 createdAt: serverTimestamp(),
             });
+            await createNotification(transaction, userId, `تمت إضافة حسابك ${accountNumber} والموافقة عليه من قبل المسؤول.`, 'account', '/dashboard/my-accounts');
         });
 
         // Award points separately after the transaction succeeds
-        await awardPoints(userId, 'approve_account');
+        await awardPoints(db, userId, 'approve_account');
         
         return { success: true, message: 'تمت إضافة الحساب والموافقة عليه بنجاح.' };
     } catch (error) {
@@ -378,7 +387,6 @@ export async function updateUser(userId: string, data: { name: string }) {
 // Cashback Management
 export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id' | 'date'>) {
     try {
-        // Main transaction for cashback
         await runTransaction(db, async (transaction) => {
             const newTransactionRef = doc(collection(db, 'cashbackTransactions'));
             transaction.set(newTransactionRef, {
@@ -388,36 +396,34 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 
             const message = `لقد تلقيت ${data.cashbackAmount.toFixed(2)}$ كاش باك للحساب ${data.accountNumber}.`;
             await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
-        });
 
-        // Award points and handle referral logic separately
-        await awardPoints(data.userId, 'cashback_earned', data.cashbackAmount);
+            await awardPoints(transaction, data.userId, 'cashback_earned', data.cashbackAmount);
 
-        const userRef = doc(db, 'users', data.userId);
-        const userSnap = await getDoc(userRef);
+            const userRef = doc(db, 'users', data.userId);
+            const userSnap = await transaction.get(userRef);
 
-        if (userSnap.exists() && userSnap.data().referredBy) {
-            const referrerId = userSnap.data().referredBy;
-            await awardPoints(referrerId, 'referral_becomes_trader');
+            if (userSnap.exists() && userSnap.data().referredBy) {
+                const referrerId = userSnap.data().referredBy;
+                await awardPoints(transaction, referrerId, 'referral_becomes_trader');
 
-            const referrerRef = doc(db, 'users', referrerId);
-            const referrerSnap = await getDoc(referrerRef);
-            const tiers = await getLoyaltyTiers();
+                const referrerRef = doc(db, 'users', referrerId);
+                const referrerSnap = await transaction.get(referrerRef);
+                const tiers = await getLoyaltyTiers();
 
-            if (referrerSnap.exists()) {
-                const referrerProfile = referrerSnap.data() as UserProfile;
-                const referrerTier = tiers.find(t => t.name === referrerProfile.tier) || tiers[0];
-                const commissionPercent = referrerTier.referralCommissionPercent;
+                if (referrerSnap.exists()) {
+                    const referrerProfile = referrerSnap.data() as UserProfile;
+                    const referrerTier = tiers.find(t => t.name === referrerProfile.tier) || tiers[0];
+                    const commissionPercent = referrerTier.referralCommissionPercent;
 
-                if(commissionPercent > 0) {
-                    const commissionAmount = data.cashbackAmount * (commissionPercent / 100);
-                    if (commissionAmount > 0) {
-                        await awardPoints(referrerId, 'referral_commission', commissionAmount);
+                    if (commissionPercent > 0) {
+                        const commissionAmount = data.cashbackAmount * (commissionPercent / 100);
+                        if (commissionAmount > 0) {
+                            await awardPoints(transaction, referrerId, 'referral_commission', commissionAmount);
+                        }
                     }
                 }
             }
-        }
-
+        });
         return { success: true, message: 'تمت إضافة معاملة الكاش باك بنجاح.' };
     } catch (error) {
         console.error("Error adding cashback transaction:", error);
@@ -760,7 +766,7 @@ export async function placeOrder(
         if (product) {
             const clientInfo = await getClientSessionInfo();
             await logUserActivity(userId, 'store_purchase', clientInfo, { productId, price: product.price });
-            await awardPoints(userId, 'store_purchase', product.price);
+            await awardPoints(db, userId, 'store_purchase', product.price);
         }
 
         return { success: true, message: 'تم تقديم الطلب بنجاح!' };
@@ -1065,4 +1071,50 @@ export async function deletePointsRule(id: string) {
     }
 }
 
-    
+// Feedback Form Management
+export async function getFeedbackForms(): Promise<FeedbackForm[]> {
+    const snapshot = await getDocs(query(collection(db, 'feedbackForms'), orderBy('createdAt', 'desc')));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp).toDate(),
+        } as FeedbackForm;
+    });
+}
+
+export async function addFeedbackForm(data: Omit<FeedbackForm, 'id' | 'createdAt' | 'responseCount'>) {
+    try {
+        await addDoc(collection(db, 'feedbackForms'), {
+            ...data,
+            createdAt: serverTimestamp(),
+            responseCount: 0,
+        });
+        return { success: true, message: 'تم إنشاء نموذج الملاحظات بنجاح.' };
+    } catch (error) {
+        console.error("Error adding feedback form:", error);
+        return { success: false, message: 'فشل إنشاء النموذج.' };
+    }
+}
+
+export async function updateFeedbackForm(id: string, data: Partial<Omit<FeedbackForm, 'id' | 'createdAt'>>) {
+    try {
+        await updateDoc(doc(db, 'feedbackForms', id), data);
+        return { success: true, message: 'تم تحديث النموذج بنجاح.' };
+    } catch (error) {
+        console.error("Error updating feedback form:", error);
+        return { success: false, message: 'فشل تحديث النموذج.' };
+    }
+}
+
+export async function deleteFeedbackForm(id: string) {
+    try {
+        // In a real app, you might want to also delete all responses associated with this form.
+        await deleteDoc(doc(db, 'feedbackForms', id));
+        return { success: true, message: 'تم حذف النموذج بنجاح.' };
+    } catch (error) {
+        console.error("Error deleting feedback form:", error);
+        return { success: false, message: 'فشل حذف النموذج.' };
+    }
+}
