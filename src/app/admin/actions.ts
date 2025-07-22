@@ -3,7 +3,7 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment } from 'firebase/firestore';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification } from '@/types';
 import { headers } from 'next/headers';
 
 // Activity Logging
@@ -50,7 +50,7 @@ async function createNotification(
     transaction: any, // Can be a transaction or the db instance
     userId: string, 
     message: string, 
-    type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store' | 'loyalty', 
+    type: Notification['type'], 
     link?: string
 ) {
     const notificationsCollection = collection(db, 'notifications');
@@ -542,6 +542,69 @@ export async function markNotificationsAsRead(notificationIds: string[]) {
     await batch.commit();
 }
 
+export async function getAdminNotifications(): Promise<AdminNotification[]> {
+    const snapshot = await getDocs(query(collection(db, 'adminNotifications'), orderBy('createdAt', 'desc')));
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: (data.createdAt as Timestamp).toDate(),
+        } as AdminNotification;
+    });
+}
+
+export async function sendAdminNotification(
+    message: string,
+    target: 'all' | 'specific',
+    userIds: string[]
+): Promise<{ success: boolean; message: string }> {
+    try {
+        // Log the admin notification itself
+        const adminNotifRef = doc(collection(db, 'adminNotifications'));
+        await setDoc(adminNotifRef, {
+            message,
+            target,
+            userIds,
+            createdAt: serverTimestamp(),
+        });
+
+        // Create notifications for the targeted users
+        const batch = writeBatch(db);
+        let targetUsers: { id: string }[] = [];
+
+        if (target === 'all') {
+            const usersSnapshot = await getDocs(collection(db, 'users'));
+            targetUsers = usersSnapshot.docs.map(doc => ({ id: doc.id }));
+        } else {
+            targetUsers = userIds.map(id => ({ id }));
+        }
+
+        if (targetUsers.length === 0) {
+            return { success: false, message: 'لم يتم تحديد مستخدمين مستهدفين.' };
+        }
+
+        targetUsers.forEach(user => {
+            const userNotifRef = doc(collection(db, 'notifications'));
+            batch.set(userNotifRef, {
+                userId: user.id,
+                message,
+                type: 'announcement',
+                isRead: false,
+                createdAt: serverTimestamp(),
+            });
+        });
+
+        await batch.commit();
+
+        return { success: true, message: `تم إرسال الإشعار إلى ${targetUsers.length} مستخدم.` };
+
+    } catch (error) {
+        console.error("Error sending admin notification:", error);
+        return { success: false, message: 'فشل إرسال الإشعار.' };
+    }
+}
+
 
 // Store Management - Categories
 export async function getCategories(): Promise<ProductCategory[]> {
@@ -1001,3 +1064,5 @@ export async function deletePointsRule(id: string) {
         return { success: false, message: 'فشل حذف القاعدة.' };
     }
 }
+
+    

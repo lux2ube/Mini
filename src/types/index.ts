@@ -237,11 +237,23 @@ export interface Notification {
     id: string;
     userId: string;
     message: string;
-    type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store' | 'loyalty';
+    type: 'account' | 'cashback' | 'withdrawal' | 'general' | 'store' | 'loyalty' | 'announcement';
     isRead: boolean;
     createdAt: Date;
     link?: string;
 }
+
+/**
+ * Represents a notification sent by an admin, for logging purposes.
+ */
+export interface AdminNotification {
+    id: string;
+    message: string;
+    target: 'all' | 'specific';
+    userIds: string[];
+    createdAt: Date;
+}
+
 
 /**
  * Represents a product category in the 'productCategories' collection.
@@ -370,3 +382,5 @@ export interface PointsRule {
 
 // Definition of a user's status based on their activity
 export type UserStatus = 'New' | 'Active' | 'Trader' | 'Partner' | 'Active Partner' | 'Active Trader';
+
+    
