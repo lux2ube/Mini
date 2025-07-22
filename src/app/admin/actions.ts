@@ -1122,21 +1122,25 @@ export async function deleteFeedbackForm(id: string) {
 
 // Get the first active feedback form for a user that they haven't responded to yet.
 export async function getActiveFeedbackFormForUser(userId: string): Promise<FeedbackForm | null> {
-    const activeFormsQuery = query(collection(db, 'feedbackForms'), where('status', '==', 'active'), orderBy('createdAt', 'desc'));
+    const activeFormsQuery = query(collection(db, 'feedbackForms'), where('status', '==', 'active'));
     const activeFormsSnap = await getDocs(activeFormsQuery);
     if (activeFormsSnap.empty) {
         return null;
     }
 
+    // Sort in-memory to avoid composite index
+    const activeForms = activeFormsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeedbackForm));
+    activeForms.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+
     const userResponsesQuery = query(collection(db, 'feedbackResponses'), where('userId', '==', userId));
     const userResponsesSnap = await getDocs(userResponsesQuery);
     const respondedFormIds = new Set(userResponsesSnap.docs.map(doc => doc.data().formId));
 
-    for (const formDoc of activeFormsSnap.docs) {
-        if (!respondedFormIds.has(formDoc.id)) {
-            const data = formDoc.data();
+    for (const form of activeForms) {
+        if (!respondedFormIds.has(form.id)) {
+            const data = form;
             return {
-                id: formDoc.id,
                 ...data,
                 createdAt: (data.createdAt as Timestamp).toDate(),
             } as FeedbackForm;
