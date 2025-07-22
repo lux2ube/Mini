@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronLeft, KeyRound, History, Settings, Store, ShoppingBag } from "lucide-react";
+import { DollarSign, Briefcase, PlusCircle, Landmark, ArrowRight, Users, Gift, Copy, Wallet, MessageCircle, ChevronLeft, KeyRound, History, Settings, Store, ShoppingBag, Download } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { db } from "@/lib/firebase/config";
@@ -149,6 +149,51 @@ export default function UserDashboardPage() {
   });
   const [transactions, setTransactions] = useState<CashbackTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // PWA Install Prompt Logic
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      
+      const pwaPromptShown = localStorage.getItem('pwaPromptShown');
+      if (pwaPromptShown) {
+        return;
+      }
+      
+      const deferredPrompt = e as any;
+
+      toast({
+        title: "📲 تثبيت التطبيق",
+        description: "أضف موقعنا إلى شاشتك الرئيسية لتسهيل الوصول إليه.",
+        action: (
+          <Button
+            size="sm"
+            onClick={async () => {
+              deferredPrompt.prompt();
+              const { outcome } = await deferredPrompt.userChoice;
+              if (outcome === 'accepted') {
+                console.log('User accepted the A2HS prompt');
+              } else {
+                console.log('User dismissed the A2HS prompt');
+              }
+              localStorage.setItem('pwaPromptShown', 'true');
+            }}
+          >
+            <Download className="ml-2 h-4 w-4" />
+            تثبيت
+          </Button>
+        ),
+        duration: 30000,
+      });
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, [toast]);
+
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -378,3 +423,5 @@ export default function UserDashboardPage() {
     </div>
   );
 }
+
+    
