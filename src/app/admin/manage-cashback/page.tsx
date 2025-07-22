@@ -1,20 +1,42 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from "date-fns";
+
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, XCircle, UserCheck, Edit, DollarSign } from 'lucide-react';
+import { Loader2, Search, XCircle, UserCheck, Edit, DollarSign, History, AlertTriangle } from 'lucide-react';
 import { addCashbackTransaction } from '../actions';
-import type { TradingAccount } from '@/types';
+import type { TradingAccount, CashbackTransaction } from '@/types';
 import { useAdminData } from '@/hooks/useAdminData';
+import { db } from '@/lib/firebase/config';
+import { collection, query, where, getDocs, Timestamp, orderBy, limit } from 'firebase/firestore';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const formSchema = z.object({
   tradeDetails: z.string().min(3, { message: "الرجاء إدخال تفاصيل الصفقة." }),
@@ -30,6 +52,29 @@ export default function ManageCashbackPage() {
     
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAccount, setSelectedAccount] = useState<EnrichedAccount | null>(null);
+    const [recentTransactions, setRecentTransactions] = useState<CashbackTransaction[]>([]);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+    const [duplicateWarning, setDuplicateWarning] = useState<{ show: boolean, onConfirm: () => void }>({ show: false, onConfirm: () => {} });
+
+    const fetchHistory = useCallback(async () => {
+        setIsHistoryLoading(true);
+        const historyQuery = query(collection(db, "cashbackTransactions"), orderBy("date", "desc"), limit(10));
+        const snapshot = await getDocs(historyQuery);
+        const history = snapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                ...data,
+                id: doc.id,
+                date: (data.date as Timestamp).toDate()
+            } as CashbackTransaction
+        });
+        setRecentTransactions(history);
+        setIsHistoryLoading(false);
+    }, []);
+
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory]);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -63,11 +108,19 @@ export default function ManageCashbackPage() {
         );
     }, [searchQuery, enrichedAccounts]);
 
-    async function onSubmit(values: z.infer<typeof formSchema>) {
-        if (!selectedAccount) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم اختيار حساب.' });
-            return;
-        }
+    const checkForDuplicates = (values: z.infer<typeof formSchema>): boolean => {
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        return recentTransactions.some(tx => 
+            tx.accountId === selectedAccount?.id &&
+            tx.cashbackAmount === values.cashbackAmount &&
+            tx.date > oneWeekAgo
+        );
+    };
+
+    const performSubmit = async (values: z.infer<typeof formSchema>) => {
+        if (!selectedAccount) return;
         setIsSubmitting(true);
         
         const result = await addCashbackTransaction({
@@ -84,10 +137,19 @@ export default function ManageCashbackPage() {
             form.reset();
             setSelectedAccount(null);
             setSearchQuery('');
+            fetchHistory(); // Refresh history
         } else {
             toast({ variant: 'destructive', title: 'خطأ', description: result.message });
         }
         setIsSubmitting(false);
+    };
+
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        if (checkForDuplicates(values)) {
+            setDuplicateWarning({ show: true, onConfirm: () => performSubmit(values) });
+        } else {
+            await performSubmit(values);
+        }
     }
     
     const handleSelectAccount = (account: EnrichedAccount) => {
@@ -104,105 +166,160 @@ export default function ManageCashbackPage() {
         <div className="container mx-auto space-y-6">
             <PageHeader title="إدارة الكاش باك" description="إضافة معاملات الكاش باك للمستخدمين يدويًا." />
             
-            <Card>
-                <CardHeader>
-                    <CardTitle>1. البحث عن حساب التداول</CardTitle>
-                    <CardDescription>ابحث باسم المستخدم أو البريد الإلكتروني أو رقم الحساب.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {isDataLoading ? (
-                        <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>
-                    ) : selectedAccount ? (
-                        <div className="p-4 border rounded-md bg-muted/50 flex items-center justify-between">
-                            <div className="space-y-1">
-                                <p className="font-semibold">{selectedAccount.userName} ({selectedAccount.userEmail})</p>
-                                <p className="text-sm text-muted-foreground">{selectedAccount.broker} - {selectedAccount.accountNumber}</p>
-                            </div>
-                            <Button variant="ghost" size="icon" onClick={clearSelection}>
-                                <XCircle className="h-5 w-5" />
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            <div className="relative">
-                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <Input 
-                                    placeholder="بحث..."
-                                    className="pr-10"
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                            {searchQuery && (
-                                <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md">
-                                    {searchResults.length > 0 ? searchResults.map(acc => (
-                                        <button 
-                                            key={acc.id} 
-                                            className="w-full text-right p-3 hover:bg-muted"
-                                            onClick={() => handleSelectAccount(acc)}
-                                        >
-                                            <p className="font-medium">{acc.userName} ({acc.accountNumber})</p>
-                                            <p className="text-sm text-muted-foreground">{acc.userEmail}</p>
-                                        </button>
-                                    )) : (
-                                        <p className="p-4 text-center text-sm text-muted-foreground">لم يتم العثور على حسابات مطابقة.</p>
+            <div className="grid lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-1 space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>1. البحث عن حساب</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {isDataLoading ? (
+                                <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                            ) : selectedAccount ? (
+                                <div className="p-4 border rounded-md bg-muted/50 flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <p className="font-semibold">{selectedAccount.userName}</p>
+                                        <p className="text-sm text-muted-foreground">{selectedAccount.broker} - {selectedAccount.accountNumber}</p>
+                                    </div>
+                                    <Button variant="ghost" size="icon" onClick={clearSelection}>
+                                        <XCircle className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="relative">
+                                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                        <Input 
+                                            placeholder="بحث بالاسم، البريد، أو الحساب..."
+                                            className="pr-10"
+                                            value={searchQuery}
+                                            onChange={e => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                    {searchQuery && (
+                                        <div className="space-y-2 max-h-60 overflow-y-auto border rounded-md">
+                                            {searchResults.length > 0 ? searchResults.map(acc => (
+                                                <button 
+                                                    key={acc.id} 
+                                                    className="w-full text-right p-3 hover:bg-muted"
+                                                    onClick={() => handleSelectAccount(acc)}
+                                                >
+                                                    <p className="font-medium">{acc.userName} ({acc.accountNumber})</p>
+                                                    <p className="text-sm text-muted-foreground">{acc.userEmail}</p>
+                                                </button>
+                                            )) : (
+                                                <p className="p-4 text-center text-sm text-muted-foreground">لم يتم العثور على حسابات.</p>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
                             )}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
+                        </CardContent>
+                    </Card>
 
-            <Card className={!selectedAccount ? 'opacity-50 pointer-events-none' : ''}>
-                <CardHeader>
-                    <CardTitle>2. إضافة تفاصيل المعاملة</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                             <FormField
-                                control={form.control}
-                                name="tradeDetails"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>تفاصيل الصفقة</FormLabel>
-                                        <FormControl>
-                                            <div className="relative">
-                                                <Edit className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input placeholder="مثال: 5.0 لوت EUR/USD" {...field} className="pr-10" />
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                    <Card className={!selectedAccount ? 'opacity-50 pointer-events-none' : ''}>
+                        <CardHeader>
+                            <CardTitle>2. إضافة التفاصيل</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="tradeDetails"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>تفاصيل الصفقة</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <Edit className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <Input placeholder="مثال: 5.0 لوت EUR/USD" {...field} className="pr-10" />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="cashbackAmount"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>مبلغ الكاش باك ($)</FormLabel>
+                                                <FormControl>
+                                                    <div className="relative">
+                                                        <DollarSign className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                                        <Input type="number" placeholder="مثال: 25.50" {...field} className="pr-10" />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <Button type="submit" disabled={isSubmitting || !selectedAccount}>
+                                        {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                                        إضافة معاملة
+                                    </Button>
+                                </form>
+                            </Form>
+                        </CardContent>
+                    </Card>
+                </div>
+                
+                <div className="lg:col-span-2">
+                    <Card>
+                        <CardHeader>
+                           <CardTitle className="flex items-center gap-2"><History className="h-5 w-5" /> سجل العمليات الأخيرة</CardTitle>
+                           <CardDescription>آخر 10 عمليات كاش باك تمت إضافتها للنظام.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             {isHistoryLoading ? (
+                                <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin" /></div>
+                             ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>التاريخ</TableHead>
+                                            <TableHead>الحساب</TableHead>
+                                            <TableHead>المبلغ</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                    {recentTransactions.map(tx => (
+                                        <TableRow key={tx.id}>
+                                            <TableCell className="text-xs text-muted-foreground">{format(tx.date, 'PP')}</TableCell>
+                                            <TableCell>
+                                                <div className="font-medium text-sm">{tx.broker}</div>
+                                                <div className="text-xs text-muted-foreground">{tx.accountNumber}</div>
+                                            </TableCell>
+                                            <TableCell className="font-semibold text-primary">${tx.cashbackAmount.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                    </TableBody>
+                                </Table>
+                             )}
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
 
-                            <FormField
-                                control={form.control}
-                                name="cashbackAmount"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>مبلغ الكاش باك ($)</FormLabel>
-                                        <FormControl>
-                                            <div className="relative">
-                                                <DollarSign className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                                <Input type="number" placeholder="مثال: 25.50" {...field} className="pr-10" />
-                                            </div>
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            
-                            <Button type="submit" disabled={isSubmitting || !selectedAccount}>
-                                {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                                إضافة معاملة
-                            </Button>
-                        </form>
-                    </Form>
-                </CardContent>
-            </Card>
+            <AlertDialog open={duplicateWarning.show} onOpenChange={(open) => !open && setDuplicateWarning({ show: false, onConfirm: () => {} })}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle className="text-amber-500" /> تحذير من معاملة مكررة</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            يبدو أنه تم إضافة نفس المبلغ لنفس الحساب خلال الأسبوع الماضي. هل أنت متأكد أنك تريد المتابعة؟
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={() => setDuplicateWarning({ show: false, onConfirm: () => {} })}>إلغاء</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => {
+                            duplicateWarning.onConfirm();
+                            setDuplicateWarning({ show: false, onConfirm: () => {} });
+                        }}>نعم، متابعة</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }
