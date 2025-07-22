@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from 'react';
@@ -61,7 +62,8 @@ export default function ManageUsersPage() {
             const clientIdMatch = user.clientId && String(user.clientId).includes(lowerCaseQuery);
             const referralCodeMatch = user.referralCode && user.referralCode.toLowerCase().includes(lowerCaseQuery);
             const uidMatch = user.uid?.toLowerCase().includes(lowerCaseQuery) || false;
-            return nameMatch || emailMatch || clientIdMatch || referralCodeMatch || uidMatch;
+            const countryMatch = user.country?.toLowerCase().includes(lowerCaseQuery) || false;
+            return nameMatch || emailMatch || clientIdMatch || referralCodeMatch || uidMatch || countryMatch;
         });
     }, [searchQuery, users]);
 
@@ -87,7 +89,7 @@ export default function ManageUsersPage() {
                     <div className="relative max-w-sm">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
-                            placeholder="بحث بالاسم، البريد، UID، الكود، أو معرف العميل..."
+                            placeholder="بحث بالاسم، البريد، الدولة، أو ID..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pr-10"
@@ -105,10 +107,9 @@ export default function ManageUsersPage() {
                                         <TableHead>معرف العميل</TableHead>
                                         <TableHead>الاسم</TableHead>
                                         <TableHead>البريد الإلكتروني</TableHead>
+                                        <TableHead>الدولة</TableHead>
                                         <TableHead>تاريخ الانضمام</TableHead>
-                                        <TableHead>الإحالات</TableHead>
                                         <TableHead>النقاط</TableHead>
-                                        <TableHead>تمت إحالته بواسطة</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -121,10 +122,9 @@ export default function ManageUsersPage() {
                                             <TableCell className="font-mono text-xs">{user.clientId || 'N/A'}</TableCell>
                                             <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                                             <TableCell>{user.email || 'N/A'}</TableCell>
+                                            <TableCell>{user.country || 'N/A'}</TableCell>
                                             <TableCell>{getSafeDate(user.createdAt)}</TableCell>
-                                            <TableCell>{user.referrals?.length || 0}</TableCell>
                                             <TableCell>{user.points || 0}</TableCell>
-                                            <TableCell>{user.referredByName || '-'}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from 'next/link';
@@ -53,6 +54,7 @@ export default function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
+      const clientInfo = await getClientSessionInfo();
       const finalReferralCode = (referralCode || referralCodeFromUrl || '').trim();
       
       await runTransaction(db, async (transaction) => {
@@ -84,6 +86,7 @@ export default function RegisterPage() {
             role: "user",
             clientId: newClientId,
             createdAt: Timestamp.now(),
+            country: clientInfo.geoInfo.country || null,
             referralCode: newReferralCode,
             referredBy: referrerProfile ? referrerProfile.uid : null,
             referrals: [],
@@ -108,7 +111,6 @@ export default function RegisterPage() {
         transaction.set(counterRef, { lastId: newClientId }, { merge: true });
       });
       
-      const clientInfo = await getClientSessionInfo();
       await logUserActivity(user.uid, 'signup', clientInfo, { method: 'email', referralCode: finalReferralCode || null });
 
       window.dispatchEvent(new CustomEvent('refetchUser'));

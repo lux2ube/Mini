@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -15,8 +16,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { getUserDetails, getBrokers, adminAddTradingAccount } from "../../actions";
-import { Loader2, User, Wallet, Briefcase, Gift, ArrowRight, ArrowUpFromLine, ShoppingBag, PlusCircle } from "lucide-react";
+import { getUserDetails, getBrokers, adminAddTradingAccount, updateUser } from "../../actions";
+import { Loader2, User, Wallet, Briefcase, Gift, ArrowRight, ArrowUpFromLine, ShoppingBag, PlusCircle, Globe } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -38,6 +39,87 @@ const addAccountSchema = z.object({
 });
 
 type AddAccountForm = z.infer<typeof addAccountSchema>;
+
+const editUserSchema = z.object({
+    name: z.string().min(3, "الاسم مطلوب"),
+    country: z.string().length(2, "يجب أن يكون رمز البلد من حرفين").toUpperCase().or(z.literal("")),
+})
+type EditUserForm = z.infer<typeof editUserSchema>;
+
+
+function EditUserDialog({ userProfile, onSuccess }: { userProfile: UserDetails['userProfile'], onSuccess: () => void }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+
+    const form = useForm<EditUserForm>({
+        resolver: zodResolver(editUserSchema),
+        defaultValues: {
+            name: userProfile?.name || "",
+            country: userProfile?.country || "",
+        },
+    });
+
+    const onSubmit = async (values: EditUserForm) => {
+        if (!userProfile) return;
+        setIsSubmitting(true);
+        const result = await updateUser(userProfile.uid, values);
+        if (result.success) {
+            toast({ title: "نجاح", description: result.message });
+            onSuccess();
+            setIsOpen(false);
+        } else {
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
+        }
+        setIsSubmitting(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                 <Button size="sm" variant="outline">تعديل الملف الشخصي</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>تعديل المستخدم</DialogTitle>
+                </DialogHeader>
+                 <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                         <FormField
+                            control={form.control}
+                            name="name"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>الاسم</FormLabel>
+                                    <FormControl><Input {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="country"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>الدولة (رمز ISO)</FormLabel>
+                                    <FormControl><Input placeholder="EG" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="secondary">إلغاء</Button></DialogClose>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                                حفظ
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 function AddAccountDialog({ userId, onSuccess }: { userId: string, onSuccess: () => void }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -213,10 +295,13 @@ export default function UserDetailPage() {
 
     return (
         <div className="container mx-auto space-y-6">
-            <PageHeader
-                title={userProfile.name}
-                description={`عرض شامل للمستخدم ${userProfile.clientId}`}
-            />
+            <div className="flex justify-between items-start">
+                 <PageHeader
+                    title={userProfile.name}
+                    description={`عرض شامل للمستخدم ${userProfile.clientId}`}
+                />
+                <EditUserDialog userProfile={userProfile} onSuccess={fetchDetails} />
+            </div>
             
             <div className="grid lg:grid-cols-3 gap-6">
                 {/* Left Column */}
@@ -229,6 +314,7 @@ export default function UserDetailPage() {
                            <InfoRow label="معرف العميل" value={userProfile.clientId} />
                            <InfoRow label="البريد الإلكتروني" value={userProfile.email} />
                            <InfoRow label="تاريخ الانضمام" value={userProfile.createdAt ? format(userProfile.createdAt, 'PP') : '-'} />
+                           <InfoRow label="الدولة" value={userProfile.country || 'N/A'} />
                            <InfoRow label="UID" value={userProfile.uid} />
                         </CardContent>
                     </Card>

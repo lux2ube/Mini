@@ -25,6 +25,10 @@ export async function logUserActivity(
             ipAddress: clientInfo.geoInfo.ip || 'unknown',
             userAgent,
             device: clientInfo.deviceInfo,
+            geo: {
+                country: clientInfo.geoInfo.country,
+                city: clientInfo.geoInfo.city,
+            },
             details,
         };
         await addDoc(collection(db, 'activityLogs'), logEntry);
@@ -373,10 +377,10 @@ export async function getUsers(): Promise<UserProfile[]> {
   });
 }
 
-export async function updateUser(userId: string, data: { name: string }) {
+export async function updateUser(userId: string, data: { name: string, country: string }) {
     try {
         const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, { name: data.name });
+        await updateDoc(userRef, data);
         return { success: true, message: 'تم تحديث الملف الشخصي بنجاح.' };
     } catch (error) {
         console.error("Error updating user profile:", error);
