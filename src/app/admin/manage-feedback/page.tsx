@@ -99,7 +99,7 @@ function FeedbackFormDialog({ form: existingForm, onSuccess }: { form?: Feedback
   };
 
   const addQuestion = () => {
-    append({ text: "", type: "text", options: [] });
+    append({ id: crypto.randomUUID(), text: "", type: "text", options: [] });
   };
   
   return (
@@ -155,7 +155,6 @@ function FeedbackFormDialog({ form: existingForm, onSuccess }: { form?: Feedback
 export default function ManageFeedbackPage() {
     const [forms, setForms] = useState<FeedbackForm[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingForm, setEditingForm] = useState<FeedbackForm | null>(null);
     const { toast } = useToast();
 
