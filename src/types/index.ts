@@ -40,7 +40,7 @@ export interface UserProfile {
     referredBy?: string | null; // UID of the user who referred this person
     referrals?: string[]; // Array of UIDs of users this person has referred
     points: number; 
-    tier: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+    tier: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond' | 'Ambassador';
     monthlyPoints: number; 
 }
 
@@ -355,10 +355,23 @@ export interface BlogPost {
 
 // Loyalty & Points System
 export interface LoyaltyTier {
-  name: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond';
+  name: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond' | 'Ambassador';
   monthlyPointsRequired: number;
-  referralCommissionPercent: number;
-  storeDiscountPercent: number;
+  // User Actions (Points)
+  user_signup_pts: number;
+  user_approval_pts: number;
+  user_cashback_pts: number; // per $100
+  user_store_pts: number; // per $100
+  // Partner Direct Earnings (Commission & Points)
+  partner_cashback_com: number; // %
+  partner_store_com: number; // %
+  partner_cashback_pts: number; // per $100
+  partner_store_pts: number; // per $100
+  // Referral Bonuses (Points)
+  ref_signup_pts: number;
+  ref_approval_pts: number;
+  ref_cashback_pts: number; // per $100
+  ref_store_pts: number; // per $100
 }
 
 export const POINTS_RULE_ACTIONS = [

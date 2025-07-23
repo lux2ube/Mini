@@ -418,7 +418,7 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
                 if (referrerSnap.exists()) {
                     const referrerProfile = referrerSnap.data() as UserProfile;
                     const referrerTier = tiers.find(t => t.name === referrerProfile.tier) || tiers[0];
-                    const commissionPercent = referrerTier.referralCommissionPercent;
+                    const commissionPercent = referrerTier.partner_cashback_com;
 
                     if (commissionPercent > 0) {
                         const commissionAmount = data.cashbackAmount * (commissionPercent / 100);
@@ -1006,17 +1006,18 @@ export async function getLoyaltyTiers(): Promise<LoyaltyTier[]> {
         const data = docSnap.data();
         const tiersArray = Object.values(data) as LoyaltyTier[];
         // Ensure consistent order
-        const tierOrder: LoyaltyTier['name'][] = ['New', 'Bronze', 'Silver', 'Gold', 'Diamond'];
+        const tierOrder: LoyaltyTier['name'][] = ['New', 'Bronze', 'Silver', 'Gold', 'Diamond', 'Ambassador'];
         tiersArray.sort((a, b) => tierOrder.indexOf(a.name) - tierOrder.indexOf(b.name));
         return tiersArray;
     }
     // Return default settings if not found
     return [
-        { name: 'New', monthlyPointsRequired: 0, referralCommissionPercent: 0, storeDiscountPercent: 0 },
-        { name: 'Bronze', monthlyPointsRequired: 100, referralCommissionPercent: 5, storeDiscountPercent: 2 },
-        { name: 'Silver', monthlyPointsRequired: 500, referralCommissionPercent: 10, storeDiscountPercent: 5 },
-        { name: 'Gold', monthlyPointsRequired: 2000, referralCommissionPercent: 15, storeDiscountPercent: 10 },
-        { name: 'Diamond', monthlyPointsRequired: 10000, referralCommissionPercent: 25, storeDiscountPercent: 20 },
+        { name: 'New', monthlyPointsRequired: 0, user_signup_pts: 1, user_approval_pts: 2, user_cashback_pts: 3, user_store_pts: 4, partner_cashback_com: 1, partner_store_com: 2, partner_cashback_pts: 3, partner_store_pts: 4, ref_signup_pts: 1, ref_approval_pts: 2, ref_cashback_pts: 3, ref_store_pts: 4 },
+        { name: 'Bronze', monthlyPointsRequired: 100, user_signup_pts: 2, user_approval_pts: 3, user_cashback_pts: 5, user_store_pts: 6, partner_cashback_com: 2, partner_store_com: 3, partner_cashback_pts: 5, partner_store_pts: 6, ref_signup_pts: 2, ref_approval_pts: 3, ref_cashback_pts: 5, ref_store_pts: 6 },
+        { name: 'Silver', monthlyPointsRequired: 500, user_signup_pts: 3, user_approval_pts: 5, user_cashback_pts: 8, user_store_pts: 10, partner_cashback_com: 3, partner_store_com: 5, partner_cashback_pts: 8, partner_store_pts: 10, ref_signup_pts: 3, ref_approval_pts: 5, ref_cashback_pts: 8, ref_store_pts: 10 },
+        { name: 'Gold', monthlyPointsRequired: 2000, user_signup_pts: 5, user_approval_pts: 8, user_cashback_pts: 12, user_store_pts: 15, partner_cashback_com: 5, partner_store_com: 8, partner_cashback_pts: 12, partner_store_pts: 15, ref_signup_pts: 5, ref_approval_pts: 8, ref_cashback_pts: 12, ref_store_pts: 15 },
+        { name: 'Diamond', monthlyPointsRequired: 10000, user_signup_pts: 8, user_approval_pts: 12, user_cashback_pts: 18, user_store_pts: 22, partner_cashback_com: 8, partner_store_com: 12, partner_cashback_pts: 18, partner_store_pts: 22, ref_signup_pts: 8, ref_approval_pts: 12, ref_cashback_pts: 18, ref_store_pts: 22 },
+        { name: 'Ambassador', monthlyPointsRequired: 50000, user_signup_pts: 12, user_approval_pts: 18, user_cashback_pts: 25, user_store_pts: 30, partner_cashback_com: 12, partner_store_com: 18, partner_cashback_pts: 25, partner_store_pts: 30, ref_signup_pts: 12, ref_approval_pts: 18, ref_cashback_pts: 25, ref_store_pts: 30 },
     ];
 }
 
