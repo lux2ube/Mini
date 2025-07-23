@@ -1,9 +1,8 @@
 
-
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction } from 'firebase/firestore';
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse } from '@/types';
 import { headers } from 'next/headers';
 
@@ -52,7 +51,7 @@ export async function getActivityLogs(): Promise<ActivityLog[]> {
 
 // Generic function to create a notification
 async function createNotification(
-    transaction: any, // Can be a transaction or the db instance
+    transaction: Transaction,
     userId: string, 
     message: string, 
     type: Notification['type'], 
@@ -205,54 +204,40 @@ export async function updateBrokerOrder(orderedIds: string[]) {
 }
 
 // Point Awarding Engine
-export async function awardPoints(
-    transactionOrDb: any,
+async function awardPoints(
+    transaction: Transaction,
     userId: string,
     action: PointsRuleAction,
     amountValue?: number // e.g., cashback amount or order price
 ) {
-    const execute = async (transaction: any) => {
-        const rulesQuery = query(collection(db, 'pointsRules'), where('action', '==', action));
-        const rulesSnap = await getDocs(rulesQuery); // This read is safe inside a transaction if it comes first or uses the transaction object for reading which getDocs doesn't support directly. For simplicity, we read outside if not in a transaction.
+    const rulesQuery = query(collection(db, 'pointsRules'), where('action', '==', action));
+    const rulesSnap = await transaction.get(rulesQuery);
 
-        if (rulesSnap.empty) {
-            console.warn(`No points rule found for action: ${action}`);
+    if (rulesSnap.empty) {
+        console.warn(`No points rule found for action: ${action}`);
+        return;
+    }
+
+    const rule = rulesSnap.docs[0].data() as PointsRule;
+    let pointsToAward = rule.points;
+
+    if (rule.isDollarBased) {
+        if (typeof amountValue !== 'number') {
+            console.warn(`Dollar-based rule '${action}' requires an amountValue.`);
             return;
         }
-
-        const rule = rulesSnap.docs[0].data() as PointsRule;
-        let pointsToAward = rule.points;
-
-        if (rule.isDollarBased) {
-            if (typeof amountValue !== 'number') {
-                console.warn(`Dollar-based rule '${action}' requires an amountValue.`);
-                return;
-            }
-            pointsToAward = Math.floor(amountValue * rule.points);
-        }
-
-        if (pointsToAward <= 0) return;
-
-        const userRef = doc(db, 'users', userId);
-        transaction.update(userRef, {
-            points: increment(pointsToAward),
-            monthlyPoints: increment(pointsToAward)
-        });
-
-        await createNotification(transaction, userId, `لقد ربحت ${pointsToAward} نقطة! ${rule.description}`, 'loyalty', '/dashboard/loyalty');
-    };
-
-    // Check if we are in a transaction
-    if (transactionOrDb && typeof transactionOrDb.get === 'function') {
-        await execute(transactionOrDb);
-    } else {
-        try {
-            await runTransaction(db, execute);
-        } catch (error) {
-            console.error(`Failed to award points for action ${action} to user ${userId}:`, error);
-            // Don't rethrow, as this should not block the main flow.
-        }
+        pointsToAward = Math.floor(amountValue * rule.points);
     }
+
+    if (pointsToAward <= 0) return;
+
+    const userRef = doc(db, 'users', userId);
+    transaction.update(userRef, {
+        points: increment(pointsToAward),
+        monthlyPoints: increment(pointsToAward)
+    });
+
+    await createNotification(transaction, userId, `لقد ربحت ${pointsToAward} نقطة! ${rule.description}`, 'loyalty', '/dashboard/loyalty');
 }
 
 
@@ -270,99 +255,79 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
 }
 
 export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected', reason?: string) {
-    let accountData: TradingAccount | null = null;
-    
-    // --- Step 1: Perform the critical status update in a clean transaction ---
-    try {
-        await runTransaction(db, async (transaction) => {
-            const accountRef = doc(db, 'tradingAccounts', accountId);
-            const accountSnap = await transaction.get(accountRef);
-            if (!accountSnap.exists()) throw new Error("لم يتم العثور على الحساب");
-            
-            const currentData = accountSnap.data() as TradingAccount;
-            accountData = currentData; 
+    return runTransaction(db, async (transaction) => {
+        const accountRef = doc(db, 'tradingAccounts', accountId);
+        const accountSnap = await transaction.get(accountRef);
+        if (!accountSnap.exists()) throw new Error("لم يتم العثور على الحساب");
 
-            if (currentData.status !== 'Pending') {
-                throw new Error(`لا يمكن تحديث الحساب. الحالة الحالية هي ${currentData.status}.`);
+        const currentData = accountSnap.data() as TradingAccount;
+        if (currentData.status !== 'Pending') {
+            throw new Error(`لا يمكن تحديث الحساب. الحالة الحالية هي ${currentData.status}.`);
+        }
+
+        const updateData: { status: 'Approved' | 'Rejected', rejectionReason?: string } = { status };
+        let message = `تم ${status === 'Approved' ? 'الموافقة على' : 'رفض'} حساب التداول الخاص بك ${currentData.accountNumber}.`;
+
+        if (status === 'Rejected') {
+            if (!reason) throw new Error("سبب الرفض مطلوب.");
+            updateData.rejectionReason = reason;
+            message += ` السبب: ${reason}`;
+        } else {
+            updateData.rejectionReason = "";
+            await awardPoints(transaction, currentData.userId, 'approve_account');
+
+            const userRef = doc(db, 'users', currentData.userId);
+            const userSnap = await transaction.get(userRef);
+            if (userSnap.exists() && userSnap.data().referredBy) {
+                const referrerId = userSnap.data().referredBy;
+                await awardPoints(transaction, referrerId, 'referral_becomes_active');
             }
+        }
 
-            const updateData: { status: 'Approved' | 'Rejected', rejectionReason?: string } = { status };
-            let message = `تم ${status === 'Approved' ? 'الموافقة على' : 'رفض'} حساب التداول الخاص بك ${currentData.accountNumber}.`;
-
-            if (status === 'Rejected') {
-                if (!reason) throw new Error("سبب الرفض مطلوب.");
-                updateData.rejectionReason = reason;
-                message += ` السبب: ${reason}`;
-            } else {
-                updateData.rejectionReason = ""; 
-            }
-
-            transaction.update(accountRef, updateData);
-            await createNotification(transaction, currentData.userId, message, 'account', '/dashboard/my-accounts');
-        });
-    } catch (error) {
+        transaction.update(accountRef, updateData);
+        await createNotification(transaction, currentData.userId, message, 'account', '/dashboard/my-accounts');
+        
+        return { success: true, message: `تم تحديث حالة الحساب إلى ${status}.` };
+    }).catch(error => {
         console.error("Error updating account status:", error);
         const errorMessage = error instanceof Error ? error.message : "حدث خطأ غير معروف";
         return { success: false, message: `فشل تحديث حالة الحساب: ${errorMessage}` };
-    }
-
-    // --- Step 2: Award points outside the main transaction ---
-    if (status === 'Approved' && accountData) {
-        try {
-            const finalAccountData = accountData; // Ensure non-null for TS
-            await awardPoints(db, finalAccountData.userId, 'approve_account');
-
-            // Check if this user was referred and award points to their referrer
-            const userRef = doc(db, 'users', finalAccountData.userId);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists() && userSnap.data().referredBy) {
-                const referrerId = userSnap.data().referredBy;
-                await awardPoints(db, referrerId, 'referral_becomes_active');
-            }
-        } catch (pointError) {
-             console.error("Account status updated, but failed to award points:", pointError);
-             // The main operation succeeded, so we don't return an error to the user here.
-        }
-    }
-
-    return { success: true, message: `تم تحديث حالة الحساب إلى ${status}.` };
+    });
 }
 
+
 export async function adminAddTradingAccount(userId: string, brokerName: string, accountNumber: string) {
-    try {
-        await runTransaction(db, async (transaction) => {
-            const q = query(
-                collection(db, 'tradingAccounts'),
-                where('broker', '==', brokerName),
-                where('accountNumber', '==', accountNumber)
-            );
-            const querySnapshot = await getDocs(q);
+    return runTransaction(db, async (transaction) => {
+        const q = query(
+            collection(db, 'tradingAccounts'),
+            where('broker', '==', brokerName),
+            where('accountNumber', '==', accountNumber)
+        );
+        const querySnapshot = await transaction.get(q);
 
-            if (!querySnapshot.empty) {
-                throw new Error('رقم حساب التداول هذا مرتبط بالفعل لهذا الوسيط.');
-            }
+        if (!querySnapshot.empty) {
+            throw new Error('رقم حساب التداول هذا مرتبط بالفعل لهذا الوسيط.');
+        }
 
-            const newAccountRef = doc(collection(db, 'tradingAccounts'));
-            transaction.set(newAccountRef, {
-                userId: userId,
-                broker: brokerName,
-                accountNumber: accountNumber,
-                status: 'Approved',
-                createdAt: serverTimestamp(),
-            });
-            await createNotification(transaction, userId, `تمت إضافة حسابك ${accountNumber} والموافقة عليه من قبل المسؤول.`, 'account', '/dashboard/my-accounts');
+        const newAccountRef = doc(collection(db, 'tradingAccounts'));
+        transaction.set(newAccountRef, {
+            userId: userId,
+            broker: brokerName,
+            accountNumber: accountNumber,
+            status: 'Approved',
+            createdAt: serverTimestamp(),
         });
-
-        // Award points separately after the transaction succeeds
-        await awardPoints(db, userId, 'approve_account');
+        await createNotification(transaction, userId, `تمت إضافة حسابك ${accountNumber} والموافقة عليه من قبل المسؤول.`, 'account', '/dashboard/my-accounts');
+        await awardPoints(transaction, userId, 'approve_account');
         
         return { success: true, message: 'تمت إضافة الحساب والموافقة عليه بنجاح.' };
-    } catch (error) {
+    }).catch(error => {
         console.error('Error adding trading account: ', error);
         const errorMessage = error instanceof Error ? error.message : "حدث خطأ غير معروف";
         return { success: false, message: `فشل إضافة الحساب: ${errorMessage}` };
-    }
+    });
 }
+
 
 // User Management
 export async function getUsers(): Promise<UserProfile[]> {
@@ -595,18 +560,19 @@ export async function sendAdminNotification(
             return { success: false, message: 'لم يتم تحديد مستخدمين مستهدفين.' };
         }
 
-        targetUsers.forEach(user => {
-            const userNotifRef = doc(collection(db, 'notifications'));
-            batch.set(userNotifRef, {
-                userId: user.id,
-                message,
-                type: 'announcement',
-                isRead: false,
-                createdAt: serverTimestamp(),
+        await runTransaction(db, async (transaction) => {
+            targetUsers.forEach(user => {
+                const userNotifRef = doc(collection(db, 'notifications'));
+                transaction.set(userNotifRef, {
+                    userId: user.id,
+                    message,
+                    type: 'announcement',
+                    isRead: false,
+                    createdAt: serverTimestamp(),
+                });
             });
         });
 
-        await batch.commit();
 
         return { success: true, message: `تم إرسال الإشعار إلى ${targetUsers.length} مستخدم.` };
 
@@ -734,53 +700,50 @@ export async function placeOrder(
     productId: string,
     formData: { userName: string; userEmail: string; deliveryPhoneNumber: string }
 ) {
-    try {
-        let product: Product | null = null;
-        
-        await runTransaction(db, async (transaction) => {
-            const productRef = doc(db, 'products', productId);
-            const productSnap = await transaction.get(productRef);
+    let product: Product | null = null;
+    const clientInfo = await getClientSessionInfo();
 
-            if (!productSnap.exists()) throw new Error("Product not found.");
-            product = productSnap.data() as Product;
+    return runTransaction(db, async (transaction) => {
+        const productRef = doc(db, 'products', productId);
+        const productSnap = await transaction.get(productRef);
 
-            const { availableBalance } = await getUserBalance(userId);
+        if (!productSnap.exists()) throw new Error("Product not found.");
+        product = productSnap.data() as Product;
 
-            if (product.stock <= 0) throw new Error("This product is currently out of stock.");
-            if (availableBalance < product.price) throw new Error("You do not have enough available balance to purchase this item.");
+        const { availableBalance } = await getUserBalance(userId);
 
-            transaction.update(productRef, { stock: increment(-1) });
+        if (product.stock <= 0) throw new Error("This product is currently out of stock.");
+        if (availableBalance < product.price) throw new Error("You do not have enough available balance to purchase this item.");
 
-            const orderRef = doc(collection(db, 'orders'));
-            transaction.set(orderRef, {
-                userId,
-                productId,
-                productName: product.name,
-                productImage: product.imageUrl,
-                price: product.price,
-                status: 'Pending',
-                createdAt: serverTimestamp(),
-                userName: formData.userName,
-                userEmail: formData.userEmail,
-                deliveryPhoneNumber: formData.deliveryPhoneNumber,
-            });
+        transaction.update(productRef, { stock: increment(-1) });
 
-            await createNotification(transaction, userId, `تم تقديم طلبك لـ ${product.name}.`, 'store', '/dashboard/store/orders');
+        const orderRef = doc(collection(db, 'orders'));
+        transaction.set(orderRef, {
+            userId,
+            productId,
+            productName: product.name,
+            productImage: product.imageUrl,
+            price: product.price,
+            status: 'Pending',
+            createdAt: serverTimestamp(),
+            userName: formData.userName,
+            userEmail: formData.userEmail,
+            deliveryPhoneNumber: formData.deliveryPhoneNumber,
         });
 
-        if (product) {
-            const clientInfo = await getClientSessionInfo();
-            await logUserActivity(userId, 'store_purchase', clientInfo, { productId, price: product.price });
-            await awardPoints(db, userId, 'store_purchase', product.price);
-        }
-
+        await createNotification(transaction, userId, `تم تقديم طلبك لـ ${product.name}.`, 'store', '/dashboard/store/orders');
+        await awardPoints(transaction, userId, 'store_purchase', product.price);
+        
+        await logUserActivity(userId, 'store_purchase', clientInfo, { productId, price: product.price });
+        
         return { success: true, message: 'تم تقديم الطلب بنجاح!' };
-    } catch (error) {
+    }).catch(error => {
         console.error('Error placing order:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred while placing your order.';
         return { success: false, message: errorMessage };
-    }
+    });
 }
+
 
 // Admin: Payment Method Management
 export async function getPaymentMethods(): Promise<PaymentMethod[]> {
@@ -1224,3 +1187,5 @@ export async function submitFeedbackResponse(
         return { success: false, message: "فشل إرسال الملاحظات." };
     }
 }
+
+    
