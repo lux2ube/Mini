@@ -204,7 +204,7 @@ export async function updateBrokerOrder(orderedIds: string[]) {
 }
 
 // Point Awarding Engine
-async function awardPoints(
+export async function awardPoints(
     transaction: Transaction,
     userId: string,
     action: PointsRuleAction,
@@ -1187,5 +1187,7 @@ export async function submitFeedbackResponse(
         return { success: false, message: "فشل إرسال الملاحظات." };
     }
 }
+
+    
 
     
