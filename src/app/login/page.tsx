@@ -21,7 +21,7 @@ import { doc, getDoc, setDoc, Timestamp, runTransaction } from "firebase/firesto
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { generateReferralCode } from '@/lib/referral';
-import { logUserActivity, getLoyaltyTiers, awardPoints } from '../admin/actions';
+import { logUserActivity } from '../admin/actions';
 import { getClientSessionInfo } from '@/lib/device-info';
 
 const GoogleIcon = () => (
@@ -48,7 +48,6 @@ export default function LoginPage() {
     const userDoc = await getDoc(userDocRef);
 
     // If user signs in but their Firestore doc doesn't exist, create it.
-    // This FIXES the issue for previously failed registrations.
     if (!userDoc.exists()) {
         console.log(`User ${user.uid} authenticated but has no profile. Creating one now.`);
         
@@ -60,7 +59,7 @@ export default function LoginPage() {
             
             const newUserProfile = { 
                 uid: user.uid,
-                name: user.displayName || "مستخدم جديد", 
+                name: user.displayName || "New User", 
                 email: user.email!, 
                 role: "user" as const,
                 clientId: newClientId,
@@ -75,11 +74,6 @@ export default function LoginPage() {
             };
             transaction.set(userDocRef, newUserProfile);
             transaction.set(counterRef, { lastId: newClientId }, { merge: true });
-
-            // Award signup points to this newly created user.
-            const loyaltyTiers = await getLoyaltyTiers();
-            const userTier = loyaltyTiers.find(t => t.name === 'New')!;
-            await awardPoints(transaction, user.uid, 'user_signup_pts', userTier);
         });
 
         await logUserActivity(user.uid, 'signup', clientInfo, { method: userCredential.providerId || 'social_fix' });
@@ -87,15 +81,15 @@ export default function LoginPage() {
         await logUserActivity(user.uid, 'login', clientInfo, { method: userCredential.providerId || 'email' });
     }
     
-    // Dispatch event to force refetch of user data in layout
     window.dispatchEvent(new CustomEvent('refetchUser'));
 
     toast({
         type: "success",
-        title: "نجاح",
-        description: "تم تسجيل الدخول بنجاح.",
+        title: "Success",
+        description: "Logged in successfully.",
     });
 
+    // We must fetch the doc again to get the role, especially if it was just created.
     const finalUserDoc = await getDoc(userDocRef);
     if (finalUserDoc.exists() && finalUserDoc.data()?.role === 'admin') {
       router.push('/admin/dashboard');
@@ -112,9 +106,9 @@ export default function LoginPage() {
       await handleLoginSuccess(userCredential);
     } catch (error: any) {
       toast({
-        type: "error",
-        title: "فشل تسجيل الدخول",
-        description: "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
+        variant: "destructive",
+        title: "Login Failed",
+        description: "Incorrect email or password.",
       });
     } finally {
       setIsLoading(false);
@@ -128,11 +122,11 @@ export default function LoginPage() {
         await handleLoginSuccess(userCredential);
     } catch (error: any) {
          toast({
-            type: "error",
-            title: "فشل تسجيل الدخول",
+            variant: "destructive",
+            title: "Login Failed",
             description: error.code === 'auth/account-exists-with-different-credential'
-                ? "يوجد حساب بالفعل بهذا البريد الإلكتروني. يرجى تسجيل الدخول بالطريقة الأصلية."
-                : "حدث خطأ أثناء تسجيل الدخول.",
+                ? "An account with this email already exists. Please sign in with your original method."
+                : "An error occurred during sign-in.",
         });
     } finally {
         setIsSocialLoading(false);
