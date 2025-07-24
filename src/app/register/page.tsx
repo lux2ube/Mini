@@ -1,25 +1,16 @@
 
-
 "use client";
 
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { auth, db } from '@/lib/firebase/config';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timestamp, getDoc } from "firebase/firestore"; 
 import { Loader2, User, Mail, Lock, KeyRound } from 'lucide-react';
-import { generateReferralCode } from '@/lib/referral';
-import { logUserActivity, awardPoints } from '../admin/actions';
-import { getClientSessionInfo } from '@/lib/device-info';
+import { handleRegisterUser } from '../actions';
 
 export default function RegisterPage() {
   const [name, setName] = useState('');
@@ -49,85 +40,22 @@ export default function RegisterPage() {
     }
     setIsLoading(true);
 
-    try {
-      // Step 1: Create user in Firebase Auth.
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      
-      const clientInfo = await getClientSessionInfo();
-      const finalReferralCode = (referralCode || referralCodeFromUrl || '').trim();
-      
-      await runTransaction(db, async (transaction) => {
-        let referrerProfile: { uid: string, data: any } | null = null;
-      
-        if (finalReferralCode) {
-            const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode));
-            const referrerSnapshot = await getDocs(referrerQuery); // Use getDocs within transaction scope
-            if (!referrerSnapshot.empty) {
-                const doc = referrerSnapshot.docs[0];
-                referrerProfile = { uid: doc.id, data: doc.data() };
-            } else {
-                console.warn("Referral code not found:", finalReferralCode);
-            }
-        }
+    const result = await handleRegisterUser({
+        name,
+        email,
+        password,
+        referralCode: referralCode || referralCodeFromUrl || undefined,
+    });
 
-        const counterRef = doc(db, 'counters', 'userCounter');
-        const counterSnap = await transaction.get(counterRef);
-        const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
-        const newClientId = lastId + 1;
-
-        const newUserDocRef = doc(db, "users", user.uid);
-        const newReferralCode = generateReferralCode(name);
-        
-        const newUserProfile = { 
-            uid: user.uid,
-            name, 
-            email, 
-            role: "user",
-            clientId: newClientId,
-            createdAt: Timestamp.now(),
-            country: clientInfo.geoInfo.country || null,
-            referralCode: newReferralCode,
-            referredBy: referrerProfile ? referrerProfile.uid : null,
-            referrals: [],
-            points: 0,
-            tier: 'New',
-            monthlyPoints: 0,
-        };
-        transaction.set(newUserDocRef, newUserProfile);
-        
-        if (referrerProfile) {
-          const referrerDocRef = doc(db, "users", referrerProfile.uid);
-          const currentReferrals = referrerProfile.data.referrals || [];
-          
-          transaction.update(referrerDocRef, {
-            referrals: [...currentReferrals, user.uid],
-          });
-          
-          // Award points to the referrer for the new signup
-          await awardPoints(transaction, referrerProfile.uid, 'referral_signup');
-        }
-        
-        transaction.set(counterRef, { lastId: newClientId }, { merge: true });
-      });
-      
-      await logUserActivity(user.uid, 'signup', clientInfo, { method: 'email', referralCode: finalReferralCode || null });
-
-      window.dispatchEvent(new CustomEvent('refetchUser'));
-
-      toast({ type: "success", title: "نجاح", description: "تم إنشاء الحساب بنجاح. جارٍ إعادة التوجيه..." });
-      router.push('/dashboard');
-
-    } catch (error: any) {
-      console.error("Registration Error: ", error);
-      if (error.code === 'auth/email-already-in-use') {
-        toast({ variant: 'destructive', title: "فشل التسجيل", description: "هذا البريد الإلكتروني مستخدم بالفعل. يرجى تسجيل الدخول." });
-      } else {
-        toast({ variant: 'destructive', title: "خطأ", description: "حدث خطأ غير متوقع." });
-      }
-    } finally {
-      setIsLoading(false);
+    if (result.success) {
+        window.dispatchEvent(new CustomEvent('refetchUser'));
+        toast({ type: "success", title: "نجاح", description: "تم إنشاء الحساب بنجاح. جارٍ إعادة التوجيه..." });
+        router.push('/dashboard');
+    } else {
+        toast({ variant: 'destructive', title: "فشل التسجيل", description: result.error });
     }
+
+    setIsLoading(false);
   };
 
   return (

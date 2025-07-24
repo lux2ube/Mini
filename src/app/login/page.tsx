@@ -17,11 +17,11 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db, googleProvider, appleProvider } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, signInWithPopup, UserCredential } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp, runTransaction } from "firebase/firestore";
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { generateReferralCode } from '@/lib/referral';
-import { logUserActivity } from '../admin/actions';
+import { logUserActivity, getLoyaltyTiers, awardPoints } from '../admin/actions';
 import { getClientSessionInfo } from '@/lib/device-info';
 
 const GoogleIcon = () => (
@@ -46,25 +46,43 @@ export default function LoginPage() {
     const clientInfo = await getClientSessionInfo();
     const userDocRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userDocRef);
-    const isNewUser = !userDoc.exists();
 
-    // If user signs in via social and doesn't exist, create them
-    if (isNewUser) {
-        const newUserProfile = { 
-            uid: user.uid,
-            name: user.displayName || "مستخدم جديد", 
-            email: user.email!, 
-            role: "user" as const,
-            createdAt: Timestamp.now(),
-            referralCode: generateReferralCode(user.displayName || "user"),
-            referredBy: null,
-            referrals: [],
-            points: 0,
-            tier: 'Bronze' as const,
-        };
-        await setDoc(userDocRef, newUserProfile);
-         // Log activity
-        await logUserActivity(user.uid, 'signup', clientInfo, { method: userCredential.providerId || 'social' });
+    // If user signs in but their Firestore doc doesn't exist, create it.
+    // This FIXES the issue for previously failed registrations.
+    if (!userDoc.exists()) {
+        console.log(`User ${user.uid} authenticated but has no profile. Creating one now.`);
+        
+        await runTransaction(db, async (transaction) => {
+            const counterRef = doc(db, 'counters', 'userCounter');
+            const counterSnap = await transaction.get(counterRef);
+            const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
+            const newClientId = lastId + 1;
+            
+            const newUserProfile = { 
+                uid: user.uid,
+                name: user.displayName || "مستخدم جديد", 
+                email: user.email!, 
+                role: "user" as const,
+                clientId: newClientId,
+                createdAt: Timestamp.now(),
+                country: clientInfo.geoInfo.country || null,
+                referralCode: generateReferralCode(user.displayName || "user"),
+                referredBy: null,
+                referrals: [],
+                points: 0,
+                tier: 'New' as const,
+                monthlyPoints: 0,
+            };
+            transaction.set(userDocRef, newUserProfile);
+            transaction.set(counterRef, { lastId: newClientId }, { merge: true });
+
+            // Award signup points to this newly created user.
+            const loyaltyTiers = await getLoyaltyTiers();
+            const userTier = loyaltyTiers.find(t => t.name === 'New')!;
+            await awardPoints(transaction, user.uid, 'user_signup_pts', userTier);
+        });
+
+        await logUserActivity(user.uid, 'signup', clientInfo, { method: userCredential.providerId || 'social_fix' });
     } else {
         await logUserActivity(user.uid, 'login', clientInfo, { method: userCredential.providerId || 'email' });
     }
