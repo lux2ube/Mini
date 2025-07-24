@@ -9,7 +9,7 @@ import { auth, db } from "@/lib/firebase/config";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timestamp, getDoc } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
-import { logUserActivity, awardPoints, getLoyaltyTiers } from "./admin/actions";
+import { logUserActivity, awardPoints } from "./admin/actions";
 import { getClientSessionInfo } from "@/lib/device-info";
 
 
@@ -54,41 +54,28 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
 export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
     const { name, email, password, referralCode } = formData;
     try {
-        // Step 1: Create user in Firebase Auth first. This is outside the transaction.
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const clientInfo = await getClientSessionInfo();
-        const finalReferralCode = (referralCode || '').trim();
 
-        // Step 2: Fetch loyalty tiers BEFORE the transaction.
-        const loyaltyTiers = await getLoyaltyTiers();
-
-        // Step 3: Run all Firestore writes in a single atomic transaction.
         await runTransaction(db, async (transaction) => {
-            let referrerProfile: { uid: string, data: any } | null = null;
-            let referrerTier = null;
-
-            // Find referrer if a code was provided
-            if (finalReferralCode) {
-                const referrerQuery = query(collection(db, "users"), where("referralCode", "==", finalReferralCode));
-                const referrerSnapshot = await transaction.get(referrerQuery);
-                if (!referrerSnapshot.empty) {
-                    const doc = referrerSnapshot.docs[0];
-                    referrerProfile = { uid: doc.id, data: doc.data() };
-                    referrerTier = loyaltyTiers.find(t => t.name === referrerProfile?.data.tier) || loyaltyTiers[0];
-                } else {
-                    console.warn("Referral code not found:", finalReferralCode);
-                }
-            }
-
-            // Get the next client ID
             const counterRef = doc(db, 'counters', 'userCounter');
             const counterSnap = await transaction.get(counterRef);
             const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
             const newClientId = lastId + 1;
 
-            // Prepare the new user's profile
-            const newUserDocRef = doc(db, "users", user.uid);
+            let referrerProfile = null;
+            if (referralCode) {
+                const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCode));
+                const referrerSnapshot = await transaction.get(referrerQuery);
+                if (!referrerSnapshot.empty) {
+                    referrerProfile = {
+                        id: referrerSnapshot.docs[0].id,
+                        ...referrerSnapshot.docs[0].data(),
+                    };
+                }
+            }
+
             const newUserProfileData = {
                 uid: user.uid,
                 name,
@@ -98,40 +85,33 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 createdAt: Timestamp.now(),
                 country: clientInfo.geoInfo.country || null,
                 referralCode: generateReferralCode(name),
-                referredBy: referrerProfile ? referrerProfile.uid : null,
+                referredBy: referrerProfile ? referrerProfile.id : null,
                 referrals: [],
                 points: 0,
                 tier: 'New',
                 monthlyPoints: 0,
             };
-            
-            // --- Execute all writes ---
-            
-            // 1. Create the new user's document.
+
+            const newUserDocRef = doc(db, "users", user.uid);
             transaction.set(newUserDocRef, newUserProfileData);
-
-            // 2. Award signup points to the new user.
-            const userTier = loyaltyTiers.find(t => t.name === 'New')!;
-            await awardPoints(transaction, user.uid, 'user_signup_pts', userTier);
-
-            // 3. Update the referrer if they exist.
-            if (referrerProfile && referrerTier) {
-                const referrerDocRef = doc(db, "users", referrerProfile.uid);
-                const currentReferrals = referrerProfile.data.referrals || [];
+            
+            // Award signup points to the new user
+            await awardPoints(transaction, user.uid, 'user_signup_pts');
+            
+            if (referrerProfile) {
+                const referrerDocRef = doc(db, "users", referrerProfile.id);
+                const currentReferrals = referrerProfile.referrals || [];
                 transaction.update(referrerDocRef, {
                     referrals: [...currentReferrals, user.uid],
                 });
-                // Award points to the referrer for the new signup.
-                await awardPoints(transaction, referrerProfile.uid, 'referral_signup', referrerTier);
+                await awardPoints(transaction, referrerProfile.id, 'referral_signup');
             }
 
-            // 4. Update the client ID counter.
             transaction.set(counterRef, { lastId: newClientId }, { merge: true });
         });
 
-        // Step 4: Log the successful signup activity.
-        await logUserActivity(user.uid, 'signup', clientInfo, { method: 'email', referralCode: finalReferralCode || null });
-
+        await logUserActivity(user.uid, 'signup', clientInfo, { method: 'email', referralCode: referralCode || null });
+        
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
