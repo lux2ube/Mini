@@ -7,11 +7,8 @@ import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 import { auth, db } from "@/lib/firebase/config";
 import { createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
-import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timestamp, getDoc } from "firebase/firestore";
+import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
-import { awardPoints, logUserActivity } from "./admin/actions";
-import { getClientSessionInfo } from "@/lib/device-info";
-
 
 // Hardcoded data based on https://github.com/tcb4dev/cashback1
 const projectData = {
@@ -51,86 +48,38 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
 }
 
 
-export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
-    const { name, email, password, referralCode } = formData;
+export async function handleRegisterUser(formData: { name: string, email: string, password: string }) {
+    const { name, email, password } = formData;
     let userCredential: UserCredential | undefined;
 
     try {
-        // Step 1: Create the user in Firebase Auth. This is outside the transaction.
+        // Step 1: Create the user in Firebase Auth.
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-        const clientInfo = await getClientSessionInfo();
 
-        // Step 2: Run all database operations in a single atomic transaction
-        await runTransaction(db, async (transaction) => {
-            let referrerProfile = null;
-            let referrerRef = null;
+        // Step 2: Create the user's profile in Firestore.
+        // This is a minimal profile. All other fields can be added later.
+        const newUserProfileData = {
+            uid: user.uid,
+            name,
+            email,
+            role: "user",
+            createdAt: Timestamp.now(),
+            points: 0,
+            tier: 'New',
+            monthlyPoints: 0,
+            referrals: [],
+            referralCode: generateReferralCode(name),
+            referredBy: null,
+        };
 
-            // Find referrer if code is provided
-            if (referralCode) {
-                const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCode));
-                const referrerSnapshot = await transaction.get(referrerQuery);
-                if (!referrerSnapshot.empty) {
-                    referrerRef = referrerSnapshot.docs[0].ref;
-                    referrerProfile = {
-                        id: referrerSnapshot.docs[0].id,
-                        ...referrerSnapshot.docs[0].data(),
-                    };
-                }
-            }
-
-            // Get the latest client ID
-            const counterRef = doc(db, 'counters', 'userCounter');
-            const counterSnap = await transaction.get(counterRef);
-            const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
-            const newClientId = lastId + 1;
-
-            // Prepare the new user's profile data
-            const newUserProfileData = {
-                uid: user.uid,
-                name,
-                email,
-                role: "user",
-                clientId: newClientId,
-                createdAt: Timestamp.now(),
-                country: clientInfo.geoInfo.country || null,
-                referralCode: generateReferralCode(name),
-                referredBy: referrerProfile ? referrerProfile.id : null,
-                referrals: [],
-                points: 0,
-                tier: 'New',
-                monthlyPoints: 0,
-            };
-
-            // Stage the creation of the new user's document
-            const newUserDocRef = doc(db, "users", user.uid);
-            transaction.set(newUserDocRef, newUserProfileData);
-
-            // Stage awarding points to the new user for signing up
-            // This is now safe because the user document creation is part of the transaction
-            await awardPoints(transaction, user.uid, 'user_signup_pts');
-            
-            // If there's a referrer, stage updates for them
-            if (referrerProfile && referrerRef) {
-                const currentReferrals = referrerProfile.referrals || [];
-                transaction.update(referrerRef, {
-                    referrals: [...currentReferrals, user.uid],
-                });
-                // Award points to the referrer
-                await awardPoints(transaction, referrerProfile.id, 'referral_signup');
-            }
-
-            // Stage the update for the client ID counter
-            transaction.set(counterRef, { lastId: newClientId }, { merge: true });
-        });
-
-        // Step 3: Log the activity after the transaction is successful
-        await logUserActivity(user.uid, 'signup', clientInfo, { method: 'email', referralCode: referralCode || null });
+        await setDoc(doc(db, "users", user.uid), newUserProfileData);
         
+        // Step 3: Success.
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
-        // If any step fails, especially the transaction, this block will execute.
+        // If any step fails, especially the database write, this block will execute.
         // We should delete the auth user to allow them to try again.
         if (userCredential) {
             await userCredential.user.delete();
