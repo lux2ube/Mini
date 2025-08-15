@@ -3,7 +3,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     LayoutGrid,
     Users,
@@ -32,6 +32,8 @@ import { AuthProvider } from "@/hooks/useAuthContext";
 import { AdminGuard } from "@/components/shared/AdminGuard";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { handleLogout } from "../actions";
 
 const navLinks = [
     { href: "/admin/dashboard", icon: LayoutGrid, label: "لوحة التحكم" },
@@ -102,19 +104,33 @@ function SidebarHeader() {
 }
 
 function UserInfoFooter({ user }: { user: any }) {
+    const router = useRouter();
+    const { toast } = useToast();
+    
+    const onLogout = async () => {
+        const { success, error } = await handleLogout();
+        if (success) {
+            toast({ title: "تم تسجيل الخروج", description: "لقد قمت بتسجيل الخروج بنجاح."});
+            router.push('/login');
+        } else {
+            toast({ variant: 'destructive', title: "خطأ", description: error });
+        }
+    };
+    
     return (
         <div className="mt-auto p-4 border-t space-y-2">
             <div className="text-sm">
                 <p className="font-semibold">{user?.profile?.name || 'مشرف'}</p>
                 <p className="text-muted-foreground">{user?.email}</p>
             </div>
-             <Link
-                href="/"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
+             <Button
+                variant="ghost"
+                onClick={onLogout}
+                className="w-full justify-start flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
             >
                 <LogOut className="h-4 w-4" />
                 تسجيل الخروج
-            </Link>
+            </Button>
         </div>
     )
 }

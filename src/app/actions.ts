@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { generateProjectSummary } from "@/ai/flows/generate-project-summary";
@@ -6,9 +7,12 @@ import type { GenerateProjectSummaryOutput } from "@/ai/flows/generate-project-s
 import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 import { auth, db } from "@/lib/firebase/config";
-import { createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
 import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
+import { logUserActivity } from "./admin/actions";
+import { getClientSessionInfo } from "@/lib/device-info";
+
 
 // Hardcoded data based on https://github.com/tcb4dev/cashback1
 const projectData = {
@@ -47,18 +51,15 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
     }
 }
 
-
 export async function handleRegisterUser(formData: { name: string, email: string, password: string }) {
     const { name, email, password } = formData;
-    let userCredential: UserCredential | undefined;
 
     try {
-        // Step 1: Create the user in Firebase Auth.
-        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Step 2: Create the user's profile in Firestore.
-        // This is a minimal profile. All other fields can be added later.
+        const clientInfo = await getClientSessionInfo();
+
         const newUserProfileData = {
             uid: user.uid,
             name,
@@ -71,27 +72,29 @@ export async function handleRegisterUser(formData: { name: string, email: string
             referrals: [],
             referralCode: generateReferralCode(name),
             referredBy: null,
+            country: clientInfo.geoInfo.country,
         };
 
         await setDoc(doc(db, "users", user.uid), newUserProfileData);
+        await logUserActivity(user.uid, 'signup', clientInfo, { method: 'email' });
         
-        // Step 3: Success.
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
-        // If any step fails, especially the database write, this block will execute.
-        // We should delete the auth user to allow them to try again.
-        if (userCredential) {
-            await userCredential.user.delete();
-        }
-        
         console.error("Registration Error: ", error);
-        
-        // Provide a more specific error message if available
         if (error.code === 'auth/email-already-in-use') {
             return { success: false, error: "This email is already in use. Please log in." };
         }
-        
-        return { success: false, error: "An unexpected error occurred during registration. Please try again." };
+        return { success: false, error: "An unexpected error occurred during registration." };
+    }
+}
+
+export async function handleLogout() {
+    try {
+        await signOut(auth);
+        return { success: true };
+    } catch (error) {
+        console.error("Logout Error: ", error);
+        return { success: false, error: "Failed to log out." };
     }
 }

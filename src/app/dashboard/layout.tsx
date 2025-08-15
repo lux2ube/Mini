@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
     CircleUser,
     Settings,
@@ -36,7 +37,7 @@ import { AuthProvider, useAuthContext } from "@/hooks/useAuthContext";
 import { AuthGuard } from "@/components/shared/AuthGuard";
 import { useEffect, useState } from "react";
 import type { Notification } from "@/types";
-import { getNotificationsForUser, markNotificationsAsRead } from "../admin/actions";
+import { getNotificationsForUser, markNotificationsAsRead, handleLogout } from "../admin/actions";
 import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 
 function NotificationBell() {
@@ -144,6 +146,8 @@ const supportLinks = [
 function SettingsSidebar() {
     const { user } = useAuthContext();
     const pathname = usePathname();
+    const router = useRouter();
+    const { toast } = useToast();
     const [theme, setTheme] = useState('light');
 
     useEffect(() => {
@@ -159,6 +163,16 @@ function SettingsSidebar() {
             document.documentElement.classList.remove('dark');
         }
     }
+    
+    const onLogout = async () => {
+        const { success, error } = await handleLogout();
+        if (success) {
+            toast({ title: "تم تسجيل الخروج", description: "لقد قمت بتسجيل الخروج بنجاح."});
+            router.push('/login');
+        } else {
+            toast({ variant: 'destructive', title: "خطأ", description: error });
+        }
+    };
 
     return (
         <div className="flex flex-col h-full">
@@ -249,10 +263,10 @@ function SettingsSidebar() {
 
             </div>
              <div className="mt-auto p-4 border-t">
-                <Link href="/" className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10">
+                <Button variant="ghost" onClick={onLogout} className="w-full justify-start flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10">
                     <LogOut className="h-5 w-5" />
                     <span className="text-sm font-medium">تسجيل الخروج</span>
-                </Link>
+                </Button>
             </div>
         </div>
     )

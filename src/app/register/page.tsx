@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from 'next/link';
@@ -40,9 +41,8 @@ export default function RegisterPage() {
     });
 
     if (result.success) {
-        window.dispatchEvent(new CustomEvent('refetchUser'));
-        toast({ type: "success", title: "نجاح", description: "تم إنشاء الحساب بنجاح. جارٍ إعادة التوجيه..." });
-        router.push('/dashboard');
+        toast({ type: "success", title: "نجاح", description: "تم إنشاء الحساب بنجاح. الرجاء تسجيل الدخول." });
+        router.push('/login');
     } else {
         toast({ variant: 'destructive', title: "فشل التسجيل", description: result.error });
     }
