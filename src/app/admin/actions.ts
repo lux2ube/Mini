@@ -5,6 +5,7 @@ import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction } from 'firebase/firestore';
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse } from '@/types';
 import { headers } from 'next/headers';
+import { POINTS_RULE_ACTIONS } from '@/types';
 
 // Activity Logging
 export async function logUserActivity(
@@ -210,15 +211,24 @@ export async function awardPoints(
     action: PointsRuleAction,
     amountValue?: number // e.g., cashback amount or order price
 ) {
-    const rulesQuery = query(collection(db, 'pointsRules'), where('action', '==', action));
-    const rulesSnap = await transaction.get(rulesQuery);
+    // This is a simplified placeholder. A real implementation would fetch rules from Firestore.
+    const rules: Record<PointsRuleAction, { points: number, isDollarBased: boolean, description: string }> = {
+        'user_signup_pts': { points: 10, isDollarBased: false, description: 'For signing up.'},
+        'approve_account': { points: 50, isDollarBased: false, description: 'For linking a new trading account.' },
+        'cashback_earned': { points: 1, isDollarBased: true, description: 'Earn 1 point for every $1 of cashback.' },
+        'store_purchase': { points: 1, isDollarBased: true, description: 'Earn 1 point for every $1 spent in the store.' },
+        'referral_signup': { points: 25, isDollarBased: false, description: 'For referring a new user.' },
+        'referral_becomes_active': { points: 100, isDollarBased: false, description: 'When your referral links their first account.' },
+        'referral_becomes_trader': { points: 250, isDollarBased: false, description: 'When your referral gets first cashback.' },
+        'referral_commission': { points: 0.1, isDollarBased: true, description: 'Earn 10% of the points your referral earns from cashback.' } // Example: 10% as 0.1
+    };
 
-    if (rulesSnap.empty) {
+    const rule = rules[action];
+    if (!rule) {
         console.warn(`No points rule found for action: ${action}`);
         return;
     }
 
-    const rule = rulesSnap.docs[0].data() as PointsRule;
     let pointsToAward = rule.points;
 
     if (rule.isDollarBased) {
@@ -1187,7 +1197,3 @@ export async function submitFeedbackResponse(
         return { success: false, message: "فشل إرسال الملاحظات." };
     }
 }
-
-    
-
-    

@@ -45,11 +45,11 @@ export default function LoginPage() {
     const user = userCredential.user;
     const clientInfo = await getClientSessionInfo();
     const userDocRef = doc(db, "users", user.uid);
-    const userDoc = await getDoc(userDocRef);
+    let userDoc = await getDoc(userDocRef);
 
-    // If user signs in but their Firestore doc doesn't exist, create it.
+    // Self-healing: If user exists in Auth but not Firestore, create their profile now.
     if (!userDoc.exists()) {
-        console.log(`User ${user.uid} authenticated but has no profile. Creating one now.`);
+        console.warn(`User ${user.uid} authenticated but has no profile. Creating one now.`);
         
         await runTransaction(db, async (transaction) => {
             const counterRef = doc(db, 'counters', 'userCounter');
@@ -75,8 +75,10 @@ export default function LoginPage() {
             transaction.set(userDocRef, newUserProfile);
             transaction.set(counterRef, { lastId: newClientId }, { merge: true });
         });
-
-        await logUserActivity(user.uid, 'signup', clientInfo, { method: userCredential.providerId || 'social_fix' });
+        
+        // Refetch the document we just created
+        userDoc = await getDoc(userDocRef);
+        await logUserActivity(user.uid, 'signup', clientInfo, { method: userCredential.providerId || 'social_login_fix' });
     } else {
         await logUserActivity(user.uid, 'login', clientInfo, { method: userCredential.providerId || 'email' });
     }
@@ -89,9 +91,7 @@ export default function LoginPage() {
         description: "Logged in successfully.",
     });
 
-    // We must fetch the doc again to get the role, especially if it was just created.
-    const finalUserDoc = await getDoc(userDocRef);
-    if (finalUserDoc.exists() && finalUserDoc.data()?.role === 'admin') {
+    if (userDoc.exists() && userDoc.data()?.role === 'admin') {
       router.push('/admin/dashboard');
     } else {
       router.push('/dashboard');

@@ -9,7 +9,7 @@ import { auth, db } from "@/lib/firebase/config";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timestamp, getDoc } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
-import { logUserActivity, awardPoints } from "./admin/actions";
+import { awardPoints, logUserActivity } from "./admin/actions";
 import { getClientSessionInfo } from "@/lib/device-info";
 
 
@@ -53,22 +53,24 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
 
 export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
     const { name, email, password, referralCode } = formData;
+    let userCredential;
+
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Step 1: Create the user in Firebase Auth
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const clientInfo = await getClientSessionInfo();
 
+        // Step 2: Run all database operations in a single atomic transaction
         await runTransaction(db, async (transaction) => {
-            const counterRef = doc(db, 'counters', 'userCounter');
-            const counterSnap = await transaction.get(counterRef);
-            const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
-            const newClientId = lastId + 1;
-
+            // Get the referrer's profile IF a referral code was provided
             let referrerProfile = null;
+            let referrerRef = null;
             if (referralCode) {
                 const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCode));
                 const referrerSnapshot = await transaction.get(referrerQuery);
                 if (!referrerSnapshot.empty) {
+                    referrerRef = referrerSnapshot.docs[0].ref;
                     referrerProfile = {
                         id: referrerSnapshot.docs[0].id,
                         ...referrerSnapshot.docs[0].data(),
@@ -76,6 +78,13 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 }
             }
 
+            // Get the latest client ID
+            const counterRef = doc(db, 'counters', 'userCounter');
+            const counterSnap = await transaction.get(counterRef);
+            const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
+            const newClientId = lastId + 1;
+
+            // Prepare the new user's profile data
             const newUserProfileData = {
                 uid: user.uid,
                 name,
@@ -92,34 +101,45 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 monthlyPoints: 0,
             };
 
+            // Stage the creation of the new user's document
             const newUserDocRef = doc(db, "users", user.uid);
             transaction.set(newUserDocRef, newUserProfileData);
-            
-            // Award signup points to the new user
+
+            // Stage awarding points to the new user for signing up
             await awardPoints(transaction, user.uid, 'user_signup_pts');
             
-            if (referrerProfile) {
-                const referrerDocRef = doc(db, "users", referrerProfile.id);
+            // If there's a referrer, stage updates for them
+            if (referrerProfile && referrerRef) {
                 const currentReferrals = referrerProfile.referrals || [];
-                transaction.update(referrerDocRef, {
+                transaction.update(referrerRef, {
                     referrals: [...currentReferrals, user.uid],
                 });
                 await awardPoints(transaction, referrerProfile.id, 'referral_signup');
             }
 
+            // Stage the update for the client ID counter
             transaction.set(counterRef, { lastId: newClientId }, { merge: true });
         });
 
+        // Step 3: Log the activity after the transaction is successful
         await logUserActivity(user.uid, 'signup', clientInfo, { method: 'email', referralCode: referralCode || null });
         
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
+        // If any step fails, especially the transaction, this block will execute.
+        // We should delete the auth user to allow them to try again.
+        if (userCredential) {
+            await userCredential.user.delete();
+        }
+        
         console.error("Registration Error: ", error);
-        let errorMessage = "An unexpected error occurred during registration.";
+        
+        let errorMessage = "An unexpected error occurred during registration. Please try again.";
         if (error.code === 'auth/email-already-in-use') {
             errorMessage = "This email is already in use. Please log in.";
         }
+        
         return { success: false, error: errorMessage };
     }
 }
