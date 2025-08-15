@@ -38,13 +38,17 @@ export default function RegisterPage() {
       toast({ variant: "destructive", title: "خطأ", description: "كلمات المرور غير متطابقة." });
       return;
     }
+    if (password.length < 6) {
+      toast({ variant: "destructive", title: "خطأ", description: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل." });
+      return;
+    }
     setIsLoading(true);
 
     const result = await handleRegisterUser({
         name,
         email,
         password,
-        referralCode: referralCode || referralCodeFromUrl || undefined,
+        referralCode: referralCode || undefined,
     });
 
     if (result.success) {

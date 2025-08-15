@@ -212,6 +212,7 @@ export async function awardPoints(
     amountValue?: number // e.g., cashback amount or order price
 ) {
     // This is a simplified placeholder. A real implementation would fetch rules from Firestore.
+    // In a production app, fetch these rules ONCE outside the transaction if they are the same for all users.
     const rules: Record<PointsRuleAction, { points: number, isDollarBased: boolean, description: string }> = {
         'user_signup_pts': { points: 10, isDollarBased: false, description: 'For signing up.'},
         'approve_account': { points: 50, isDollarBased: false, description: 'For linking a new trading account.' },

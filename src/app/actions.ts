@@ -6,7 +6,7 @@ import type { GenerateProjectSummaryOutput } from "@/ai/flows/generate-project-s
 import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 import { auth, db } from "@/lib/firebase/config";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { doc, setDoc, runTransaction, query, collection, where, getDocs, Timestamp, getDoc } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
 import { awardPoints, logUserActivity } from "./admin/actions";
@@ -53,19 +53,20 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
 
 export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
     const { name, email, password, referralCode } = formData;
-    let userCredential;
+    let userCredential: UserCredential | undefined;
 
     try {
-        // Step 1: Create the user in Firebase Auth
+        // Step 1: Create the user in Firebase Auth. This is outside the transaction.
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         const clientInfo = await getClientSessionInfo();
 
         // Step 2: Run all database operations in a single atomic transaction
         await runTransaction(db, async (transaction) => {
-            // Get the referrer's profile IF a referral code was provided
             let referrerProfile = null;
             let referrerRef = null;
+
+            // Find referrer if code is provided
             if (referralCode) {
                 const referrerQuery = query(collection(db, "users"), where("referralCode", "==", referralCode));
                 const referrerSnapshot = await transaction.get(referrerQuery);
@@ -106,6 +107,7 @@ export async function handleRegisterUser(formData: { name: string, email: string
             transaction.set(newUserDocRef, newUserProfileData);
 
             // Stage awarding points to the new user for signing up
+            // This is now safe because the user document creation is part of the transaction
             await awardPoints(transaction, user.uid, 'user_signup_pts');
             
             // If there's a referrer, stage updates for them
@@ -114,6 +116,7 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 transaction.update(referrerRef, {
                     referrals: [...currentReferrals, user.uid],
                 });
+                // Award points to the referrer
                 await awardPoints(transaction, referrerProfile.id, 'referral_signup');
             }
 
@@ -135,11 +138,11 @@ export async function handleRegisterUser(formData: { name: string, email: string
         
         console.error("Registration Error: ", error);
         
-        let errorMessage = "An unexpected error occurred during registration. Please try again.";
+        // Provide a more specific error message if available
         if (error.code === 'auth/email-already-in-use') {
-            errorMessage = "This email is already in use. Please log in.";
+            return { success: false, error: "This email is already in use. Please log in." };
         }
         
-        return { success: false, error: errorMessage };
+        return { success: false, error: "An unexpected error occurred during registration. Please try again." };
     }
 }
