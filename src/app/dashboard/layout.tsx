@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -37,7 +36,8 @@ import { AuthProvider, useAuthContext } from "@/hooks/useAuthContext";
 import { AuthGuard } from "@/components/shared/AuthGuard";
 import { useEffect, useState } from "react";
 import type { Notification } from "@/types";
-import { getNotificationsForUser, markNotificationsAsRead, handleLogout } from "../admin/actions";
+import { getNotificationsForUser, markNotificationsAsRead } from "../admin/actions";
+import { handleLogout } from "../actions";
 import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
