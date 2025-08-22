@@ -50,7 +50,7 @@ export default function ProfilePage() {
     const handleProfileSubmit = async (values: ProfileFormValues) => {
         if (!user) return;
         setIsProfileSubmitting(true);
-        const result = await updateUser(user.uid, values);
+        const result = await updateUser(user.uid, { name: values.name });
         if (result.success) {
             toast({ type: "success", title: "نجاح", description: result.message });
             refetchUserData();

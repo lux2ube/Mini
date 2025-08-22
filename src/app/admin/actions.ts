@@ -214,45 +214,6 @@ export async function awardPoints(
 ) {
     // SYSTEM PAUSED: The loyalty program is temporarily disabled.
     return;
-    
-    /*
-    const rules: Record<PointsRuleAction, { points: number, isDollarBased: boolean, description: string }> = {
-        'user_signup_pts': { points: 10, isDollarBased: false, description: 'For signing up.'},
-        'approve_account': { points: 50, isDollarBased: false, description: 'For linking a new trading account.' },
-        'cashback_earned': { points: 1, isDollarBased: true, description: 'Earn 1 point for every $1 of cashback.' },
-        'store_purchase': { points: 1, isDollarBased: true, description: 'Earn 1 point for every $1 spent in the store.' },
-        'referral_signup': { points: 25, isDollarBased: false, description: 'For referring a new user.' },
-        'referral_becomes_active': { points: 100, isDollarBased: false, description: 'When your referral links their first account.' },
-        'referral_becomes_trader': { points: 250, isDollarBased: false, description: 'When your referral gets first cashback.' },
-        'referral_commission': { points: 0.1, isDollarBased: true, description: 'Earn 10% of the points your referral earns from cashback.' } // Example: 10% as 0.1
-    };
-
-    const rule = rules[action];
-    if (!rule) {
-        console.warn(`No points rule found for action: ${action}`);
-        return;
-    }
-
-    let pointsToAward = rule.points;
-
-    if (rule.isDollarBased) {
-        if (typeof amountValue !== 'number') {
-            console.warn(`Dollar-based rule '${action}' requires an amountValue.`);
-            return;
-        }
-        pointsToAward = Math.floor(amountValue * rule.points);
-    }
-
-    if (pointsToAward <= 0) return;
-
-    const userRef = doc(db, 'users', userId);
-    transaction.update(userRef, {
-        points: increment(pointsToAward),
-        monthlyPoints: increment(pointsToAward)
-    });
-
-    await createNotification(transaction, userId, `لقد ربحت ${pointsToAward} نقطة! ${rule.description}`, 'loyalty', '/dashboard/loyalty');
-    */
 }
 
 
@@ -357,7 +318,7 @@ export async function getUsers(): Promise<UserProfile[]> {
   });
 }
 
-export async function updateUser(userId: string, data: { name: string, country: string }) {
+export async function updateUser(userId: string, data: { name: string, country?: string }) {
     try {
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, data);

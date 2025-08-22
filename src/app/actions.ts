@@ -8,7 +8,7 @@ import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 import { auth, db } from "@/lib/firebase/config";
 import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, setDoc, Timestamp, runTransaction, collection, query, where, getDocs, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, setDoc, Timestamp } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
 
 
@@ -49,87 +49,34 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
     }
 }
 
-export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
-    const { name, email, password, referralCode } = formData;
+export async function handleRegisterUser(formData: { name: string, email: string, password: string }) {
+    const { name, email, password } = formData;
 
     try {
-        // Step 1: Create the user in Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Step 2: Use a transaction to ensure all database operations succeed or fail together.
-        await runTransaction(db, async (transaction) => {
-            const usersRef = collection(db, "users");
-            const counterRef = doc(db, 'counters', 'userCounter');
-            
-            let referrerId: string | null = null;
-            let referrerRef = null;
-
-            // Step 2a: Validate referral code if provided
-            if (referralCode) {
-                const q = query(usersRef, where("referralCode", "==", referralCode.toUpperCase()));
-                const querySnapshot = await transaction.get(q);
-                
-                if (querySnapshot.empty) {
-                    throw new Error("Invalid referral code."); // This will abort the transaction
-                } else {
-                    const referrerDoc = querySnapshot.docs[0];
-                    referrerId = referrerDoc.id;
-                    referrerRef = referrerDoc.ref;
-                }
-            }
-
-            // Step 2b: Get the next client ID from the counter
-            const counterSnap = await transaction.get(counterRef);
-            const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
-            const newClientId = lastId + 1;
-            
-            // Step 2c: Create the new user's document
-            const newUserRef = doc(usersRef, user.uid);
-            transaction.set(newUserRef, {
-                uid: user.uid,
-                name,
-                email,
-                role: "user",
-                clientId: newClientId,
-                createdAt: Timestamp.now(),
-                referralCode: generateReferralCode(name),
-                referredBy: referrerId,
-                referrals: [],
-                points: 0,
-                tier: 'New',
-                monthlyPoints: 0,
-            });
-
-            // Step 2d: Update the counter
-            transaction.set(counterRef, { lastId: newClientId }, { merge: true });
-
-            // Step 2e: If there was a referrer, update their document
-            if (referrerRef) {
-                transaction.update(referrerRef, {
-                    referrals: arrayUnion(user.uid)
-                });
-            }
+        await setDoc(doc(db, "users", user.uid), {
+            uid: user.uid,
+            name,
+            email,
+            role: "user",
+            createdAt: Timestamp.now(),
+            referralCode: generateReferralCode(name),
+            referredBy: null,
+            referrals: [],
+            points: 0,
+            tier: 'New',
+            monthlyPoints: 0,
         });
         
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
         console.error("Registration Error: ", error);
-
-        // This will delete the user from Auth if the transaction fails
-        if (auth.currentUser && auth.currentUser.email === email) {
-            await auth.currentUser.delete();
-            console.log(`Cleaned up partially registered user: ${email}`);
-        }
-
         if (error.code === 'auth/email-already-in-use') {
             return { success: false, error: "This email is already in use. Please log in." };
         }
-        if (error.message === 'Invalid referral code.') {
-            return { success: false, error: 'The referral code you entered is not valid.' };
-        }
-        
         return { success: false, error: "An unexpected error occurred during registration." };
     }
 }
