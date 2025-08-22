@@ -55,7 +55,6 @@ export async function handleRegisterUser(formData: { name: string, email: string
     let referrerId: string | null = null;
     let referrerRef = null;
 
-    // Step 1: Validate referral code *before* creating a user or starting a transaction.
     if (referralCode) {
         const q = query(collection(db, 'users'), where('referralCode', '==', referralCode));
         const querySnapshot = await getDocs(q);
@@ -69,18 +68,21 @@ export async function handleRegisterUser(formData: { name: string, email: string
 
     let userCredential;
     try {
-        // Step 2: Create the user in Firebase Auth
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Step 3: Run database operations in a transaction
         await runTransaction(db, async (transaction) => {
-            // Create the new user's document
+            const counterRef = doc(db, 'counters', 'userCounter');
+            const counterSnap = await transaction.get(counterRef);
+            const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
+            const newClientId = lastId + 1;
+
             const newUserRef = doc(db, "users", user.uid);
             transaction.set(newUserRef, {
                 uid: user.uid,
                 name,
                 email,
+                clientId: newClientId,
                 role: "user",
                 createdAt: Timestamp.now(),
                 referralCode: generateReferralCode(name),
@@ -91,18 +93,18 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 monthlyPoints: 0,
             });
 
-            // If there was a valid referrer, update their document
             if (referrerRef) {
                 transaction.update(referrerRef, {
                     referrals: arrayUnion(user.uid)
                 });
             }
+            
+            transaction.set(counterRef, { lastId: newClientId }, { merge: true });
         });
 
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
-        // If any error occurs after user creation (e.g., transaction fails), clean up the auth user
         if (userCredential) {
             await deleteUser(userCredential.user);
         }
