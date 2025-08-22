@@ -22,7 +22,7 @@ import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
-import type { Broker } from "@/types";
+import type { Broker, UserProfile } from "@/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -47,7 +47,7 @@ const editUserSchema = z.object({
 type EditUserForm = z.infer<typeof editUserSchema>;
 
 
-function EditUserDialog({ userProfile, onSuccess }: { userProfile: UserDetails['userProfile'], onSuccess: () => void }) {
+function EditUserDialog({ userProfile, onSuccess }: { userProfile: UserProfile, onSuccess: () => void }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
@@ -315,7 +315,7 @@ export default function UserDetailPage() {
                            <InfoRow label="البريد الإلكتروني" value={userProfile.email} />
                            <InfoRow label="تاريخ الانضمام" value={userProfile.createdAt ? format(userProfile.createdAt, 'PP') : '-'} />
                            <InfoRow label="الدولة" value={userProfile.country || 'N/A'} />
-                           <InfoRow label="UID" value={userProfile.uid} />
+                           <InfoRow label="Auth UID" value={userProfile.uid} />
                         </CardContent>
                     </Card>
                      <Card>

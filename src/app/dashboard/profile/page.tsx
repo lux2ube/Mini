@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { Loader2, User, KeyRound, Copy, Star, Mail, ArrowLeft } from "lucide-react";
+import { Loader2, User, KeyRound, Copy, Star, Mail, ArrowLeft, Hash } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
     Card,
@@ -60,9 +60,9 @@ export default function ProfilePage() {
         setIsProfileSubmitting(false);
     };
     
-    const copyToClipboard = (text: string | undefined) => {
-        if (text) {
-            navigator.clipboard.writeText(text);
+    const copyToClipboard = (text: string | number | undefined) => {
+        if (text !== undefined) {
+            navigator.clipboard.writeText(String(text));
             toast({ title: 'تم النسخ!' });
         }
     }
@@ -143,17 +143,20 @@ export default function ProfilePage() {
                 </form>
             </Form>
 
-             {/* --- UID & Referral Code Card --- */}
+             {/* --- IDs Card --- */}
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base">معرفات الحساب</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div>
-                        <Label>معرف المستخدم (UID)</Label>
+                        <Label>معرف العميل (Client ID)</Label>
                         <div className="flex items-center gap-2">
-                            <Input readOnly value={profile.uid} className="font-mono text-xs" />
-                            <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(profile.uid)}>
+                            <div className="relative flex-grow">
+                                <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input readOnly value={profile.clientId} className="font-mono text-sm pl-10" />
+                            </div>
+                            <Button type="button" variant="outline" size="icon" onClick={() => copyToClipboard(profile.clientId)}>
                                 <Copy className="h-4 w-4" />
                             </Button>
                         </div>

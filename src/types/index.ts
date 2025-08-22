@@ -24,11 +24,11 @@ export interface BannerSettings {
  * Represents a user document in the 'users' collection.
  */
 export interface UserProfile {
-    uid: string;
+    uid: string; // Document ID, same as Firebase Auth UID
     email: string;
     name: string;
     role: 'user' | 'admin';
-    clientId?: number;
+    clientId: number; // Sequential, human-readable ID
     createdAt?: Date;
     country?: string; // ISO 3166-1 alpha-2 country code
     isVerified?: boolean;

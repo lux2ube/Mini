@@ -52,8 +52,7 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
 export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
     const { name, email, password, referralCode } = formData;
 
-    let referrerId: string | null = null;
-    let referrerRef = null;
+    let referrerData: { id: string; ref: any; } | null = null;
 
     if (referralCode) {
         const q = query(collection(db, 'users'), where('referralCode', '==', referralCode));
@@ -62,8 +61,7 @@ export async function handleRegisterUser(formData: { name: string, email: string
             return { success: false, error: "The referral code you entered is not valid." };
         }
         const referrerDoc = querySnapshot.docs[0];
-        referrerId = referrerDoc.id;
-        referrerRef = referrerDoc.ref;
+        referrerData = { id: referrerDoc.id, ref: referrerDoc.ref };
     }
 
     let userCredential;
@@ -79,22 +77,22 @@ export async function handleRegisterUser(formData: { name: string, email: string
 
             const newUserRef = doc(db, "users", user.uid);
             transaction.set(newUserRef, {
-                uid: user.uid,
+                // No 'uid' field here, it's the document ID
                 name,
                 email,
                 clientId: newClientId,
                 role: "user",
                 createdAt: Timestamp.now(),
                 referralCode: generateReferralCode(name),
-                referredBy: referrerId,
+                referredBy: referrerData ? referrerData.id : null,
                 referrals: [],
                 points: 0,
                 tier: 'New',
                 monthlyPoints: 0,
             });
 
-            if (referrerRef) {
-                transaction.update(referrerRef, {
+            if (referrerData) {
+                transaction.update(referrerData.ref, {
                     referrals: arrayUnion(user.uid)
                 });
             }

@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db, googleProvider, appleProvider } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, signInWithPopup, UserCredential } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp, runTransaction } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp, runTransaction, collection } from "firebase/firestore";
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { generateReferralCode } from '@/lib/referral';
@@ -58,7 +58,6 @@ export default function LoginPage() {
             const newClientId = lastId + 1;
             
             const newUserProfile = { 
-                uid: user.uid,
                 name: user.displayName || "New User", 
                 email: user.email!, 
                 role: "user" as const,
