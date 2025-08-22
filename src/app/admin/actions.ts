@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase/config';
@@ -342,33 +343,6 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 
             const message = `لقد تلقيت ${data.cashbackAmount.toFixed(2)}$ كاش باك للحساب ${data.accountNumber}.`;
             await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
-
-            await awardPoints(transaction, data.userId, 'cashback_earned', data.cashbackAmount);
-
-            const userRef = doc(db, 'users', data.userId);
-            const userSnap = await transaction.get(userRef);
-
-            if (userSnap.exists() && userSnap.data().referredBy) {
-                const referrerId = userSnap.data().referredBy;
-                await awardPoints(transaction, referrerId, 'referral_becomes_trader');
-
-                const referrerRef = doc(db, 'users', referrerId);
-                const referrerSnap = await transaction.get(referrerRef);
-                const tiers = await getLoyaltyTiers();
-
-                if (referrerSnap.exists()) {
-                    const referrerProfile = referrerSnap.data() as UserProfile;
-                    const referrerTier = tiers.find(t => t.name === referrerProfile.tier) || tiers[0];
-                    const commissionPercent = (referrerTier as any).partner_cashback_com;
-
-                    if (commissionPercent > 0) {
-                        const commissionAmount = data.cashbackAmount * (commissionPercent / 100);
-                        if (commissionAmount > 0) {
-                            await awardPoints(transaction, referrerId, 'referral_commission', commissionAmount);
-                        }
-                    }
-                }
-            }
         });
         return { success: true, message: 'تمت إضافة معاملة الكاش باك بنجاح.' };
     } catch (error) {
