@@ -16,7 +16,7 @@ export interface BannerSettings {
     // Script Banner Fields
     scriptCode?: string;
     // Targeting Fields
-    targetTiers?: ('New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond')[];
+    targetTiers?: ('New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond' | 'Ambassador')[];
     targetCountries?: string[]; // Array of ISO 3166-1 alpha-2 country codes
 }
 
@@ -128,18 +128,6 @@ export interface Broker {
     description: string;
     category: 'forex' | 'crypto' | 'other';
     rating: number; // A number from 1 to 5
-    details: {
-        cashbackType: string; // e.g., "Daily Forex Cashback"
-        minDeposit: string; // e.g., "$1"
-    };
-    cashbackRate: {
-        tradeType: string; // e.g., "Trade 1 lot"
-        amount: number; // e.g., 8
-    };
-    features: {
-        text: string;
-        available: boolean;
-    }[];
     instructions: {
         description: string;
         linkText: string;
@@ -357,6 +345,8 @@ export interface BlogPost {
 export interface LoyaltyTier {
   name: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond' | 'Ambassador';
   monthlyPointsRequired: number;
+  referralCommissionPercent: number;
+  storeDiscountPercent: number;
   // User Actions (Points)
   user_signup_pts: number;
   user_approval_pts: number;

@@ -9,6 +9,17 @@ import { headers } from 'next/headers';
 import { POINTS_RULE_ACTIONS } from '@/types';
 import { getClientSessionInfo } from '@/lib/device-info';
 
+const safeToDate = (timestamp: any): Date | undefined => {
+    if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
+    }
+    if (timestamp && typeof timestamp.toDate === 'function') {
+        return timestamp.toDate();
+    }
+    return undefined;
+};
+
+
 // Activity Logging
 export async function logUserActivity(
     userId: string, 
@@ -47,7 +58,7 @@ export async function getActivityLogs(): Promise<ActivityLog[]> {
         return {
             id: doc.id,
             ...data,
-            timestamp: (data.timestamp as Timestamp).toDate(),
+            timestamp: safeToDate(data.timestamp) || new Date(),
         } as ActivityLog
     });
 }
@@ -226,7 +237,7 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
     return {
       id: doc.id,
       ...data,
-      createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+      createdAt: safeToDate(data.createdAt) || new Date(),
     } as TradingAccount
   });
 }
@@ -252,13 +263,6 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
         } else {
             updateData.rejectionReason = "";
             await awardPoints(transaction, currentData.userId, 'approve_account');
-
-            const userRef = doc(db, 'users', currentData.userId);
-            const userSnap = await transaction.get(userRef);
-            if (userSnap.exists() && userSnap.data().referredBy) {
-                const referrerId = userSnap.data().referredBy;
-                await awardPoints(transaction, referrerId, 'referral_becomes_active');
-            }
         }
 
         transaction.update(accountRef, updateData);
@@ -280,7 +284,7 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
             where('broker', '==', brokerName),
             where('accountNumber', '==', accountNumber)
         );
-        const querySnapshot = await getDocs(q); // Should be transaction.get(q) in a real scenario
+        const querySnapshot = await getDocs(q); // This is outside a transaction in the calling function, but should be fine here.
 
         if (!querySnapshot.empty) {
             throw new Error('رقم حساب التداول هذا مرتبط بالفعل لهذا الوسيط.');
@@ -314,7 +318,7 @@ export async function getUsers(): Promise<UserProfile[]> {
     return {
         uid: doc.id,
         ...data,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+        createdAt: safeToDate(data.createdAt) || new Date(),
     } as UserProfile;
   });
 }
@@ -362,7 +366,7 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
     const allWithdrawals = allWithdrawalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Withdrawal }));
 
     const withdrawals = withdrawalsSnapshot.docs.map(doc => {
-        const data = doc.data() as Withdrawal;
+        const data = doc.data();
 
         // Find the most recent *completed* withdrawal for this user and payment method type,
         // excluding the current withdrawal itself.
@@ -376,13 +380,13 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
         return {
             id: doc.id,
             ...data,
-            requestedAt: (data.requestedAt as Timestamp).toDate(),
-            completedAt: data.completedAt instanceof Timestamp ? data.completedAt.toDate() : undefined,
+            requestedAt: safeToDate(data.requestedAt) || new Date(),
+            completedAt: safeToDate(data.completedAt),
             previousWithdrawalDetails: previousWithdrawal?.withdrawalDetails ?? null,
         } as Withdrawal;
     });
 
-    withdrawals.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+    withdrawals.sort((a, b) => (b.requestedAt?.getTime() || 0) - (a.requestedAt?.getTime() || 0));
     return withdrawals;
 }
 
@@ -449,7 +453,7 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
         return {
             id: doc.id,
             ...data,
-            createdAt: (data.createdAt as Timestamp).toDate(),
+            createdAt: safeToDate(data.createdAt) || new Date(),
         } as Notification;
     });
 
@@ -475,7 +479,7 @@ export async function getAdminNotifications(): Promise<AdminNotification[]> {
         return {
             id: doc.id,
             ...data,
-            createdAt: (data.createdAt as Timestamp).toDate(),
+            createdAt: safeToDate(data.createdAt) || new Date(),
         } as AdminNotification;
     });
 }
@@ -616,7 +620,7 @@ export async function getOrders(): Promise<Order[]> {
         return {
             id: doc.id,
             ...data,
-            createdAt: (data.createdAt as Timestamp).toDate(),
+            createdAt: safeToDate(data.createdAt) || new Date(),
         } as Order;
     });
 }
@@ -737,8 +741,8 @@ function convertTimestamps(docData: any) {
     return {
         id: docData.id,
         ...data,
-        createdAt: (data.createdAt as Timestamp)?.toDate(),
-        updatedAt: (data.updatedAt as Timestamp)?.toDate(),
+        createdAt: safeToDate(data.createdAt) || new Date(),
+        updatedAt: safeToDate(data.updatedAt) || new Date(),
     } as BlogPost;
 }
 
@@ -829,10 +833,7 @@ export async function getUserDetails(userId: string) {
             throw new Error("لم يتم العثور على المستخدم");
         }
         
-        const userProfile = { uid: userSnap.id, ...userSnap.data() } as UserProfile;
-        if(userProfile.createdAt && userProfile.createdAt instanceof Timestamp) {
-            userProfile.createdAt = userProfile.createdAt.toDate();
-        }
+        const userProfile = { uid: userSnap.id, ...userSnap.data(), createdAt: safeToDate(userSnap.data().createdAt) } as UserProfile;
 
         const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", userId));
         const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", userId));
@@ -855,22 +856,22 @@ export async function getUserDetails(userId: string) {
 
         const tradingAccounts = accountsSnapshot.docs.map(doc => {
             const data = doc.data();
-            return { id: doc.id, ...data, createdAt: (data.createdAt as Timestamp).toDate() } as TradingAccount;
+            return { id: doc.id, ...data, createdAt: safeToDate(data.createdAt) || new Date() } as TradingAccount;
         });
 
         const cashbackTransactions = transactionsSnapshot.docs.map(doc => {
             const data = doc.data();
-            return { id: doc.id, ...data, date: (data.date as Timestamp).toDate() } as CashbackTransaction;
+            return { id: doc.id, ...data, date: safeToDate(data.date) || new Date() } as CashbackTransaction;
         }).sort((a, b) => b.date.getTime() - a.date.getTime());
 
         const withdrawals = withdrawalsSnapshot.docs.map(doc => {
             const data = doc.data();
-            return { id: doc.id, ...data, requestedAt: (data.requestedAt as Timestamp).toDate(), completedAt: data.completedAt ? (data.completedAt as Timestamp).toDate() : undefined } as Withdrawal;
+            return { id: doc.id, ...data, requestedAt: safeToDate(data.requestedAt) || new Date(), completedAt: safeToDate(data.completedAt) } as Withdrawal;
         }).sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
 
         const orders = ordersSnapshot.docs.map(doc => {
             const data = doc.data();
-            return { id: doc.id, ...data, createdAt: (data.createdAt as Timestamp).toDate() } as Order;
+            return { id: doc.id, ...data, createdAt: safeToDate(data.createdAt) || new Date() } as Order;
         }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
         // Fetch referrer name
@@ -925,13 +926,18 @@ export async function getLoyaltyTiers(): Promise<LoyaltyTier[]> {
     }
     // Return default settings if not found
     return [
-        { name: 'New', monthlyPointsRequired: 0, user_signup_pts: 1, user_approval_pts: 2, user_cashback_pts: 3, user_store_pts: 4, partner_cashback_com: 1, partner_store_com: 2, partner_cashback_pts: 3, partner_store_pts: 4, ref_signup_pts: 1, ref_approval_pts: 2, ref_cashback_pts: 3, ref_store_pts: 4 },
-        { name: 'Bronze', monthlyPointsRequired: 100, user_signup_pts: 2, user_approval_pts: 3, user_cashback_pts: 5, user_store_pts: 6, partner_cashback_com: 2, partner_store_com: 3, partner_cashback_pts: 5, partner_store_pts: 6, ref_signup_pts: 2, ref_approval_pts: 3, ref_cashback_pts: 5, ref_store_pts: 6 },
-        { name: 'Silver', monthlyPointsRequired: 500, user_signup_pts: 3, user_approval_pts: 5, user_cashback_pts: 8, user_store_pts: 10, partner_cashback_com: 3, partner_store_com: 5, partner_cashback_pts: 8, partner_store_pts: 10, ref_signup_pts: 3, ref_approval_pts: 5, ref_cashback_pts: 8, ref_store_pts: 10 },
-        { name: 'Gold', monthlyPointsRequired: 2000, user_signup_pts: 5, user_approval_pts: 8, user_cashback_pts: 12, user_store_pts: 15, partner_cashback_com: 5, partner_store_com: 8, partner_cashback_pts: 12, partner_store_pts: 15, ref_signup_pts: 5, ref_approval_pts: 8, ref_cashback_pts: 12, ref_store_pts: 15 },
-        { name: 'Diamond', monthlyPointsRequired: 10000, user_signup_pts: 8, user_approval_pts: 12, user_cashback_pts: 18, user_store_pts: 22, partner_cashback_com: 8, partner_store_com: 12, partner_cashback_pts: 18, partner_store_pts: 22, ref_signup_pts: 8, ref_approval_pts: 12, ref_cashback_pts: 18, ref_store_pts: 22 },
-        { name: 'Ambassador', monthlyPointsRequired: 50000, user_signup_pts: 12, user_approval_pts: 18, user_cashback_pts: 25, user_store_pts: 30, partner_cashback_com: 12, partner_store_com: 18, partner_cashback_pts: 25, partner_store_pts: 30, ref_signup_pts: 12, ref_approval_pts: 18, ref_cashback_pts: 25, ref_store_pts: 30 },
-    ];
+        { name: 'New', monthlyPointsRequired: 0, referralCommissionPercent: 0, storeDiscountPercent: 0 },
+        { name: 'Bronze', monthlyPointsRequired: 100, referralCommissionPercent: 5, storeDiscountPercent: 2 },
+        { name: 'Silver', monthlyPointsRequired: 500, referralCommissionPercent: 7, storeDiscountPercent: 4 },
+        { name: 'Gold', monthlyPointsRequired: 2000, referralCommissionPercent: 10, storeDiscountPercent: 6 },
+        { name: 'Diamond', monthlyPointsRequired: 10000, referralCommissionPercent: 15, storeDiscountPercent: 8 },
+        { name: 'Ambassador', monthlyPointsRequired: 50000, referralCommissionPercent: 20, storeDiscountPercent: 10 },
+    ].map(tier => ({
+      ...tier,
+      user_signup_pts: 0, user_approval_pts: 0, user_cashback_pts: 0, user_store_pts: 0,
+      partner_cashback_com: 0, partner_store_com: 0, partner_cashback_pts: 0, partner_store_pts: 0,
+      ref_signup_pts: 0, ref_approval_pts: 0, ref_cashback_pts: 0, ref_store_pts: 0
+    }));
 }
 
 // Update all loyalty tiers
@@ -998,7 +1004,7 @@ export async function getFeedbackForms(): Promise<FeedbackForm[]> {
         return {
             id: doc.id,
             ...data,
-            createdAt: (data.createdAt as Timestamp).toDate(),
+            createdAt: safeToDate(data.createdAt) || new Date(),
         } as FeedbackForm;
     });
 }
@@ -1047,7 +1053,7 @@ export async function getFeedbackFormById(formId: string): Promise<FeedbackForm 
     return {
         id: docSnap.id,
         ...data,
-        createdAt: (data.createdAt as Timestamp).toDate(),
+        createdAt: safeToDate(data.createdAt) || new Date(),
     } as FeedbackForm;
 }
 
@@ -1060,14 +1066,14 @@ export async function getFeedbackResponses(formId: string): Promise<EnrichedFeed
         return {
             id: doc.id,
             ...data,
-            submittedAt: (data.submittedAt as Timestamp).toDate(),
+            submittedAt: safeToDate(data.submittedAt) || new Date(),
         } as FeedbackResponse;
     });
 
     const userIds = [...new Set(responses.map(r => r.userId))];
     if (userIds.length === 0) return [];
 
-    const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds));
+    const usersQuery = query(collection(db, 'users'), where('__name__', 'in', userIds));
     const usersSnap = await getDocs(usersQuery);
     const usersMap = new Map(usersSnap.docs.map(d => [d.id, d.data() as UserProfile]));
 
@@ -1091,7 +1097,7 @@ export async function getActiveFeedbackFormForUser(userId: string): Promise<Feed
         return {
             id: doc.id,
             ...data,
-            createdAt: (data.createdAt as Timestamp).toDate(),
+            createdAt: safeToDate(data.createdAt) || new Date(),
         } as FeedbackForm;
     });
     
@@ -1127,7 +1133,7 @@ export async function submitFeedbackResponse(
                 answers,
             };
 
-            transaction.set(responseRef, responsePayload);
+            transaction.set(responseRef, { ...responsePayload, submittedAt: serverTimestamp()});
             transaction.update(formRef, { responseCount: increment(1) });
         });
 

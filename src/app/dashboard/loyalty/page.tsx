@@ -40,8 +40,8 @@ export default function LoyaltyPage() {
         fetchTiers();
     }, []);
 
-    const getTierDetails = (tierName: string): LoyaltyTier => {
-        return tiers.find(t => t.name === tierName) || tiers[0];
+    const getTierDetails = (tierName: string): LoyaltyTier | undefined => {
+        return tiers.find(t => t.name === tierName);
     };
 
     const getNextTier = (currentTierName: string): LoyaltyTier | null => {
@@ -60,7 +60,7 @@ export default function LoyaltyPage() {
         );
     }
 
-    const currentTier = getTierDetails(user.profile.tier);
+    const currentTier = getTierDetails(user.profile.tier) || tiers[0];
     const nextTier = getNextTier(user.profile.tier);
     
     const monthlyPoints = user.profile.monthlyPoints || 0;
@@ -90,11 +90,11 @@ export default function LoyaltyPage() {
                 <CardContent className="flex justify-around text-center">
                     <div>
                         <p className="text-xs opacity-80">عمولة الإحالة</p>
-                        <p className="text-lg font-bold">{currentTier.referralCommissionPercent}%</p>
+                        <p className="text-lg font-bold">{currentTier.partner_cashback_com}%</p>
                     </div>
                     <div>
                         <p className="text-xs opacity-80">خصم المتجر</p>
-                        <p className="text-lg font-bold">{currentTier.storeDiscountPercent}%</p>
+                        <p className="text-lg font-bold">{currentTier.partner_store_com}%</p>
                     </div>
                 </CardContent>
             </Card>

@@ -22,6 +22,8 @@ const tierSchema = z.object({
   monthlyPointsRequired: z.coerce.number().min(0),
   
   // User Actions
+  referralCommissionPercent: z.coerce.number().min(0),
+  storeDiscountPercent: z.coerce.number().min(0),
   user_signup_pts: z.coerce.number().min(0),
   user_approval_pts: z.coerce.number().min(0),
   user_cashback_pts: z.coerce.number().min(0),
@@ -135,7 +137,7 @@ export default function ManageLoyaltyPage() {
     <div className="container mx-auto space-y-6">
       <PageHeader
         title="إدارة نظام الولاء"
-        description="تكوين مستويات الولاء الستة والمكافآت لكل إجراء."
+        description="تكوين مستويات الولاء والمكافآت لكل إجراء."
       />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
