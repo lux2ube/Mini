@@ -52,30 +52,29 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
 export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
     const { name, email, password, referralCode } = formData;
 
+    let referrerId: string | null = null;
+    let referrerRef = null;
+
+    // Step 1: Validate referral code *before* creating a user or starting a transaction.
+    if (referralCode) {
+        const q = query(collection(db, 'users'), where('referralCode', '==', referralCode));
+        const querySnapshot = await getDocs(q);
+        if (querySnapshot.empty) {
+            return { success: false, error: "The referral code you entered is not valid." };
+        }
+        const referrerDoc = querySnapshot.docs[0];
+        referrerId = referrerDoc.id;
+        referrerRef = referrerDoc.ref;
+    }
+
     let userCredential;
     try {
-        // Step 1: Create the user in Firebase Auth
+        // Step 2: Create the user in Firebase Auth
         userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Step 2: Run database operations in a transaction
+        // Step 3: Run database operations in a transaction
         await runTransaction(db, async (transaction) => {
-            let referrerId: string | null = null;
-            let referrerRef = null;
-
-            // If a referral code is provided, validate it
-            if (referralCode) {
-                const q = query(collection(db, 'users'), where('referralCode', '==', referralCode));
-                const querySnapshot = await getDocs(q); // Use getDocs for querying
-                if (querySnapshot.empty) {
-                    // This error will be caught and will trigger the cleanup
-                    throw new Error("Invalid referral code");
-                }
-                const referrerDoc = querySnapshot.docs[0];
-                referrerId = referrerDoc.id;
-                referrerRef = referrerDoc.ref;
-            }
-
             // Create the new user's document
             const newUserRef = doc(db, "users", user.uid);
             transaction.set(newUserRef, {
@@ -103,17 +102,13 @@ export async function handleRegisterUser(formData: { name: string, email: string
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
-        // If any error occurs, especially after user creation, clean up the auth user
+        // If any error occurs after user creation (e.g., transaction fails), clean up the auth user
         if (userCredential) {
             await deleteUser(userCredential.user);
         }
 
         console.error("Registration Error: ", error);
         
-        if (error.message === "Invalid referral code") {
-             return { success: false, error: "The referral code you entered is not valid." };
-        }
-
         if (error.code === 'auth/email-already-in-use') {
             return { success: false, error: "This email is already in use. Please log in." };
         }
