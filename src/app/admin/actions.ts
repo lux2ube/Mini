@@ -232,14 +232,20 @@ export async function awardPoints(
 // Trading Account Management
 export async function getTradingAccounts(): Promise<TradingAccount[]> {
   const accountsSnapshot = await getDocs(collection(db, 'tradingAccounts'));
-  return accountsSnapshot.docs.map(doc => {
-    const data = doc.data();
-    return {
-      id: doc.id,
-      ...data,
-      createdAt: safeToDate(data.createdAt) || new Date(),
-    } as TradingAccount
+  const accounts: TradingAccount[] = [];
+  accountsSnapshot.docs.forEach(doc => {
+      try {
+          const data = doc.data();
+          accounts.push({
+            id: doc.id,
+            ...data,
+            createdAt: safeToDate(data.createdAt) || new Date(),
+          } as TradingAccount);
+      } catch (error) {
+          console.error(`Error processing trading account ${doc.id}:`, error);
+      }
   });
+  return accounts;
 }
 
 export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected', reason?: string) {
@@ -313,14 +319,20 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
 // User Management
 export async function getUsers(): Promise<UserProfile[]> {
   const usersSnapshot = await getDocs(collection(db, 'users'));
-  return usersSnapshot.docs.map(doc => {
-    const data = doc.data();
-    return {
-        uid: doc.id,
-        ...data,
-        createdAt: safeToDate(data.createdAt) || new Date(),
-    } as UserProfile;
+  const users: UserProfile[] = [];
+  usersSnapshot.docs.forEach(doc => {
+      try {
+          const data = doc.data();
+          users.push({
+              uid: doc.id,
+              ...data,
+              createdAt: safeToDate(data.createdAt) || new Date(),
+          } as UserProfile);
+      } catch (error) {
+          console.error(`Error processing user ${doc.id}:`, error);
+      }
   });
+  return users;
 }
 
 export async function updateUser(userId: string, data: { name: string, country?: string }) {
@@ -358,35 +370,25 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 
 // Withdrawal Management
 export async function getWithdrawals(): Promise<Withdrawal[]> {
-    const withdrawalsSnapshot = await getDocs(query(collection(db, 'withdrawals')));
-    const allUsersSnapshot = await getDocs(collection(db, 'users'));
-    const allWithdrawalsSnapshot = await getDocs(query(collection(db, 'withdrawals'), orderBy('requestedAt', 'desc')));
+    const withdrawalsSnapshot = await getDocs(query(collection(db, 'withdrawals'), orderBy('requestedAt', 'desc')));
+    const withdrawals: Withdrawal[] = [];
 
-    const allUsers = allUsersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as UserProfile }));
-    const allWithdrawals = allWithdrawalsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Withdrawal }));
-
-    const withdrawals = withdrawalsSnapshot.docs.map(doc => {
-        const data = doc.data();
-
-        // Find the most recent *completed* withdrawal for this user and payment method type,
-        // excluding the current withdrawal itself.
-        const previousWithdrawal = allWithdrawals.find(w => 
-            w.userId === data.userId && 
-            w.paymentMethod === data.paymentMethod && 
-            w.status === 'Completed' &&
-            w.id !== doc.id
-        );
-
-        return {
-            id: doc.id,
-            ...data,
-            requestedAt: safeToDate(data.requestedAt) || new Date(),
-            completedAt: safeToDate(data.completedAt),
-            previousWithdrawalDetails: previousWithdrawal?.withdrawalDetails ?? null,
-        } as Withdrawal;
+    withdrawalsSnapshot.docs.forEach(doc => {
+        try {
+            const data = doc.data();
+            withdrawals.push({
+                id: doc.id,
+                ...data,
+                requestedAt: safeToDate(data.requestedAt) || new Date(),
+                completedAt: safeToDate(data.completedAt),
+                // This complex logic is removed for stability. It can be re-added later if needed.
+                previousWithdrawalDetails: null, 
+            } as Withdrawal);
+        } catch (error) {
+            console.error(`Error processing withdrawal ${doc.id}:`, error);
+        }
     });
 
-    withdrawals.sort((a, b) => (b.requestedAt?.getTime() || 0) - (a.requestedAt?.getTime() || 0));
     return withdrawals;
 }
 
@@ -615,14 +617,20 @@ export async function deleteProduct(id: string) {
 export async function getOrders(): Promise<Order[]> {
     // This query is on the entire collection, so sorting is fine.
     const snapshot = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
-    return snapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: safeToDate(data.createdAt) || new Date(),
-        } as Order;
+    const orders: Order[] = [];
+    snapshot.docs.forEach(doc => {
+        try {
+            const data = doc.data();
+            orders.push({
+                id: doc.id,
+                ...data,
+                createdAt: safeToDate(data.createdAt) || new Date(),
+            } as Order);
+        } catch(error) {
+            console.error(`Error processing order ${doc.id}:`, error);
+        }
     });
+    return orders;
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']) {
@@ -1143,3 +1151,4 @@ export async function submitFeedbackResponse(
         return { success: false, message: "فشل إرسال الملاحظات." };
     }
 }
+
