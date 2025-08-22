@@ -7,8 +7,8 @@ import type { GenerateProjectSummaryOutput } from "@/ai/flows/generate-project-s
 import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 import { auth, db } from "@/lib/firebase/config";
-import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { doc, setDoc, Timestamp } from "firebase/firestore";
+import { createUserWithEmailAndPassword, signOut, deleteUser } from "firebase/auth";
+import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
 
 
@@ -49,35 +49,76 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
     }
 }
 
-export async function handleRegisterUser(formData: { name: string, email: string, password: string }) {
-    const { name, email, password } = formData;
+export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
+    const { name, email, password, referralCode } = formData;
 
+    let userCredential;
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Step 1: Create the user in Firebase Auth
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        await setDoc(doc(db, "users", user.uid), {
-            uid: user.uid,
-            name,
-            email,
-            role: "user",
-            createdAt: Timestamp.now(),
-            referralCode: generateReferralCode(name),
-            referredBy: null,
-            referrals: [],
-            points: 0,
-            tier: 'New',
-            monthlyPoints: 0,
+        // Step 2: Run database operations in a transaction
+        await runTransaction(db, async (transaction) => {
+            let referrerId: string | null = null;
+            let referrerRef = null;
+
+            // If a referral code is provided, validate it
+            if (referralCode) {
+                const q = query(collection(db, 'users'), where('referralCode', '==', referralCode));
+                const querySnapshot = await getDocs(q); // Use getDocs for querying
+                if (querySnapshot.empty) {
+                    // This error will be caught and will trigger the cleanup
+                    throw new Error("Invalid referral code");
+                }
+                const referrerDoc = querySnapshot.docs[0];
+                referrerId = referrerDoc.id;
+                referrerRef = referrerDoc.ref;
+            }
+
+            // Create the new user's document
+            const newUserRef = doc(db, "users", user.uid);
+            transaction.set(newUserRef, {
+                uid: user.uid,
+                name,
+                email,
+                role: "user",
+                createdAt: Timestamp.now(),
+                referralCode: generateReferralCode(name),
+                referredBy: referrerId,
+                referrals: [],
+                points: 0,
+                tier: 'New',
+                monthlyPoints: 0,
+            });
+
+            // If there was a valid referrer, update their document
+            if (referrerRef) {
+                transaction.update(referrerRef, {
+                    referrals: arrayUnion(user.uid)
+                });
+            }
         });
-        
+
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
+        // If any error occurs, especially after user creation, clean up the auth user
+        if (userCredential) {
+            await deleteUser(userCredential.user);
+        }
+
         console.error("Registration Error: ", error);
+        
+        if (error.message === "Invalid referral code") {
+             return { success: false, error: "The referral code you entered is not valid." };
+        }
+
         if (error.code === 'auth/email-already-in-use') {
             return { success: false, error: "This email is already in use. Please log in." };
         }
-        return { success: false, error: "An unexpected error occurred during registration." };
+        
+        return { success: false, error: "An unexpected error occurred during registration. Please try again." };
     }
 }
 
