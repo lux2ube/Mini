@@ -57,9 +57,11 @@ export async function handleRegisterUser(formData: { name: string, email: string
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Step 2: Use a transaction for all database operations
+        // Step 2: Use a transaction to ensure all database operations succeed or fail together.
         await runTransaction(db, async (transaction) => {
             const usersRef = collection(db, "users");
+            const counterRef = doc(db, 'counters', 'userCounter');
+            
             let referrerId: string | null = null;
             let referrerRef = null;
 
@@ -77,13 +79,19 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 }
             }
 
-            // Step 2b: Create the new user's document
+            // Step 2b: Get the next client ID from the counter
+            const counterSnap = await transaction.get(counterRef);
+            const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
+            const newClientId = lastId + 1;
+            
+            // Step 2c: Create the new user's document
             const newUserRef = doc(usersRef, user.uid);
             transaction.set(newUserRef, {
                 uid: user.uid,
                 name,
                 email,
                 role: "user",
+                clientId: newClientId,
                 createdAt: Timestamp.now(),
                 referralCode: generateReferralCode(name),
                 referredBy: referrerId,
@@ -93,7 +101,10 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 monthlyPoints: 0,
             });
 
-            // Step 2c: If there was a referrer, update their document
+            // Step 2d: Update the counter
+            transaction.set(counterRef, { lastId: newClientId }, { merge: true });
+
+            // Step 2e: If there was a referrer, update their document
             if (referrerRef) {
                 transaction.update(referrerRef, {
                     referrals: arrayUnion(user.uid)
@@ -105,6 +116,12 @@ export async function handleRegisterUser(formData: { name: string, email: string
 
     } catch (error: any) {
         console.error("Registration Error: ", error);
+
+        // This will delete the user from Auth if the transaction fails
+        if (auth.currentUser && auth.currentUser.email === email) {
+            await auth.currentUser.delete();
+            console.log(`Cleaned up partially registered user: ${email}`);
+        }
 
         if (error.code === 'auth/email-already-in-use') {
             return { success: false, error: "This email is already in use. Please log in." };
