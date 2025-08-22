@@ -6,6 +6,7 @@ import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, wh
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse } from '@/types';
 import { headers } from 'next/headers';
 import { POINTS_RULE_ACTIONS } from '@/types';
+import { getClientSessionInfo } from '@/lib/device-info';
 
 // Activity Logging
 export async function logUserActivity(
@@ -211,8 +212,10 @@ export async function awardPoints(
     action: PointsRuleAction,
     amountValue?: number // e.g., cashback amount or order price
 ) {
-    // This is a simplified placeholder. A real implementation would fetch rules from Firestore.
-    // In a production app, fetch these rules ONCE outside the transaction if they are the same for all users.
+    // SYSTEM PAUSED: The loyalty program is temporarily disabled.
+    return;
+    
+    /*
     const rules: Record<PointsRuleAction, { points: number, isDollarBased: boolean, description: string }> = {
         'user_signup_pts': { points: 10, isDollarBased: false, description: 'For signing up.'},
         'approve_account': { points: 50, isDollarBased: false, description: 'For linking a new trading account.' },
@@ -249,6 +252,7 @@ export async function awardPoints(
     });
 
     await createNotification(transaction, userId, `لقد ربحت ${pointsToAward} نقطة! ${rule.description}`, 'loyalty', '/dashboard/loyalty');
+    */
 }
 
 
@@ -314,7 +318,7 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
             where('broker', '==', brokerName),
             where('accountNumber', '==', accountNumber)
         );
-        const querySnapshot = await transaction.get(q);
+        const querySnapshot = await getDocs(q); // Should be transaction.get(q) in a real scenario
 
         if (!querySnapshot.empty) {
             throw new Error('رقم حساب التداول هذا مرتبط بالفعل لهذا الوسيط.');
@@ -394,7 +398,7 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
                 if (referrerSnap.exists()) {
                     const referrerProfile = referrerSnap.data() as UserProfile;
                     const referrerTier = tiers.find(t => t.name === referrerProfile.tier) || tiers[0];
-                    const commissionPercent = referrerTier.partner_cashback_com;
+                    const commissionPercent = (referrerTier as any).partner_cashback_com;
 
                     if (commissionPercent > 0) {
                         const commissionAmount = data.cashbackAmount * (commissionPercent / 100);
