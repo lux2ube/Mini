@@ -3,14 +3,14 @@
 "use client";
 
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Lock, KeyRound } from 'lucide-react';
+import { Loader2, User, Mail, Lock } from 'lucide-react';
 import { handleRegisterUser } from '../actions';
 
 export default function RegisterPage() {
@@ -18,18 +18,9 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [referralCode, setReferralCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
-
-  useEffect(() => {
-    const refFromUrl = searchParams.get('ref');
-    if (refFromUrl) {
-        setReferralCode(refFromUrl);
-    }
-  }, [searchParams]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +28,7 @@ export default function RegisterPage() {
       toast({ variant: "destructive", title: "خطأ", description: "كلمات المرور غير متطابقة." });
       return;
     }
-    if (password.length < 6) {
+     if (password.length < 6) {
       toast({ variant: "destructive", title: "خطأ", description: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل." });
       return;
     }
@@ -47,7 +38,6 @@ export default function RegisterPage() {
         name,
         email,
         password,
-        referralCode: referralCode || undefined,
     });
 
     if (result.success) {
@@ -96,13 +86,6 @@ export default function RegisterPage() {
                          <div className="relative">
                             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input id="confirm-password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10"/>
-                        </div>
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="referral-code">كود الإحالة (اختياري)</Label>
-                         <div className="relative">
-                            <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="referral-code" type="text" placeholder="ALI123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="pl-10"/>
                         </div>
                     </div>
                     <Button type="submit" className="w-full" disabled={isLoading}>
