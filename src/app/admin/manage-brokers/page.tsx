@@ -58,7 +58,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { BrokerFormDialog } from "@/components/admin/BrokerFormDialog";
+import { ArabicBrokerFormDialog } from "@/components/admin/ArabicBrokerFormDialog";
 import { Badge } from "@/components/ui/badge";
 
 function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: () => void }) {
@@ -91,9 +91,9 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
       }
   }
 
-  const brokerName = broker.basicInfo.broker_name;
-  const riskLevel = broker.regulation.risk_level;
-  const wikifxScore = broker.reputation.wikifx_score;
+  const brokerName = broker.basicInfo?.broker_name || broker.name;
+  const riskLevel = broker.regulation?.risk_level;
+  const wikifxScore = broker.reputation?.wikifx_score;
 
 
   return (
@@ -121,7 +121,7 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
           {wikifxScore ?? 'N/A'} <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
       </TableCell>
       <TableCell className="space-x-2 text-left">
-        <BrokerFormDialog
+        <ArabicBrokerFormDialog
           broker={broker}
           onSuccess={onSuccess}
           isOpen={isFormOpen}
@@ -135,7 +135,7 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
           >
             <Edit className="h-4 w-4" />
           </Button>
-        </BrokerFormDialog>
+        </ArabicBrokerFormDialog>
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
@@ -309,7 +309,7 @@ export default function ManageBrokersPage() {
           <Button variant="outline" onClick={handleExport} disabled={isLoading}>
             <Download className="ml-2 h-4 w-4" /> تصدير
           </Button>
-          <BrokerFormDialog
+          <ArabicBrokerFormDialog
             onSuccess={fetchBrokers}
             isOpen={isFormOpen}
             setIsOpen={setIsFormOpen}
@@ -318,7 +318,7 @@ export default function ManageBrokersPage() {
               <PlusCircle className="ml-2 h-4 w-4" />
               إضافة وسيط
             </Button>
-          </BrokerFormDialog>
+          </ArabicBrokerFormDialog>
         </div>
       </div>
 
