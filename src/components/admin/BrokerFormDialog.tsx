@@ -32,6 +32,7 @@ import type { Broker } from "@/types";
 import { addBroker, updateBroker } from "@/app/admin/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import React from 'react';
 
 const formSchema = z.object({
   logoUrl: z.string().url("Must be a valid URL.").default("https://placehold.co/100x100.png"),
@@ -185,7 +186,7 @@ export function BrokerFormDialog({
   
   React.useEffect(() => {
       form.reset(getSafeDefaultValues(broker));
-  }, [broker, form]);
+  }, [broker, form, isOpen]);
 
   const onSubmit = async (values: BrokerFormValues) => {
     setIsSubmitting(true);
@@ -206,7 +207,8 @@ export function BrokerFormDialog({
       if (broker) {
         result = await updateBroker(broker.id, finalValues);
       } else {
-        result = await addBroker(finalValues);
+        const { id, ...dataToAdd } = finalValues;
+        result = await addBroker(dataToAdd as Omit<Broker, 'id' | 'order'>);
       }
 
       if (result.success) {
