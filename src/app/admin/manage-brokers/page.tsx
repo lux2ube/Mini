@@ -91,10 +91,9 @@ function SortableBrokerRow({ broker, onSuccess }: { broker: Broker, onSuccess: (
       }
   }
 
-  // Safely access broker name and risk level for both old and new data structures
-  const brokerName = broker.basicInfo?.broker_name || broker.name;
-  const riskLevel = broker.regulation?.risk_level;
-  const wikifxScore = broker.reputation?.wikifx_score;
+  const brokerName = broker.basicInfo.broker_name;
+  const riskLevel = broker.regulation.risk_level;
+  const wikifxScore = broker.reputation.wikifx_score;
 
 
   return (
