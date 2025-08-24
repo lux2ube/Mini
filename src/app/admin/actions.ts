@@ -28,15 +28,12 @@ export async function logUserActivity(
     details?: Record<string, any>,
 ) {
     try {
-        const headersList = headers();
-        const userAgent = headersList.get('user-agent') ?? 'unknown';
-
         const logEntry: Omit<ActivityLog, 'id'> = {
             userId,
             event,
             timestamp: new Date(),
             ipAddress: clientInfo.geoInfo.ip || 'unknown',
-            userAgent,
+            userAgent: clientInfo.deviceInfo.browser,
             device: clientInfo.deviceInfo,
             geo: {
                 country: clientInfo.geoInfo.country,
@@ -180,6 +177,30 @@ export async function addBroker(data: Omit<Broker, 'id' | 'order'>) {
         return { success: false, message: 'فشل إضافة الوسيط.' };
     }
 }
+
+export async function addBrokersBatch(brokers: Omit<Broker, 'id' | 'order'>[]) {
+    try {
+        const batch = writeBatch(db);
+        const brokersCollection = collection(db, 'brokers');
+        
+        // Get current max order
+        const brokersSnapshot = await getDocs(query(brokersCollection, orderBy('order', 'desc')));
+        let maxOrder = brokersSnapshot.docs.length > 0 && brokersSnapshot.docs[0].data().order != null ? brokersSnapshot.docs[0].data().order : -1;
+
+        brokers.forEach(brokerData => {
+            const newBrokerRef = doc(brokersCollection);
+            maxOrder++;
+            batch.set(newBrokerRef, { ...brokerData, order: maxOrder });
+        });
+
+        await batch.commit();
+        return { success: true, message: `تمت إضافة ${brokers.length} وسطاء بنجاح.` };
+    } catch (error) {
+        console.error("Error adding brokers batch:", error);
+        return { success: false, message: 'فشل إضافة الوسطاء.' };
+    }
+}
+
 
 export async function updateBroker(brokerId: string, data: Partial<Omit<Broker, 'id'>>) {
     try {
@@ -1151,4 +1172,3 @@ export async function submitFeedbackResponse(
         return { success: false, message: "فشل إرسال الملاحظات." };
     }
 }
-

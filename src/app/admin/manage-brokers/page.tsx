@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   DndContext,
   closestCenter,
@@ -22,6 +22,7 @@ import {
   getBrokers,
   deleteBroker,
   updateBrokerOrder,
+  addBrokersBatch,
 } from "../actions";
 import type { Broker } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +42,8 @@ import {
   Loader2,
   GripVertical,
   Star,
+  Upload,
+  Download,
 } from "lucide-react";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -166,6 +169,7 @@ export default function ManageBrokersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchBrokers = async () => {
     // No need to set loading true here if we want a silent refetch
@@ -221,7 +225,63 @@ export default function ManageBrokersPage() {
     }
   }
 
-  if (isLoading) {
+  const handleExport = () => {
+    const dataStr = JSON.stringify(brokers, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = 'brokers_export.json';
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    toast({ title: "نجاح", description: "تم تصدير الوسطاء." });
+  }
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const text = e.target?.result;
+        if (typeof text !== 'string') {
+          throw new Error("File content is not valid text.");
+        }
+        const importedBrokers = JSON.parse(text);
+        
+        if (!Array.isArray(importedBrokers)) {
+            throw new Error("Invalid format: JSON file should contain an array of brokers.");
+        }
+        
+        // A simple validation, you can make this more robust
+        const brokersToAdd = importedBrokers.map(b => {
+          // Remove id and order as they will be generated
+          const { id, order, ...brokerData } = b;
+          return brokerData;
+        });
+        
+        setIsLoading(true);
+        const result = await addBrokersBatch(brokersToAdd);
+        if (result.success) {
+            toast({ title: "نجاح", description: result.message });
+            fetchBrokers(); // Refetch data
+        } else {
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "فشل في تحليل ملف JSON.";
+        toast({ variant: 'destructive', title: 'خطأ في الاستيراد', description: message });
+      } finally {
+        setIsLoading(false);
+        if(fileInputRef.current) fileInputRef.current.value = ""; // Reset file input
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  if (isLoading && brokers.length === 0) {
     return (
       <div className="flex justify-center items-center h-full">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -231,21 +291,36 @@ export default function ManageBrokersPage() {
 
   return (
     <div className="container mx-auto space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-2">
         <PageHeader
           title="إدارة الوسطاء"
           description="إضافة أو تعديل أو إزالة الوسطاء الشركاء."
         />
-        <BrokerFormDialog
-          onSuccess={fetchBrokers}
-          isOpen={isFormOpen}
-          setIsOpen={setIsFormOpen}
-        >
-          <Button onClick={() => setIsFormOpen(true)}>
-            <PlusCircle className="ml-2 h-4 w-4" />
-            إضافة وسيط
+        <div className="flex gap-2">
+           <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImport}
+              className="hidden"
+              accept=".json"
+            />
+          <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isLoading}>
+            <Upload className="ml-2 h-4 w-4" /> استيراد
           </Button>
-        </BrokerFormDialog>
+          <Button variant="outline" onClick={handleExport} disabled={isLoading}>
+            <Download className="ml-2 h-4 w-4" /> تصدير
+          </Button>
+          <BrokerFormDialog
+            onSuccess={fetchBrokers}
+            isOpen={isFormOpen}
+            setIsOpen={setIsFormOpen}
+          >
+            <Button onClick={() => setIsFormOpen(true)}>
+              <PlusCircle className="ml-2 h-4 w-4" />
+              إضافة وسيط
+            </Button>
+          </BrokerFormDialog>
+        </div>
       </div>
 
       <Card>
