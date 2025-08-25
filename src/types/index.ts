@@ -56,22 +56,22 @@ export interface Broker {
         founded_year: number;
         headquarters: string;
         CEO: string;
+        broker_type: string;
     };
     regulation: {
         licenses: { authority: string; licenseNumber?: string; status: string }[];
         regulated_in: string[];
         regulator_name: string[];
-        regulation_status: 'Active' | 'Revoked' | 'Expired' | 'Unregulated';
+        regulation_status: string;
         offshore_regulation: boolean;
-        risk_level: 'Low' | 'Medium' | 'High' | 'Suspicious' | 'Unregulated';
+        risk_level: string;
     };
     tradingConditions: {
-        broker_type: 'Market Maker' | 'ECN' | 'STP' | 'Hybrid';
         account_types: string[];
         swap_free: boolean;
         max_leverage: string;
         min_deposit: number;
-        spread_type: 'Fixed' | 'Variable';
+        spread_type: string;
         min_spread: number;
         commission_per_lot: number;
         execution_speed: string;
@@ -132,6 +132,9 @@ export interface Broker {
         description: string;
         linkText: string;
         link: string;
+        new_account_instructions?: string,
+        new_account_link?: string,
+        new_account_link_text?: string
     };
     existingAccountInstructions: string;
 }

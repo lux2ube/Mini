@@ -59,6 +59,8 @@ const formSchema = z.object({
     licenses: z.array(licenseSchema).optional().default([]),
     offshore_regulation: z.boolean().default(false),
     risk_level: z.string().optional().default(""),
+    regulated_in: z.array(z.string()).optional().default([]),
+    regulator_name: z.array(z.string()).optional().default([]),
   }),
   tradingConditions: z.object({
       account_types: z.array(z.string()).optional().default([]),
@@ -66,23 +68,25 @@ const formSchema = z.object({
       max_leverage: z.string().optional().default("1:500"),
       min_deposit: z.coerce.number().min(0).default(10),
       spread_type: z.string().optional().default(""),
-      avg_spread: z.coerce.number().min(0).optional().default(0),
+      min_spread: z.coerce.number().min(0).optional().default(0),
+      commission_per_lot: z.coerce.number().min(0).optional().default(0),
+      execution_speed: z.string().optional().default(""),
   }),
   platforms: z.object({
       platforms_supported: z.array(z.string()).optional().default([]),
       mt4_license_type: z.enum(['Full License', 'White Label', 'None']).default('None'),
       mt5_license_type: z.enum(['Full License', 'White Label', 'None']).default('None'),
+      custom_platform: z.boolean().optional().default(false),
   }),
   instruments: z.object({
-      forex: z.boolean().default(false),
+      forex_pairs: z.string().optional().default(""),
+      crypto_trading: z.boolean().default(false),
       stocks: z.boolean().default(false),
       commodities: z.boolean().default(false),
       indices: z.boolean().default(false),
-      crypto: z.boolean().default(false),
   }),
   depositsWithdrawals: z.object({
-      deposit_methods: z.array(z.string()).optional().default([]),
-      withdrawal_methods: z.array(z.string()).optional().default([]),
+      payment_methods: z.array(z.string()).optional().default([]),
       min_withdrawal: z.coerce.number().min(0).optional().default(0),
       withdrawal_speed: z.string().optional().default(""),
       deposit_fees: z.boolean().default(false),
@@ -96,23 +100,24 @@ const formSchema = z.object({
       cashback_per_lot: z.coerce.number().min(0).optional().default(0),
   }),
   globalReach: z.object({
+      business_region: z.array(z.string()).optional().default([]),
+      global_presence: z.string().optional().default(""),
       languages_supported: z.array(z.string()).optional().default([]),
       customer_support_channels: z.array(z.string()).optional().default([]),
-      support_hours: z.string().optional().default(""),
-      business_region: z.array(z.string()).optional().default([]),
   }),
   reputation: z.object({
-      overall_rating: z.coerce.number().min(0).max(5).optional().default(0),
+      wikifx_score: z.coerce.number().min(0).max(10).optional().default(0),
+      trustpilot_rating: z.coerce.number().min(0).max(5).optional().default(0),
       reviews_count: z.coerce.number().min(0).optional().default(0),
       verified_users: z.coerce.number().min(0).optional().default(0),
-      wikifx_score: z.coerce.number().min(0).max(10).optional().default(0),
   }),
   additionalFeatures: z.object({
-      welcome_bonus: z.boolean().default(false),
+      education_center: z.boolean().default(false),
       copy_trading: z.boolean().default(false),
       demo_account: z.boolean().default(false),
-      education_center: z.boolean().default(false),
       trading_contests: z.boolean().default(false),
+      regulatory_alerts: z.string().optional().default(""),
+      welcome_bonus: z.boolean().default(false),
   }),
   instructions: z.object({
       description: z.string().optional().default(""),
@@ -138,15 +143,15 @@ const getSafeDefaultValues = (broker?: Broker | null): BrokerFormValues => {
         logoUrl: "https://placehold.co/100x100.png",
         category: 'forex',
         basicInfo: { broker_name: "", group_entity: "", founded_year: new Date().getFullYear(), headquarters: "", CEO: "", broker_type: "" },
-        regulation: { regulation_status: "", licenses: [], offshore_regulation: false, risk_level: "" },
-        tradingConditions: { account_types: [], swap_free: false, max_leverage: "1:500", min_deposit: 10, spread_type: "", avg_spread: 0 },
-        platforms: { platforms_supported: [], mt4_license_type: 'None', mt5_license_type: 'None' },
-        instruments: { forex: false, stocks: false, commodities: false, indices: false, crypto: false },
-        depositsWithdrawals: { deposit_methods: [], withdrawal_methods: [], min_withdrawal: 0, withdrawal_speed: "", deposit_fees: false, withdrawal_fees: false },
+        regulation: { regulation_status: "", licenses: [], offshore_regulation: false, risk_level: "", regulated_in: [], regulator_name: [] },
+        tradingConditions: { account_types: [], swap_free: false, max_leverage: "1:500", min_deposit: 10, spread_type: "", min_spread: 0, commission_per_lot: 0, execution_speed: "" },
+        platforms: { platforms_supported: [], mt4_license_type: 'None', mt5_license_type: 'None', custom_platform: false },
+        instruments: { forex_pairs: "", crypto_trading: false, stocks: false, commodities: false, indices: false },
+        depositsWithdrawals: { payment_methods: [], min_withdrawal: 0, withdrawal_speed: "", deposit_fees: false, withdrawal_fees: false },
         cashback: { affiliate_program_link: "", cashback_account_type: [], cashback_frequency: "", rebate_method: [], cashback_per_lot: 0 },
-        globalReach: { languages_supported: [], customer_support_channels: [], support_hours: "", business_region: [] },
-        reputation: { overall_rating: 0, reviews_count: 0, verified_users: 0, wikifx_score: 0 },
-        additionalFeatures: { welcome_bonus: false, copy_trading: false, demo_account: false, education_center: false, trading_contests: false },
+        globalReach: { business_region: [], global_presence: "", languages_supported: [], customer_support_channels: [] },
+        reputation: { wikifx_score: 0, trustpilot_rating: 0, reviews_count: 0, verified_users: 0 },
+        additionalFeatures: { education_center: false, copy_trading: false, demo_account: false, trading_contests: false, regulatory_alerts: "", welcome_bonus: false },
         instructions: { description: "", new_account_instructions: "", new_account_link: "", new_account_link_text: "" },
         existingAccountInstructions: "",
     };
@@ -155,9 +160,10 @@ const getSafeDefaultValues = (broker?: Broker | null): BrokerFormValues => {
         return defaults;
     }
     
+    // Deep merge of broker data into defaults to ensure all keys exist
     const brokerCopy = JSON.parse(JSON.stringify(broker));
-
-    return {
+    
+    const merged = {
         ...defaults,
         ...brokerCopy,
         basicInfo: { ...defaults.basicInfo, ...brokerCopy.basicInfo },
@@ -172,6 +178,20 @@ const getSafeDefaultValues = (broker?: Broker | null): BrokerFormValues => {
         additionalFeatures: { ...defaults.additionalFeatures, ...brokerCopy.additionalFeatures },
         instructions: { ...defaults.instructions, ...brokerCopy.instructions },
     };
+
+    // Ensure arrays are not undefined
+    Object.keys(merged).forEach(key => {
+        const section = key as keyof BrokerFormValues;
+        if (typeof merged[section] === 'object' && merged[section] !== null) {
+            Object.keys(merged[section] as object).forEach(field => {
+                if (Array.isArray(defaults[section as keyof typeof defaults]?.[field as keyof {}]) && !Array.isArray((merged[section] as any)[field])) {
+                    (merged[section] as any)[field] = [];
+                }
+            });
+        }
+    });
+
+    return merged;
 };
 
 export function ArabicBrokerFormDialog({
@@ -202,25 +222,27 @@ export function ArabicBrokerFormDialog({
 
   const onSubmit = async (values: BrokerFormValues) => {
     setIsSubmitting(true);
-    
-    const finalValues: any = {
-        ...values,
-        name: values.basicInfo.broker_name,
-        description: values.instructions.description,
-        rating: Math.round(values.reputation.overall_rating || 0),
-        instructions: {
-            description: values.instructions.new_account_instructions,
-            linkText: values.instructions.new_account_link_text,
-            link: values.instructions.new_account_link,
-        }
-    };
 
     try {
+      // Legacy fields for backward compatibility
+      const legacyData = {
+          name: values.basicInfo.broker_name,
+          description: values.instructions.description,
+          rating: Math.round(values.reputation.wikifx_score ? values.reputation.wikifx_score / 2 : 0),
+          instructions: {
+              description: values.instructions.new_account_instructions,
+              linkText: values.instructions.new_account_link_text,
+              link: values.instructions.new_account_link,
+          }
+      };
+
+      const payload = { ...values, ...legacyData };
+
       let result;
       if (broker) {
-        result = await updateBroker(broker.id, finalValues);
+        result = await updateBroker(broker.id, payload);
       } else {
-        const { id, order, ...dataToAdd } = finalValues;
+        const { id, order, ...dataToAdd } = payload as any;
         result = await addBroker(dataToAdd as Omit<Broker, 'id' | 'order'>);
       }
 
@@ -232,6 +254,7 @@ export function ArabicBrokerFormDialog({
         toast({ variant: "destructive", title: "خطأ", description: result.message });
       }
     } catch (error) {
+      console.error(error);
       toast({ variant: "destructive", title: "خطأ", description: "حدث خطأ غير متوقع." });
     } finally {
       setIsSubmitting(false);
@@ -343,12 +366,12 @@ export function ArabicBrokerFormDialog({
                   <FormField control={form.control} name="tradingConditions.min_deposit" render={({ field }) => (<FormItem><FormLabel>الحد الأدنى للإيداع ($)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="tradingConditions.max_leverage" render={({ field }) => (<FormItem><FormLabel>الرافعة المالية</FormLabel><FormControl><Input placeholder="e.g. 1:500" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="tradingConditions.spread_type" render={({ field }) => (<FormItem><FormLabel>نوع السبريد</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{TermsBank.spreadType.map(o=><SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
-                  <FormField control={form.control} name="tradingConditions.avg_spread" render={({ field }) => (<FormItem><FormLabel>متوسط السبريد (نقاط)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={form.control} name="tradingConditions.min_spread" render={({ field }) => (<FormItem><FormLabel>أدنى سبريد (نقاط)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                 </AccordionContent>
               </AccordionItem>
               
-              <AccordionItem value="item-12">
-                <AccordionTrigger>12. ميزات الحساب</AccordionTrigger>
+              <AccordionItem value="item-5">
+                <AccordionTrigger>5. ميزات الحساب</AccordionTrigger>
                 <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {renderBooleanField('additionalFeatures.welcome_bonus', 'بونص ترحيبي ومكافآت')}
                     {renderBooleanField('additionalFeatures.copy_trading', 'نسخ التداول')}
@@ -364,9 +387,8 @@ export function ArabicBrokerFormDialog({
               <AccordionItem value="item-6">
                 <AccordionTrigger>6. طرق الدفع والسحب</AccordionTrigger>
                 <AccordionContent className="space-y-4">
-                    {renderMultiSelect('depositsWithdrawals.deposit_methods', 'طرق الإيداع', TermsBank.depositMethods)}
+                    {renderMultiSelect('depositsWithdrawals.payment_methods', 'طرق الدفع', TermsBank.depositMethods)}
                     {renderBooleanField('depositsWithdrawals.deposit_fees', 'توجد رسوم على الإيداع')}
-                    {renderMultiSelect('depositsWithdrawals.withdrawal_methods', 'طرق السحب', TermsBank.withdrawalMethods)}
                     {renderBooleanField('depositsWithdrawals.withdrawal_fees', 'توجد رسوم على السحب')}
                     <FormField control={form.control} name="depositsWithdrawals.min_withdrawal" render={({ field }) => (<FormItem><FormLabel>الحد الأدنى للسحب ($)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                     <FormField control={form.control} name="depositsWithdrawals.withdrawal_speed" render={({ field }) => (<FormItem><FormLabel>سرعة السحب</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{TermsBank.supportHours.map(o=><SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
@@ -379,7 +401,7 @@ export function ArabicBrokerFormDialog({
                 <AccordionContent className="space-y-4">
                     {renderMultiSelect('globalReach.languages_supported', 'اللغات المدعومة', TermsBank.languagesSupported)}
                     {renderMultiSelect('globalReach.customer_support_channels', 'قنوات الدعم', TermsBank.supportChannels)}
-                    <FormField control={form.control} name="globalReach.support_hours" render={({ field }) => (<FormItem><FormLabel>ساعات الدعم</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{TermsBank.supportHours.map(o=><SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="globalReach.business_region" render={({ field }) => (<FormItem><FormLabel>ساعات الدعم</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{TermsBank.supportHours.map(o=><SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                 </AccordionContent>
               </AccordionItem>
 
@@ -407,7 +429,7 @@ export function ArabicBrokerFormDialog({
               <AccordionItem value="item-10">
                 <AccordionTrigger>10. تقييمات الوسيط</AccordionTrigger>
                 <AccordionContent className="space-y-4">
-                    <FormField control={form.control} name="reputation.overall_rating" render={({ field }) => (<FormItem><FormLabel>التقييم العام (1-5)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="reputation.trustpilot_rating" render={({ field }) => (<FormItem><FormLabel>التقييم العام (1-5)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                     <FormField control={form.control} name="reputation.reviews_count" render={({ field }) => (<FormItem><FormLabel>عدد المراجعات</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                     <FormField control={form.control} name="reputation.verified_users" render={({ field }) => (<FormItem><FormLabel>عدد المستخدمين الموثوقين</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                     <FormField control={form.control} name="reputation.wikifx_score" render={({ field }) => (<FormItem><FormLabel>تقييم WikiFX (1-10)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>)}/>
