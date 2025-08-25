@@ -1,5 +1,4 @@
 
-
 import type { Timestamp } from "firebase/firestore";
 
 /**
@@ -59,9 +58,9 @@ export interface Broker {
         CEO: string;
     };
     regulation: {
+        licenses: { authority: string; licenseNumber?: string; status: string }[];
         regulated_in: string[];
         regulator_name: string[];
-        license_type: string;
         regulation_status: 'Active' | 'Revoked' | 'Expired' | 'Unregulated';
         offshore_regulation: boolean;
         risk_level: 'Low' | 'Medium' | 'High' | 'Suspicious' | 'Unregulated';
@@ -122,6 +121,7 @@ export interface Broker {
         demo_account: boolean;
         trading_contests: boolean;
         regulatory_alerts: string;
+        welcome_bonus: boolean;
     };
     // Legacy fields for compatibility until UI is updated
     name: string;

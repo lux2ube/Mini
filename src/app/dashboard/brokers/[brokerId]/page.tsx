@@ -155,6 +155,18 @@ export default function BrokerPreviewPage() {
                     <InfoRow label="الحد الأدنى للسبريد" value={`${tradingConditions.min_spread} نقطة`} />
                 </div>
             </DetailCard>
+            
+            <DetailCard title="ميزات الحساب" icon={Briefcase}>
+                 <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
+                    <BooleanPill value={additionalFeatures.welcome_bonus} text="بونص ترحيبي ومكافآت" />
+                    <BooleanPill value={instruments.crypto_trading} text="تداول العملات المشفرة" />
+                    <BooleanPill value={additionalFeatures.copy_trading} text="نسخ التداول" />
+                    <BooleanPill value={tradingConditions.swap_free} text="حسابات إسلامية" />
+                    <BooleanPill value={additionalFeatures.demo_account} text="حسابات تجريبية" />
+                    <BooleanPill value={additionalFeatures.education_center} text="مركز تعليمي" />
+                    <BooleanPill value={additionalFeatures.trading_contests} text="مسابقات تداول" />
+                </div>
+            </DetailCard>
 
             <DetailCard title="التنظيم والترخيص" icon={ShieldCheck}>
                 <InfoRow label="الجهة المنظمة (الجهات)" value={join(regulation.regulator_name)} />
@@ -166,17 +178,6 @@ export default function BrokerPreviewPage() {
                 <InfoRow label="تنظيم خارجي؟">
                     {regulation.offshore_regulation ? 'نعم' : 'لا'}
                 </InfoRow>
-            </DetailCard>
-
-            <DetailCard title="ميزات الحساب" icon={Briefcase}>
-                 <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
-                    <BooleanPill value={instruments.crypto_trading} text="تداول العملات المشفرة" />
-                    <BooleanPill value={additionalFeatures.copy_trading} text="نسخ التداول" />
-                    <BooleanPill value={tradingConditions.swap_free} text="حسابات إسلامية" />
-                    <BooleanPill value={additionalFeatures.demo_account} text="حسابات تجريبية" />
-                    <BooleanPill value={additionalFeatures.education_center} text="مركز تعليمي" />
-                    <BooleanPill value={additionalFeatures.trading_contests} text="مسابقات تداول" />
-                </div>
             </DetailCard>
 
             <DetailCard title="المنصات والأدوات" icon={Gauge}>

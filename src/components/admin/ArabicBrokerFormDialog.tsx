@@ -107,6 +107,13 @@ const formSchema = z.object({
       verified_users: z.coerce.number().min(0).optional().default(0),
       wikifx_score: z.coerce.number().min(0).max(10).optional().default(0),
   }),
+  additionalFeatures: z.object({
+      welcome_bonus: z.boolean().default(false),
+      copy_trading: z.boolean().default(false),
+      demo_account: z.boolean().default(false),
+      education_center: z.boolean().default(false),
+      trading_contests: z.boolean().default(false),
+  }),
   instructions: z.object({
       description: z.string().optional().default(""),
       new_account_instructions: z.string().optional().default(""),
@@ -139,6 +146,7 @@ const getSafeDefaultValues = (broker?: Broker | null): BrokerFormValues => {
         cashback: { affiliate_program_link: "", cashback_account_type: [], cashback_frequency: "", rebate_method: [], cashback_per_lot: 0 },
         globalReach: { languages_supported: [], customer_support_channels: [], support_hours: "", business_region: [] },
         reputation: { overall_rating: 0, reviews_count: 0, verified_users: 0, wikifx_score: 0 },
+        additionalFeatures: { welcome_bonus: false, copy_trading: false, demo_account: false, education_center: false, trading_contests: false },
         instructions: { description: "", new_account_instructions: "", new_account_link: "", new_account_link_text: "" },
         existingAccountInstructions: "",
     };
@@ -147,7 +155,6 @@ const getSafeDefaultValues = (broker?: Broker | null): BrokerFormValues => {
         return defaults;
     }
     
-    // Create a deep copy to avoid modifying the original broker object and merge with defaults
     const brokerCopy = JSON.parse(JSON.stringify(broker));
 
     return {
@@ -162,53 +169,10 @@ const getSafeDefaultValues = (broker?: Broker | null): BrokerFormValues => {
         cashback: { ...defaults.cashback, ...brokerCopy.cashback },
         globalReach: { ...defaults.globalReach, ...brokerCopy.globalReach },
         reputation: { ...defaults.reputation, ...brokerCopy.reputation },
+        additionalFeatures: { ...defaults.additionalFeatures, ...brokerCopy.additionalFeatures },
         instructions: { ...defaults.instructions, ...brokerCopy.instructions },
     };
 };
-
-// Helper for multi-select checkboxes
-const MultiSelectCheckbox = ({ name, options }: { name: any, options: {key: string, label: string}[] }) => {
-    const { control } = useForm();
-    return (
-        <FormField
-            control={control}
-            name={name}
-            render={() => (
-                <FormItem className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {options.map((item) => (
-                    <FormField
-                        key={item.key}
-                        control={control}
-                        name={name}
-                        render={({ field }) => {
-                            return (
-                            <FormItem key={item.key} className="flex flex-row items-start space-x-2 space-y-0 rounded-md border p-2 justify-end">
-                                <FormControl>
-                                <Checkbox
-                                    checked={field.value?.includes(item.key)}
-                                    onCheckedChange={(checked) => {
-                                        return checked
-                                        ? field.onChange([...(field.value || []), item.key])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                                (value: string) => value !== item.key
-                                            )
-                                            )
-                                    }}
-                                />
-                                </FormControl>
-                                <FormLabel className="font-normal cursor-pointer text-right w-full">{item.label}</FormLabel>
-                            </FormItem>
-                            )
-                        }}
-                    />
-                ))}
-                <FormMessage />
-                </FormItem>
-            )}
-        />
-    )
-}
 
 export function ArabicBrokerFormDialog({
   broker,
@@ -231,18 +195,16 @@ export function ArabicBrokerFormDialog({
   });
 
   React.useEffect(() => {
+    if (isOpen) {
       form.reset(getSafeDefaultValues(broker));
+    }
   }, [broker, form, isOpen]);
 
   const onSubmit = async (values: BrokerFormValues) => {
     setIsSubmitting(true);
     
-    // This is where you would map the form values to your final Broker object structure.
-    // For now, we will assume a direct mapping.
-    // In a real scenario, you'd want to ensure backwards compatibility if needed.
     const finalValues: any = {
         ...values,
-        // Legacy fields for compatibility if needed.
         name: values.basicInfo.broker_name,
         description: values.instructions.description,
         rating: Math.round(values.reputation.overall_rating || 0),
@@ -337,6 +299,7 @@ export function ArabicBrokerFormDialog({
               <AccordionItem value="item-1">
                 <AccordionTrigger>1. المعلومات الأساسية</AccordionTrigger>
                 <AccordionContent className="space-y-4">
+                  <FormField control={form.control} name="logoUrl" render={({ field }) => (<FormItem><FormLabel>رابط الشعار</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="basicInfo.broker_name" render={({ field }) => (<FormItem><FormLabel>اسم الوسيط</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="basicInfo.CEO" render={({ field }) => (<FormItem><FormLabel>المؤسس / CEO</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="basicInfo.founded_year" render={({ field }) => (<FormItem><FormLabel>سنة التأسيس</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)}/>
@@ -381,19 +344,19 @@ export function ArabicBrokerFormDialog({
                   <FormField control={form.control} name="tradingConditions.max_leverage" render={({ field }) => (<FormItem><FormLabel>الرافعة المالية</FormLabel><FormControl><Input placeholder="e.g. 1:500" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="tradingConditions.spread_type" render={({ field }) => (<FormItem><FormLabel>نوع السبريد</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{TermsBank.spreadType.map(o=><SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                   <FormField control={form.control} name="tradingConditions.avg_spread" render={({ field }) => (<FormItem><FormLabel>متوسط السبريد (نقاط)</FormLabel><FormControl><Input type="number" step="0.1" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                  {renderBooleanField('tradingConditions.swap_free', 'حساب بدون مبادلة (إسلامي)')}
                 </AccordionContent>
               </AccordionItem>
               
-              {/* Section 5: Instruments */}
-              <AccordionItem value="item-5">
-                <AccordionTrigger>5. المنتجات المالية</AccordionTrigger>
+              <AccordionItem value="item-12">
+                <AccordionTrigger>12. ميزات الحساب</AccordionTrigger>
                 <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {renderBooleanField('instruments.forex', 'فوركس')}
-                    {renderBooleanField('instruments.stocks', 'أسهم')}
-                    {renderBooleanField('instruments.commodities', 'سلع')}
-                    {renderBooleanField('instruments.indices', 'مؤشرات')}
-                    {renderBooleanField('instruments.crypto', 'عملات رقمية')}
+                    {renderBooleanField('additionalFeatures.welcome_bonus', 'بونص ترحيبي ومكافآت')}
+                    {renderBooleanField('additionalFeatures.copy_trading', 'نسخ التداول')}
+                    {renderBooleanField('instruments.crypto_trading', 'تداول العملات المشفرة')}
+                    {renderBooleanField('tradingConditions.swap_free', 'حسابات إسلامية')}
+                    {renderBooleanField('additionalFeatures.demo_account', 'حسابات تجريبية')}
+                    {renderBooleanField('additionalFeatures.education_center', 'مركز تعليمي')}
+                    {renderBooleanField('additionalFeatures.trading_contests', 'مسابقات تداول')}
                 </AccordionContent>
               </AccordionItem>
 
