@@ -33,10 +33,12 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSessionExpired, setIsSessionExpired] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
   const logout = useCallback(async (isTimeout = false) => {
+    setIsSessionExpired(false);
     const { success, error } = await handleLogout();
     if (success) {
       if (isTimeout) {
@@ -62,25 +64,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [router, toast]);
   
-  const { isIdle, startTimer, resetTimer } = useInactivityTimeout(() => logout(true), 10 * 60 * 1000);
-  const [showTimeoutDialog, setShowTimeoutDialog] = useState(false);
+  const handleInactivity = useCallback(() => {
+    setIsSessionExpired(true);
+  }, []);
+
+  const { resetTimer } = useInactivityTimeout(handleInactivity, 9 * 60 * 1000); // Warn after 9 minutes
 
   useEffect(() => {
-    let warningTimer: NodeJS.Timeout;
-    if (isIdle) {
-      // Set a timer to show the warning dialog 1 minute before the final logout
-      warningTimer = setTimeout(() => {
-        setShowTimeoutDialog(true);
-      }, (10 * 60 * 1000) - (1 * 60 * 1000));
-    } else {
-      setShowTimeoutDialog(false);
+    let finalLogoutTimer: NodeJS.Timeout;
+    if (isSessionExpired) {
+        // If the warning dialog is shown, set a final timer to log out after 1 more minute
+        finalLogoutTimer = setTimeout(() => {
+            logout(true);
+        }, 1 * 60 * 1000);
     }
     
-    return () => clearTimeout(warningTimer);
-  }, [isIdle]);
+    return () => clearTimeout(finalLogoutTimer);
+  }, [isSessionExpired, logout]);
   
   const handleStayLoggedIn = () => {
-    setShowTimeoutDialog(false);
+    setIsSessionExpired(false);
     resetTimer();
   };
 
@@ -117,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       if (firebaseUser) {
         fetchUserData(firebaseUser);
-        startTimer();
+        resetTimer();
       } else {
         setUser(null);
         setIsLoading(false);
@@ -136,7 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         unsubscribe();
         window.removeEventListener('refetchUser', handleRefetch);
     };
-  }, [fetchUserData, startTimer]);
+  }, [fetchUserData, resetTimer]);
   
   const refetchUserData = useCallback(() => {
       if(auth.currentUser) {
@@ -150,7 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       {children}
       {user && (
           <SessionTimeoutDialog
-            isOpen={showTimeoutDialog}
+            isOpen={isSessionExpired}
             onStayLoggedIn={handleStayLoggedIn}
             onLogout={() => logout(false)}
           />
@@ -160,4 +163,3 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useAuthContext = () => useContext(AuthContext);
-
