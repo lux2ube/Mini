@@ -62,7 +62,7 @@ function Footer() {
                       <h3 className="font-semibold mb-2 font-headline">قانوني</h3>
                        <ul className="space-y-1 text-sm text-muted-foreground">
                           <li><Link href="#" className="hover:text-primary">سياسة الخصوصية</Link></li>
-                          <li><Link href="#" className="hover:text-primary">شروط الخدمة</Link></li>
+                          <li><Link href="/terms" className="hover:text-primary">شروط الخدمة</Link></li>
                       </ul>
                   </div>
                    <div>
