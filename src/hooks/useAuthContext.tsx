@@ -6,11 +6,6 @@ import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
-import { useInactivityTimeout } from './useInactivityTimeout';
-import { SessionTimeoutDialog } from '@/components/user/SessionTimeoutDialog';
-import { handleLogout } from '@/app/actions';
-import { useRouter } from 'next/navigation';
-import { useToast } from './use-toast';
 
 
 // Extend the user object to include the profile
@@ -33,59 +28,6 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSessionExpired, setIsSessionExpired] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
-
-  const logout = useCallback(async (isTimeout = false) => {
-    setIsSessionExpired(false);
-    const { success, error } = await handleLogout();
-    if (success) {
-      if (isTimeout) {
-        toast({
-          title: "Session Expired",
-          description: "You have been logged out due to inactivity.",
-          type: 'info'
-        });
-      } else {
-        toast({
-          title: "Logged Out",
-          description: "You have been successfully logged out.",
-          type: 'success'
-        });
-      }
-      router.push('/login');
-    } else {
-      toast({
-        title: "Logout Failed",
-        description: error,
-        variant: 'destructive',
-      });
-    }
-  }, [router, toast]);
-  
-  const handleInactivity = useCallback(() => {
-    setIsSessionExpired(true);
-  }, []);
-
-  const { resetTimer } = useInactivityTimeout(handleInactivity, 9 * 60 * 1000); // Warn after 9 minutes
-
-  useEffect(() => {
-    let finalLogoutTimer: NodeJS.Timeout;
-    if (isSessionExpired) {
-        // If the warning dialog is shown, set a final timer to log out after 1 more minute
-        finalLogoutTimer = setTimeout(() => {
-            logout(true);
-        }, 1 * 60 * 1000);
-    }
-    
-    return () => clearTimeout(finalLogoutTimer);
-  }, [isSessionExpired, logout]);
-  
-  const handleStayLoggedIn = () => {
-    setIsSessionExpired(false);
-    resetTimer();
-  };
 
   const fetchUserData = useCallback(async (firebaseUser: FirebaseAuthUser) => {
     if (!firebaseUser) {
@@ -120,7 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true);
       if (firebaseUser) {
         fetchUserData(firebaseUser);
-        resetTimer();
       } else {
         setUser(null);
         setIsLoading(false);
@@ -139,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         unsubscribe();
         window.removeEventListener('refetchUser', handleRefetch);
     };
-  }, [fetchUserData, resetTimer]);
+  }, [fetchUserData]);
   
   const refetchUserData = useCallback(() => {
       if(auth.currentUser) {
@@ -151,13 +92,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={{ user, isLoading, refetchUserData }}>
       {children}
-      {user && (
-          <SessionTimeoutDialog
-            isOpen={isSessionExpired}
-            onStayLoggedIn={handleStayLoggedIn}
-            onLogout={() => logout(false)}
-          />
-      )}
     </AuthContext.Provider>
   );
 };
