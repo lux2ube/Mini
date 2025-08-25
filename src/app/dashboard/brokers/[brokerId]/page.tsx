@@ -46,7 +46,10 @@ function DetailCard({ title, icon: Icon, children }: { title: string, icon: Reac
 }
 
 function InfoRow({ label, value, children }: { label: string, value?: any, children?: React.ReactNode }) {
-    if (!value && !children) return null;
+    if (value === undefined && !children) return null;
+    if (Array.isArray(value) && value.length === 0) return null;
+    if (value === '' || value === null) return null;
+
     return (
         <div className="flex justify-between items-center text-xs">
             <span className="text-muted-foreground">{label}</span>
@@ -57,7 +60,8 @@ function InfoRow({ label, value, children }: { label: string, value?: any, child
     )
 }
 
-function BooleanPill({ value, text }: { value: boolean, text: string }) {
+function BooleanPill({ value, text }: { value: boolean | undefined, text: string }) {
+    if (value === undefined) return null;
     return (
         <div className="flex items-center gap-1.5">
             {value ? <CheckCircle className="h-3.5 w-3.5 text-green-500" /> : <XCircle className="h-3.5 w-3.5 text-red-500" />}
@@ -107,8 +111,7 @@ export default function BrokerPreviewPage() {
         notFound();
     }
     
-    // Helper to join array fields for display
-    const join = (arr: any) => Array.isArray(arr) ? arr.join(', ') : arr;
+    const join = (arr: any[] | undefined) => Array.isArray(arr) ? arr.join(', ') : arr;
 
     const { basicInfo, regulation, tradingConditions, platforms, instruments, depositsWithdrawals, cashback, globalReach, reputation, additionalFeatures } = broker;
 
@@ -141,12 +144,12 @@ export default function BrokerPreviewPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center">
                  <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Star className="h-4 w-4 text-yellow-500"/> <span className="font-bold">{reputation.wikifx_score?.toFixed(1)}</span><span className="text-xs">تقييم WikiFX</span></Badge>
                  <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Users className="h-4 w-4 text-primary"/> <span className="font-bold">{reputation.verified_users?.toLocaleString()}</span><span className="text-xs">مستخدمون موثوقون</span></Badge>
-                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><ShieldCheck className="h-4 w-4 text-blue-500"/> <span className="font-bold">{regulation.risk_level}</span><span className="text-xs">مستوى المخاطرة</span></Badge>
+                 <Badge variant="outline" className="flex-col h-14 justify-center gap-1 capitalize"><ShieldCheck className="h-4 w-4 text-blue-500"/> <span className="font-bold">{regulation.risk_level}</span><span className="text-xs">مستوى المخاطرة</span></Badge>
                  <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Award className="h-4 w-4 text-green-500"/> <span className="font-bold">{basicInfo.founded_year}</span><span className="text-xs">تأسست</span></Badge>
             </div>
             
             <DetailCard title="الكاش باك والتداول" icon={Coins}>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
                     <InfoRow label="كاش باك لكل لوت" value={`$${cashback.cashback_per_lot?.toFixed(2)}`} />
                     <InfoRow label="تكرار الكاش باك" value={cashback.cashback_frequency} />
                     <InfoRow label="حسابات الكاش باك" value={join(cashback.cashback_account_type)} />
@@ -169,15 +172,14 @@ export default function BrokerPreviewPage() {
             </DetailCard>
 
             <DetailCard title="التنظيم والترخيص" icon={ShieldCheck}>
-                <InfoRow label="الجهة المنظمة (الجهات)" value={join(regulation.regulator_name)} />
-                 <Separator className="my-2" />
-                <InfoRow label="مرخص في" value={join(regulation.regulated_in)} />
-                 <Separator className="my-2" />
                 <InfoRow label="الحالة" value={regulation.regulation_status} />
-                 <Separator className="my-2" />
-                <InfoRow label="تنظيم خارجي؟">
-                    {regulation.offshore_regulation ? 'نعم' : 'لا'}
-                </InfoRow>
+                <Separator className="my-2" />
+                 {regulation.licenses?.map((license, index) => (
+                    <React.Fragment key={index}>
+                        <InfoRow label={license.authority} value={license.licenseNumber} />
+                        {index < regulation.licenses.length - 1 && <Separator className="my-2" />}
+                    </React.Fragment>
+                 ))}
             </DetailCard>
 
             <DetailCard title="المنصات والأدوات" icon={Gauge}>
@@ -193,10 +195,24 @@ export default function BrokerPreviewPage() {
                     </div>
                 </InfoRow>
             </DetailCard>
+
              <DetailCard title="الإيداع والسحب" icon={Landmark}>
                 <InfoRow label="طرق الدفع" value={join(depositsWithdrawals.payment_methods)} />
                 <Separator className="my-2" />
                 <InfoRow label="سرعة السحب" value={depositsWithdrawals.withdrawal_speed} />
+                <Separator className="my-2" />
+                <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
+                    <BooleanPill value={depositsWithdrawals.deposit_fees} text="رسوم على الإيداع" />
+                    <BooleanPill value={depositsWithdrawals.withdrawal_fees} text="رسوم على السحب" />
+                </div>
+             </DetailCard>
+
+             <DetailCard title="الدعم والوصول العالمي" icon={Globe}>
+                <InfoRow label="مناطق العمل" value={join(globalReach.business_region)} />
+                <Separator className="my-2" />
+                <InfoRow label="اللغات المدعومة" value={join(globalReach.languages_supported)} />
+                 <Separator className="my-2" />
+                <InfoRow label="قنوات الدعم" value={join(globalReach.customer_support_channels)} />
              </DetailCard>
              
         </div>
