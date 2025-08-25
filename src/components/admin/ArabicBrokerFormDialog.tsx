@@ -401,7 +401,7 @@ export function ArabicBrokerFormDialog({
                 <AccordionContent className="space-y-4">
                     {renderMultiSelect('globalReach.languages_supported', 'اللغات المدعومة', TermsBank.languagesSupported)}
                     {renderMultiSelect('globalReach.customer_support_channels', 'قنوات الدعم', TermsBank.supportChannels)}
-                    <FormField control={form.control} name="globalReach.business_region" render={({ field }) => (<FormItem><FormLabel>ساعات الدعم</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{TermsBank.supportHours.map(o=><SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
+                    <FormField control={form.control} name="globalReach.global_presence" render={({ field }) => (<FormItem><FormLabel>ساعات الدعم</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent>{TermsBank.supportHours.map(o=><SelectItem key={o.key} value={o.key}>{o.label}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)}/>
                 </AccordionContent>
               </AccordionItem>
 
@@ -464,5 +464,3 @@ export function ArabicBrokerFormDialog({
     </Dialog>
   );
 }
-
-    
