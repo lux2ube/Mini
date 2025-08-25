@@ -7,7 +7,7 @@ import type { GenerateProjectSummaryOutput } from "@/ai/flows/generate-project-s
 import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 import { auth, db } from "@/lib/firebase/config";
-import { createUserWithEmailAndPassword, signOut, deleteUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail } from "firebase/auth";
 import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
 
@@ -125,5 +125,18 @@ export async function handleLogout() {
     } catch (error) {
         console.error("Logout Error: ", error);
         return { success: false, error: "Failed to log out." };
+    }
+}
+
+export async function handleForgotPassword(email: string) {
+    try {
+        await sendPasswordResetEmail(auth, email);
+        return { success: true };
+    } catch (error: any) {
+        console.error("Forgot Password Error: ", error);
+        if (error.code === 'auth/user-not-found') {
+            return { success: false, error: "No user found with this email address." };
+        }
+        return { success: false, error: "An unexpected error occurred. Please try again." };
     }
 }
