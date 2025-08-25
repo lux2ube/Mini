@@ -68,7 +68,6 @@ export interface Broker {
     };
     tradingConditions: {
         account_types: string[];
-        swap_free: boolean;
         max_leverage: string;
         min_deposit: number;
         spread_type: string;
@@ -116,6 +115,7 @@ export interface Broker {
         verified_users: number;
     };
     additionalFeatures: {
+        swap_free: boolean;
         education_center: boolean;
         copy_trading: boolean;
         demo_account: boolean;
@@ -419,3 +419,5 @@ export interface FeedbackResponse {
 export interface EnrichedFeedbackResponse extends FeedbackResponse {
     userName: string;
 }
+
+    

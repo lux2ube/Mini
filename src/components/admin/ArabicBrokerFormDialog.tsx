@@ -64,7 +64,6 @@ const formSchema = z.object({
   }),
   tradingConditions: z.object({
       account_types: z.array(z.string()).optional().default([]),
-      swap_free: z.boolean().default(false),
       max_leverage: z.string().optional().default("1:500"),
       min_deposit: z.coerce.number().min(0).default(10),
       spread_type: z.string().optional().default(""),
@@ -112,6 +111,7 @@ const formSchema = z.object({
       verified_users: z.coerce.number().min(0).optional().default(0),
   }),
   additionalFeatures: z.object({
+      swap_free: z.boolean().default(false),
       education_center: z.boolean().default(false),
       copy_trading: z.boolean().default(false),
       demo_account: z.boolean().default(false),
@@ -144,14 +144,14 @@ const getSafeDefaultValues = (broker?: Broker | null): BrokerFormValues => {
         category: 'forex',
         basicInfo: { broker_name: "", group_entity: "", founded_year: new Date().getFullYear(), headquarters: "", CEO: "", broker_type: "" },
         regulation: { regulation_status: "", licenses: [], offshore_regulation: false, risk_level: "", regulated_in: [], regulator_name: [] },
-        tradingConditions: { account_types: [], swap_free: false, max_leverage: "1:500", min_deposit: 10, spread_type: "", min_spread: 0, commission_per_lot: 0, execution_speed: "" },
+        tradingConditions: { account_types: [], max_leverage: "1:500", min_deposit: 10, spread_type: "", min_spread: 0, commission_per_lot: 0, execution_speed: "" },
         platforms: { platforms_supported: [], mt4_license_type: 'None', mt5_license_type: 'None', custom_platform: false },
         instruments: { forex_pairs: "", crypto_trading: false, stocks: false, commodities: false, indices: false },
         depositsWithdrawals: { payment_methods: [], min_withdrawal: 0, withdrawal_speed: "", deposit_fees: false, withdrawal_fees: false },
         cashback: { affiliate_program_link: "", cashback_account_type: [], cashback_frequency: "", rebate_method: [], cashback_per_lot: 0 },
         globalReach: { business_region: [], global_presence: "", languages_supported: [], customer_support_channels: [] },
         reputation: { wikifx_score: 0, trustpilot_rating: 0, reviews_count: 0, verified_users: 0 },
-        additionalFeatures: { education_center: false, copy_trading: false, demo_account: false, trading_contests: false, regulatory_alerts: "", welcome_bonus: false },
+        additionalFeatures: { swap_free: false, education_center: false, copy_trading: false, demo_account: false, trading_contests: false, regulatory_alerts: "", welcome_bonus: false },
         instructions: { description: "", new_account_instructions: "", new_account_link: "", new_account_link_text: "" },
         existingAccountInstructions: "",
     };
@@ -370,13 +370,13 @@ export function ArabicBrokerFormDialog({
                 </AccordionContent>
               </AccordionItem>
               
-              <AccordionItem value="item-5">
-                <AccordionTrigger>5. ميزات الحساب</AccordionTrigger>
+              <AccordionItem value="item-12">
+                <AccordionTrigger>12. ميزات الحساب</AccordionTrigger>
                 <AccordionContent className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {renderBooleanField('additionalFeatures.welcome_bonus', 'بونص ترحيبي ومكافآت')}
                     {renderBooleanField('additionalFeatures.copy_trading', 'نسخ التداول')}
                     {renderBooleanField('instruments.crypto_trading', 'تداول العملات المشفرة')}
-                    {renderBooleanField('tradingConditions.swap_free', 'حسابات إسلامية')}
+                    {renderBooleanField('additionalFeatures.swap_free', 'حسابات إسلامية')}
                     {renderBooleanField('additionalFeatures.demo_account', 'حسابات تجريبية')}
                     {renderBooleanField('additionalFeatures.education_center', 'مركز تعليمي')}
                     {renderBooleanField('additionalFeatures.trading_contests', 'مسابقات تداول')}
@@ -464,3 +464,5 @@ export function ArabicBrokerFormDialog({
     </Dialog>
   );
 }
+
+    
