@@ -44,7 +44,7 @@ export default function AboutPage() {
         <CardHeader className="text-center">
           <CardTitle className="font-headline text-2xl">تعرف على الفريق</CardTitle>
         </CardHeader>
-        <CardContent className="grid sm:grid-cols-3 gap-8">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           {teamMembers.map((member) => (
             <div key={member.name} className="flex flex-col items-center text-center">
               <Avatar className="w-24 h-24 mb-4">

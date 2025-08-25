@@ -49,7 +49,7 @@ export default function ContactPage() {
             </CardHeader>
             <CardContent>
                  <form className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="first-name">الاسم الأول</Label>
                             <div className="relative">
