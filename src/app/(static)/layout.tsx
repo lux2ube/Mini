@@ -16,7 +16,6 @@ function Header() {
                     </Link>
                     <nav className="flex items-center gap-4">
                         <Button variant="ghost" asChild><Link href="/about">من نحن</Link></Button>
-                        <Button variant="ghost" asChild><Link href="/blog">المدونة</Link></Button>
                         <Button variant="ghost" asChild><Link href="/contact">اتصل بنا</Link></Button>
                         <Button asChild><Link href="/login">تسجيل الدخول</Link></Button>
                     </nav>
