@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +18,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import React from 'react';
+import { TermsBank } from '@/lib/terms-bank';
 
 function BrokerDetailSkeleton() {
     return (
@@ -54,9 +54,9 @@ function InfoRow({ label, value, children }: { label: string, value?: any, child
     return (
         <div className="flex justify-between items-center text-xs">
             <span className="text-muted-foreground">{label}</span>
-            <span className="font-medium text-right">
+            <div className="font-medium text-right">
                 {children || value}
-            </span>
+            </div>
         </div>
     )
 }
@@ -69,6 +69,11 @@ function BooleanPill({ value, text }: { value: boolean | undefined, text: string
             <span className="text-xs">{text}</span>
         </div>
     )
+}
+
+function findLabel(bank: {key: string, label: string}[], key: string | undefined) {
+    if (!key) return key;
+    return bank.find(item => item.key === key)?.label || key;
 }
 
 export default function BrokerPreviewPage() {
@@ -112,10 +117,12 @@ export default function BrokerPreviewPage() {
         notFound();
     }
     
-    const join = (arr: any[] | undefined) => Array.isArray(arr) ? arr.join(', ') : arr;
-
-    const { basicInfo, regulation, tradingConditions, platforms, instruments, depositsWithdrawals, cashback, globalReach, reputation, additionalFeatures } = broker;
-
+    const { 
+        basicInfo, regulation, tradingConditions, platforms, instruments, 
+        depositsWithdrawals, cashback, globalReach, reputation, additionalFeatures, instructions,
+        logoUrl
+    } = broker;
+    
     return (
         <div className="container mx-auto px-4 py-4 max-w-2xl space-y-4">
             <Button variant="ghost" asChild className="h-auto p-0 text-sm">
@@ -125,7 +132,7 @@ export default function BrokerPreviewPage() {
             <Card className="overflow-hidden">
                 <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-4">
                     <Image
-                        src={broker.logoUrl}
+                        src={logoUrl}
                         alt={`${basicInfo.broker_name} logo`}
                         width={64}
                         height={64}
@@ -149,72 +156,127 @@ export default function BrokerPreviewPage() {
                  <Badge variant="outline" className="flex-col h-14 justify-center gap-1"><Award className="h-4 w-4 text-green-500"/> <span className="font-bold">{basicInfo.founded_year}</span><span className="text-xs">تأسست</span></Badge>
             </div>
             
-            <DetailCard title="الكاش باك والتداول" icon={Coins}>
-                <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
-                    <InfoRow label="كاش باك لكل لوت" value={`$${cashback.cashback_per_lot?.toFixed(2)}`} />
-                    <InfoRow label="تكرار الكاش باك" value={cashback.cashback_frequency} />
-                    <InfoRow label="حسابات الكاش باك" value={join(cashback.cashback_account_type)} />
-                    <InfoRow label="الحد الأدنى للإيداع" value={`$${tradingConditions.min_deposit}`} />
-                    <InfoRow label="الرافعة المالية القصوى" value={tradingConditions.max_leverage} />
-                    <InfoRow label="الحد الأدنى للسبريد" value={`${tradingConditions.min_spread} نقطة`} />
-                </div>
+            <DetailCard title="المعلومات الأساسية" icon={Briefcase}>
+                <InfoRow label="المؤسس / CEO" value={basicInfo.CEO} />
+                <InfoRow label="المقر الرئيسي" value={basicInfo.headquarters} />
+                <InfoRow label="نوع الشركة" value={findLabel(TermsBank.brokerType, basicInfo.broker_type)} />
+                <InfoRow label="الحالة التنظيمية" value={findLabel(TermsBank.regulationStatus, regulation.regulation_status)} />
             </DetailCard>
             
-            <DetailCard title="ميزات الحساب" icon={Briefcase}>
-                 <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
-                    <BooleanPill value={additionalFeatures?.welcome_bonus} text="بونص ترحيبي ومكافآت" />
-                    <BooleanPill value={instruments?.crypto_trading} text="تداول العملات المشفرة" />
-                    <BooleanPill value={additionalFeatures?.copy_trading} text="نسخ التداول" />
-                    <BooleanPill value={additionalFeatures?.swap_free} text="حسابات إسلامية" />
-                    <BooleanPill value={additionalFeatures?.demo_account} text="حسابات تجريبية" />
-                    <BooleanPill value={additionalFeatures?.education_center} text="مركز تعليمي" />
-                    <BooleanPill value={additionalFeatures?.trading_contests} text="مسابقات تداول" />
-                </div>
-            </DetailCard>
-
-            <DetailCard title="التنظيم والترخيص" icon={ShieldCheck}>
-                <InfoRow label="الحالة" value={regulation.regulation_status} />
-                <Separator className="my-2" />
-                 {regulation.licenses?.map((license, index) => (
+            <DetailCard title="التراخيص" icon={ShieldCheck}>
+                {regulation.licenses?.map((license, index) => (
                     <React.Fragment key={index}>
-                        <InfoRow label={license.authority} value={license.licenseNumber} />
+                        <div className="p-2 bg-muted/50 rounded-md">
+                            <InfoRow label="جهة الترخيص" value={findLabel(TermsBank.licenseAuthority, license.authority)} />
+                            <InfoRow label="رقم الترخيص" value={license.licenseNumber} />
+                            <InfoRow label="حالة الترخيص" value={findLabel(TermsBank.regulationStatus, license.status)} />
+                        </div>
                         {index < regulation.licenses.length - 1 && <Separator className="my-2" />}
                     </React.Fragment>
                  ))}
             </DetailCard>
 
-            <DetailCard title="المنصات والأدوات" icon={Gauge}>
-                <InfoRow label="المنصات المدعومة" value={join(platforms.platforms_supported)} />
-                 <Separator className="my-2" />
-                <InfoRow label="الأدوات">
-                    <div className="flex gap-2 flex-wrap justify-end">
-                       {instruments.forex_pairs && <Badge variant="secondary">فوركس</Badge>}
-                       {instruments.crypto_trading && <Badge variant="secondary">كريبتو</Badge>}
-                       {instruments.commodities && <Badge variant="secondary">سلع</Badge>}
-                       {instruments.indices && <Badge variant="secondary">مؤشرات</Badge>}
-                       {instruments.stocks && <Badge variant="secondary">أسهم</Badge>}
+             <DetailCard title="منصات التداول" icon={Gauge}>
+                <InfoRow label="المنصات المدعومة">
+                    <div className="flex gap-1 flex-wrap justify-end">
+                       {platforms.platforms_supported?.map(p => <Badge key={p} variant="secondary">{findLabel(TermsBank.platforms, p)}</Badge>)}
                     </div>
                 </InfoRow>
+                <Separator className="my-2" />
+                <InfoRow label="ترخيص MT4" value={platforms.mt4_license_type} />
+                <InfoRow label="ترخيص MT5" value={platforms.mt5_license_type} />
+            </DetailCard>
+            
+            <DetailCard title="الحسابات وأنواعها" icon={Users}>
+                <InfoRow label="أنواع الحسابات">
+                     <div className="flex gap-1 flex-wrap justify-end">
+                       {tradingConditions.account_types?.map(t => <Badge key={t} variant="secondary">{findLabel(TermsBank.accountTypes, t)}</Badge>)}
+                    </div>
+                </InfoRow>
+                <Separator className="my-2" />
+                <InfoRow label="الحد الأدنى للإيداع" value={`$${tradingConditions.min_deposit}`} />
+                <InfoRow label="الرافعة المالية القصوى" value={tradingConditions.max_leverage} />
+                <InfoRow label="نوع السبريد" value={findLabel(TermsBank.spreadType, tradingConditions.spread_type)} />
+                <InfoRow label="أدنى سبريد (نقاط)" value={tradingConditions.min_spread} />
             </DetailCard>
 
-             <DetailCard title="الإيداع والسحب" icon={Landmark}>
-                <InfoRow label="طرق الدفع" value={join(depositsWithdrawals.payment_methods)} />
-                <Separator className="my-2" />
-                <InfoRow label="سرعة السحب" value={depositsWithdrawals.withdrawal_speed} />
-                <Separator className="my-2" />
-                <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
-                    <BooleanPill value={depositsWithdrawals.deposit_fees} text="رسوم على الإيداع" />
-                    <BooleanPill value={depositsWithdrawals.withdrawal_fees} text="رسوم على السحب" />
+            <DetailCard title="ميزات الحساب" icon={Award}>
+                 <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
+                    <BooleanPill value={additionalFeatures.welcome_bonus} text="بونص ترحيبي ومكافآت" />
+                    <BooleanPill value={additionalFeatures.copy_trading} text="نسخ التداول" />
+                    <BooleanPill value={instruments.crypto_trading} text="تداول العملات المشفرة" />
+                    <BooleanPill value={additionalFeatures.swap_free} text="حسابات إسلامية" />
+                    <BooleanPill value={additionalFeatures.demo_account} text="حسابات تجريبية" />
+                    <BooleanPill value={additionalFeatures.education_center} text="مركز تعليمي" />
+                    <BooleanPill value={additionalFeatures.trading_contests} text="مسابقات تداول" />
                 </div>
-             </DetailCard>
-
-             <DetailCard title="الدعم والوصول العالمي" icon={Globe}>
-                <InfoRow label="مناطق العمل" value={join(globalReach.business_region)} />
+            </DetailCard>
+            
+            <DetailCard title="المنتجات المالية" icon={BrainCircuit}>
+                 <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
+                    <BooleanPill value={!!instruments.forex_pairs} text="فوركس" />
+                    <BooleanPill value={instruments.stocks} text="أسهم" />
+                    <BooleanPill value={instruments.commodities} text="سلع" />
+                    <BooleanPill value={instruments.indices} text="مؤشرات" />
+                 </div>
+            </DetailCard>
+            
+            <DetailCard title="طرق الدفع والسحب" icon={Landmark}>
+                <InfoRow label="طرق الدفع">
+                     <div className="flex gap-1 flex-wrap justify-end">
+                       {depositsWithdrawals.payment_methods?.map(p => <Badge key={p} variant="secondary">{findLabel(TermsBank.depositMethods, p)}</Badge>)}
+                    </div>
+                </InfoRow>
                 <Separator className="my-2" />
-                <InfoRow label="اللغات المدعومة" value={join(globalReach.languages_supported)} />
+                 <InfoRow label="الحد الأدنى للسحب" value={`$${depositsWithdrawals.min_withdrawal}`} />
+                 <InfoRow label="سرعة السحب" value={findLabel(TermsBank.supportHours, depositsWithdrawals.withdrawal_speed)} />
                  <Separator className="my-2" />
-                <InfoRow label="قنوات الدعم" value={join(globalReach.customer_support_channels)} />
-             </DetailCard>
+                 <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
+                     <BooleanPill value={depositsWithdrawals.deposit_fees} text="رسوم على الإيداع" />
+                     <BooleanPill value={depositsWithdrawals.withdrawal_fees} text="رسوم على السحب" />
+                 </div>
+            </DetailCard>
+            
+            <DetailCard title="الدعم والخدمة" icon={Globe}>
+                <InfoRow label="اللغات المدعومة">
+                    <div className="flex gap-1 flex-wrap justify-end">
+                       {globalReach.languages_supported?.map(l => <Badge key={l} variant="secondary">{findLabel(TermsBank.languagesSupported, l)}</Badge>)}
+                    </div>
+                </InfoRow>
+                 <Separator className="my-2" />
+                 <InfoRow label="قنوات الدعم">
+                    <div className="flex gap-1 flex-wrap justify-end">
+                       {globalReach.customer_support_channels?.map(c => <Badge key={c} variant="secondary">{findLabel(TermsBank.supportChannels, c)}</Badge>)}
+                    </div>
+                </InfoRow>
+                 <Separator className="my-2" />
+                 <InfoRow label="ساعات الدعم" value={findLabel(TermsBank.supportHours, globalReach.global_presence)} />
+            </DetailCard>
+            
+            <DetailCard title="برامج المكافآت" icon={Coins}>
+                 <InfoRow label="أنواع الحسابات المؤهلة">
+                    <div className="flex gap-1 flex-wrap justify-end">
+                       {cashback.cashback_account_type?.map(a => <Badge key={a} variant="secondary">{findLabel(TermsBank.accountTypes, a)}</Badge>)}
+                    </div>
+                </InfoRow>
+                 <Separator className="my-2" />
+                 <InfoRow label="تكرار المكافأة" value={findLabel(TermsBank.cashbackFrequency, cashback.cashback_frequency)} />
+                 <InfoRow label="طريقة دفع المكافأة">
+                     <div className="flex gap-1 flex-wrap justify-end">
+                       {cashback.rebate_method?.map(m => <Badge key={m} variant="secondary">{findLabel(TermsBank.rebateMethod, m)}</Badge>)}
+                    </div>
+                </InfoRow>
+                 <InfoRow label="قيمة المكافأة لكل لوت" value={`$${cashback.cashback_per_lot}`} />
+            </DetailCard>
+
+            <DetailCard title="تقييمات الوسيط" icon={Star}>
+                 <InfoRow label="تقييم Trustpilot" value={reputation.trustpilot_rating} />
+                 <InfoRow label="عدد المراجعات" value={reputation.reviews_count?.toLocaleString()} />
+            </DetailCard>
+            
+            <DetailCard title="تعليمات" icon={FileText}>
+                 <p className="text-xs text-muted-foreground whitespace-pre-wrap">{instructions?.description}</p>
+            </DetailCard>
              
         </div>
     )
