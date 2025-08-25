@@ -162,13 +162,13 @@ export default function BrokerPreviewPage() {
             
             <DetailCard title="ميزات الحساب" icon={Briefcase}>
                  <div className="grid md:grid-cols-2 gap-x-4 gap-y-2">
-                    <BooleanPill value={additionalFeatures.welcome_bonus} text="بونص ترحيبي ومكافآت" />
-                    <BooleanPill value={instruments.crypto_trading} text="تداول العملات المشفرة" />
-                    <BooleanPill value={additionalFeatures.copy_trading} text="نسخ التداول" />
-                    <BooleanPill value={additionalFeatures.swap_free} text="حسابات إسلامية" />
-                    <BooleanPill value={additionalFeatures.demo_account} text="حسابات تجريبية" />
-                    <BooleanPill value={additionalFeatures.education_center} text="مركز تعليمي" />
-                    <BooleanPill value={additionalFeatures.trading_contests} text="مسابقات تداول" />
+                    <BooleanPill value={additionalFeatures?.welcome_bonus} text="بونص ترحيبي ومكافآت" />
+                    <BooleanPill value={instruments?.crypto_trading} text="تداول العملات المشفرة" />
+                    <BooleanPill value={additionalFeatures?.copy_trading} text="نسخ التداول" />
+                    <BooleanPill value={additionalFeatures?.swap_free} text="حسابات إسلامية" />
+                    <BooleanPill value={additionalFeatures?.demo_account} text="حسابات تجريبية" />
+                    <BooleanPill value={additionalFeatures?.education_center} text="مركز تعليمي" />
+                    <BooleanPill value={additionalFeatures?.trading_contests} text="مسابقات تداول" />
                 </div>
             </DetailCard>
 
