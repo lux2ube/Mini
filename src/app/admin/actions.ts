@@ -7,7 +7,6 @@ import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, wh
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse } from '@/types';
 import { headers } from 'next/headers';
 import { POINTS_RULE_ACTIONS } from '@/types';
-import { getClientSessionInfo } from '@/lib/device-info';
 
 const safeToDate = (timestamp: any): Date | undefined => {
     if (timestamp instanceof Timestamp) {
@@ -681,10 +680,10 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 export async function placeOrder(
     userId: string,
     productId: string,
-    formData: { userName: string; userEmail: string; deliveryPhoneNumber: string }
+    formData: { userName: string; userEmail: string; deliveryPhoneNumber: string },
+    clientInfo: { deviceInfo: DeviceInfo, geoInfo: GeoInfo }
 ) {
     let product: Product | null = null;
-    const clientInfo = await getClientSessionInfo();
 
     return runTransaction(db, async (transaction) => {
         const productRef = doc(db, 'products', productId);

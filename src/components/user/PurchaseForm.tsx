@@ -16,6 +16,7 @@ import { Loader2, Phone, User, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { placeOrder } from "@/app/admin/actions";
+import { getClientSessionInfo } from "@/lib/device-info";
 
 
 const purchaseSchema = z.object({
@@ -43,7 +44,9 @@ export function PurchaseForm({ product, isOpen, onClose }: { product: Product; i
     const handlePurchase = async (data: PurchaseFormValues) => {
         if (!user || !product) return;
         setIsSubmitting(true);
-        const result = await placeOrder(user.uid, product.id, data);
+        
+        const clientInfo = await getClientSessionInfo();
+        const result = await placeOrder(user.uid, product.id, data, clientInfo);
 
         if (result.success) {
             toast({ title: "تم بنجاح!", description: result.message });
