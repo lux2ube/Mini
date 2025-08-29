@@ -31,6 +31,7 @@ export interface UserProfile {
     createdAt?: Date;
     country?: string; // ISO 3166-1 alpha-2 country code
     isVerified?: boolean;
+    status: 'NEW' | 'Active' | 'Trader'; // User lifecycle status
     // New profile fields
     phoneNumber?: string;
     phoneNumberVerified?: boolean;
@@ -388,7 +389,7 @@ export interface PointsRule {
 }
 
 // Definition of a user's status based on their activity
-export type UserStatus = 'New' | 'Active' | 'Trader' | 'Partner' | 'Active Partner' | 'Active Trader';
+export type UserStatus = 'NEW' | 'Active' | 'Trader';
 
 // Feedback System
 export interface FeedbackQuestion {
@@ -419,5 +420,3 @@ export interface FeedbackResponse {
 export interface EnrichedFeedbackResponse extends FeedbackResponse {
     userName: string;
 }
-
-    

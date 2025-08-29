@@ -5,14 +5,26 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getUsers } from '../actions';
+import { getUsers, backfillUserStatuses } from '../actions';
 import type { UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 type EnrichedUser = UserProfile & { referredByName?: string };
 
@@ -20,37 +32,50 @@ export default function ManageUsersPage() {
     const router = useRouter();
     const [users, setUsers] = useState<EnrichedUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isUpdating, setIsUpdating] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { toast } = useToast();
 
+    const fetchUsers = async () => {
+        setIsLoading(true);
+        try {
+            const fetchedUsers = await getUsers();
+
+            // Enrich users with referrer names
+            const enriched = fetchedUsers.map(user => {
+                if (!user) return null; // Defensive check
+                const referrer = fetchedUsers.find(u => u && u.uid === user.referredBy);
+                return {
+                    ...user,
+                    referredByName: referrer ? referrer.name : '-'
+                };
+            }).filter(Boolean) as EnrichedUser[]; // Filter out any nulls
+
+            enriched.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+            setUsers(enriched);
+        } catch (error) {
+            console.error("Failed to fetch users:", error);
+            toast({ variant: 'destructive', title: 'خطأ', description: 'تعذر جلب المستخدمين.' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchUsers = async () => {
-            setIsLoading(true);
-            try {
-                const fetchedUsers = await getUsers();
-
-                // Enrich users with referrer names
-                const enriched = fetchedUsers.map(user => {
-                    if (!user) return null; // Defensive check
-                    const referrer = fetchedUsers.find(u => u && u.uid === user.referredBy);
-                    return {
-                        ...user,
-                        referredByName: referrer ? referrer.name : '-'
-                    };
-                }).filter(Boolean) as EnrichedUser[]; // Filter out any nulls
-
-                enriched.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
-                setUsers(enriched);
-            } catch (error) {
-                console.error("Failed to fetch users:", error);
-                toast({ variant: 'destructive', title: 'خطأ', description: 'تعذر جلب المستخدمين.' });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchUsers();
     }, [toast]);
+
+    const handleBackfill = async () => {
+        setIsUpdating(true);
+        const result = await backfillUserStatuses();
+        if (result.success) {
+            toast({ title: "نجاح", description: result.message });
+            fetchUsers(); // Refresh the user list to show new statuses
+        } else {
+            toast({ variant: 'destructive', title: "خطأ", description: result.message });
+        }
+        setIsUpdating(false);
+    };
 
     const filteredUsers = useMemo(() => {
         if (!searchQuery) return users;
@@ -79,7 +104,29 @@ export default function ManageUsersPage() {
 
     return (
         <div className="container mx-auto space-y-6">
-            <PageHeader title="إدارة المستخدمين" description="عرض وإدارة جميع المستخدمين المسجلين." />
+            <div className="flex justify-between items-center flex-wrap gap-2">
+                 <PageHeader title="إدارة المستخدمين" description="عرض وإدارة جميع المستخدمين المسجلين." />
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline" disabled={isUpdating}>
+                            {isUpdating ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <History className="ml-2 h-4 w-4" />}
+                            تحديث حالات المستخدمين القدامى
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                سيقوم هذا الإجراء بمراجعة جميع المستخدمين الذين ليس لديهم حالة وتعيينها بناءً على نشاطهم (حسابات مرتبطة، معاملات كاش باك). هذه العملية آمنة للتشغيل عدة مرات.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleBackfill}>متابعة التحديث</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </div>
             <Card>
                 <CardHeader>
                     <CardTitle>جميع المستخدمين</CardTitle>

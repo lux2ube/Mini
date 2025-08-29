@@ -12,12 +12,12 @@ import { useAuthContext } from '@/hooks/useAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { db } from "@/lib/firebase/config";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
-import type { UserProfile } from "@/types";
+import type { UserProfile, UserStatus } from "@/types";
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 
-type ReferralInfo = Pick<UserProfile, 'uid' | 'name' | 'createdAt'>;
+type ReferralInfo = Pick<UserProfile, 'uid' | 'name' | 'createdAt' | 'status'>;
 
 const howItWorks = [
     {
@@ -70,6 +70,7 @@ export default function ReferralsPage() {
                             uid: docSnap.id,
                             name: data.name,
                             createdAt: (data.createdAt as Timestamp).toDate(),
+                            status: data.status || 'NEW', // Default to NEW if status is missing
                         } as ReferralInfo;
                     });
                 
@@ -86,6 +87,24 @@ export default function ReferralsPage() {
         }
     }, [user, toast]);
     
+    const getStatusText = (status: UserStatus) => {
+        switch (status) {
+            case 'NEW': return 'جديد';
+            case 'Active': return 'نشط';
+            case 'Trader': return 'متداول';
+            default: return 'غير معروف';
+        }
+    };
+    
+    const getStatusVariant = (status: UserStatus) => {
+        switch (status) {
+            case 'NEW': return 'secondary';
+            case 'Active': return 'outline';
+            case 'Trader': return 'default';
+            default: return 'secondary';
+        }
+    };
+
     return (
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
             <PageHeader
@@ -180,10 +199,11 @@ export default function ReferralsPage() {
                                     </Avatar>
                                     <div className="flex-grow">
                                         <p className="font-medium text-sm">{ref.name}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            انضم في {ref.createdAt ? format(ref.createdAt, 'PP') : '-'}
+                                        </p>
                                     </div>
-                                    <p className="text-xs text-muted-foreground text-left">
-                                        انضم في {ref.createdAt ? format(ref.createdAt, 'PP') : '-'}
-                                    </p>
+                                    <Badge variant={getStatusVariant(ref.status)}>{getStatusText(ref.status)}</Badge>
                                 </div>
                             ))
                         ) : (

@@ -3,8 +3,8 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction } from 'firebase/firestore';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse } from '@/types';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit } from 'firebase/firestore';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus } from '@/types';
 import { headers } from 'next/headers';
 import { POINTS_RULE_ACTIONS } from '@/types';
 
@@ -287,6 +287,13 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
             updateData.rejectionReason = reason;
             message += ` السبب: ${reason}`;
         } else {
+            // Update user status to 'Active' if they were 'NEW'
+            const userRef = doc(db, 'users', currentData.userId);
+            const userSnap = await transaction.get(userRef);
+            if (userSnap.exists() && userSnap.data().status === 'NEW') {
+                transaction.update(userRef, { status: 'Active' });
+            }
+
             updateData.rejectionReason = "";
             await awardPoints(transaction, currentData.userId, 'approve_account');
         }
@@ -326,6 +333,13 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
         });
         await createNotification(transaction, userId, `تمت إضافة حسابك ${accountNumber} والموافقة عليه من قبل المسؤول.`, 'account', '/dashboard/my-accounts');
         await awardPoints(transaction, userId, 'approve_account');
+        
+        // Also set user status to Active if NEW
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await transaction.get(userRef);
+        if (userSnap.exists() && userSnap.data().status === 'NEW') {
+            transaction.update(userRef, { status: 'Active' });
+        }
         
         return { success: true, message: 'تمت إضافة الحساب والموافقة عليه بنجاح.' };
     }).catch(error => {
@@ -376,6 +390,10 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
                 ...data,
                 date: serverTimestamp(),
             });
+
+            // Update user status to 'Trader'
+            const userRef = doc(db, 'users', data.userId);
+            transaction.update(userRef, { status: 'Trader' });
 
             const message = `لقد تلقيت ${data.cashbackAmount.toFixed(2)}$ كاش باك للحساب ${data.accountNumber}.`;
             await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
@@ -1169,5 +1187,55 @@ export async function submitFeedbackResponse(
     } catch (error) {
         console.error("Error submitting feedback:", error);
         return { success: false, message: "فشل إرسال الملاحظات." };
+    }
+}
+
+// Admin migration script for user statuses
+export async function backfillUserStatuses(): Promise<{ success: boolean; message: string; }> {
+    try {
+        const usersRef = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersRef);
+        const batch = writeBatch(db);
+        let updatedCount = 0;
+
+        for (const userDoc of usersSnapshot.docs) {
+            const user = userDoc.data() as UserProfile;
+            const userId = userDoc.id;
+
+            if (user.status) { // Skip users who already have a status
+                continue;
+            }
+
+            let newStatus: UserStatus = 'NEW';
+
+            // Check if they are a trader
+            const cashbackQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId), limit(1));
+            const cashbackSnap = await getDocs(cashbackQuery);
+
+            if (!cashbackSnap.empty) {
+                newStatus = 'Trader';
+            } else {
+                // Check if they are active
+                const accountsQuery = query(collection(db, 'tradingAccounts'), where('userId', '==', userId), where('status', '==', 'Approved'), limit(1));
+                const accountsSnap = await getDocs(accountsQuery);
+                if (!accountsSnap.empty) {
+                    newStatus = 'Active';
+                }
+            }
+
+            batch.update(userDoc.ref, { status: newStatus });
+            updatedCount++;
+        }
+
+        if (updatedCount > 0) {
+            await batch.commit();
+            return { success: true, message: `Successfully updated ${updatedCount} users.` };
+        } else {
+            return { success: true, message: 'All users already have a status. No updates were needed.' };
+        }
+    } catch (error) {
+        console.error("Error backfilling user statuses:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { success: false, message: `Failed to backfill statuses: ${errorMessage}` };
     }
 }

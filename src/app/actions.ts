@@ -82,6 +82,7 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 email,
                 clientId: newClientId,
                 role: "user",
+                status: "NEW", // Default status for new users
                 createdAt: Timestamp.now(),
                 referralCode: generateReferralCode(name),
                 referredBy: referrerData ? referrerData.id : null,
