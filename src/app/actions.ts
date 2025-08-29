@@ -87,9 +87,8 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 referralCode: generateReferralCode(name),
                 referredBy: referrerData ? referrerData.id : null,
                 referrals: [],
-                points: 0,
-                tier: 'New',
-                monthlyPoints: 0,
+                level: 1,
+                monthlyEarnings: 0,
             });
 
             if (referrerData) {

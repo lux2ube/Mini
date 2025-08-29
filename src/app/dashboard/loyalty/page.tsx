@@ -5,54 +5,46 @@ import React, { useEffect, useState } from 'react';
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { Loader2, ArrowLeft, Star, Gem, Target, CheckCircle } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import type { LoyaltyTier } from '@/types';
+import type { ClientLevel } from '@/types';
 import { useRouter } from 'next/navigation';
-import { getLoyaltyTiers } from '@/app/admin/actions';
-
-const earningMethods = [
-    { title: "ربط حساب تداول", points: "+50 نقطة لكل حساب" },
-    { title: "الحصول على كاش باك", points: "+1 نقطة لكل 1$ مكتسب" },
-    { title: "الشراء من المتجر", points: "+1 نقطة لكل 1$ يتم إنفاقه" },
-    { title: "دعوة صديق", points: "+25 نقطة لكل صديق" },
-];
+import { getClientLevels } from '@/app/admin/actions';
+import { db } from '@/lib/firebase/config';
+import { collection, query, where, getDocs, Timestamp, startOfMonth, endOfMonth, getCountFromServer } from "firebase/firestore";
 
 export default function LoyaltyPage() {
     const { user, isLoading: isUserLoading } = useAuthContext();
-    const [tiers, setTiers] = useState<LoyaltyTier[]>([]);
+    const [levels, setLevels] = useState<ClientLevel[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
-        async function fetchTiers() {
+        async function fetchLevels() {
             setIsLoading(true);
             try {
-                const data = await getLoyaltyTiers();
-                setTiers(data);
+                const data = await getClientLevels();
+                setLevels(data);
             } catch (error) {
-                console.error("Failed to fetch loyalty tiers", error);
+                console.error("Failed to fetch client levels", error);
             } finally {
                 setIsLoading(false);
             }
         }
-        fetchTiers();
+        fetchLevels();
     }, []);
 
-    const getTierDetails = (tierName: string): LoyaltyTier | undefined => {
-        return tiers.find(t => t.name === tierName);
+    const getCurrentLevel = (userLevel: number): ClientLevel | undefined => {
+        return levels.find(l => l.id === userLevel);
     };
 
-    const getNextTier = (currentTierName: string): LoyaltyTier | null => {
-        const currentIndex = tiers.findIndex(t => t.name === currentTierName);
-        if (currentIndex !== -1 && currentIndex < tiers.length - 1) {
-            return tiers[currentIndex + 1];
-        }
-        return null;
+    const getNextLevel = (userLevel: number): ClientLevel | null => {
+        if (userLevel >= levels.length) return null;
+        return levels.find(l => l.id === userLevel + 1) || null;
     };
 
-    if (isUserLoading || isLoading || !user || !user.profile || tiers.length === 0) {
+    if (isUserLoading || isLoading || !user || !user.profile || levels.length === 0) {
         return (
             <div className="flex items-center justify-center h-full min-h-[calc(100vh-theme(spacing.14))]">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -60,14 +52,13 @@ export default function LoyaltyPage() {
         );
     }
 
-    const currentTier = getTierDetails(user.profile.tier) || tiers[0];
-    const nextTier = getNextTier(user.profile.tier);
+    const currentLevel = getCurrentLevel(user.profile.level) || levels[0];
+    const nextLevel = getNextLevel(user.profile.level);
     
-    const monthlyPoints = user.profile.monthlyPoints || 0;
-    const totalPoints = user.profile.points || 0;
+    const monthlyEarnings = user.profile.monthlyEarnings || 0;
 
-    const progress = nextTier ? Math.min((monthlyPoints / nextTier.monthlyPointsRequired) * 100, 100) : 100;
-    const pointsNeeded = nextTier ? Math.max(0, nextTier.monthlyPointsRequired - monthlyPoints) : 0;
+    const progress = nextLevel ? Math.min((monthlyEarnings / nextLevel.required_total) * 100, 100) : 100;
+    const earningsNeeded = nextLevel ? Math.max(0, nextLevel.required_total - monthlyEarnings) : 0;
 
     return (
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
@@ -75,7 +66,7 @@ export default function LoyaltyPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 العودة إلى الإعدادات
             </Button>
-            <PageHeader title="برنامج الولاء" description="اكسب نقاطًا، ارتقِ في المستويات، وافتح مكافآت حصرية." />
+            <PageHeader title="مستويات العملاء" description="اكسب المزيد كلما ارتقيت في المستوى." />
 
             <Card className="bg-gradient-to-tr from-primary to-accent text-primary-foreground overflow-hidden">
                 <CardHeader>
@@ -83,18 +74,22 @@ export default function LoyaltyPage() {
                         <CardTitle>مستواك الحالي</CardTitle>
                         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/20">
                             <Gem className="h-4 w-4" />
-                            <span className="font-bold">{currentTier.name}</span>
+                            <span className="font-bold">{currentLevel.name}</span>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent className="flex justify-around text-center">
                     <div>
-                        <p className="text-xs opacity-80">عمولة الإحالة</p>
-                        <p className="text-lg font-bold">{currentTier.partner_cashback_com}%</p>
+                        <p className="text-xs opacity-80">عمولة الكاش باك</p>
+                        <p className="text-lg font-bold">{currentLevel.advantage_referral_cashback}%</p>
+                    </div>
+                    <div>
+                        <p className="text-xs opacity-80">عمولة المتجر</p>
+                        <p className="text-lg font-bold">{currentLevel.advantage_referral_store}%</p>
                     </div>
                     <div>
                         <p className="text-xs opacity-80">خصم المتجر</p>
-                        <p className="text-lg font-bold">{currentTier.partner_store_com}%</p>
+                        <p className="text-lg font-bold">{currentLevel.advantage_product_discount}%</p>
                     </div>
                 </CardContent>
             </Card>
@@ -104,15 +99,15 @@ export default function LoyaltyPage() {
                     <CardTitle className="text-base">تقدمك الشهري</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {nextTier ? (
+                    {nextLevel ? (
                         <div className="space-y-3">
                             <Progress value={progress} />
                             <div className="flex justify-between text-sm">
-                                <span className="font-semibold text-primary">{(monthlyPoints || 0).toLocaleString()} نقطة</span>
-                                <span className="text-muted-foreground">الهدف: {nextTier.monthlyPointsRequired.toLocaleString()} نقطة</span>
+                                <span className="font-semibold text-primary">${monthlyEarnings.toFixed(2)}</span>
+                                <span className="text-muted-foreground">الهدف: ${nextLevel.required_total.toLocaleString()}</span>
                             </div>
                             <p className="text-center text-sm text-muted-foreground">
-                                أنت بحاجة إلى <span className="font-bold text-primary">{pointsNeeded.toLocaleString()}</span> نقطة أخرى للوصول إلى مستوى {nextTier.name}.
+                                أنت بحاجة إلى <span className="font-bold text-primary">${earningsNeeded.toFixed(2)}</span> أخرى للوصول إلى مستوى {nextLevel.name}.
                             </p>
                         </div>
                     ) : (
@@ -121,39 +116,31 @@ export default function LoyaltyPage() {
                 </CardContent>
             </Card>
 
-            <div className="grid grid-cols-2 gap-4">
-                 <Card>
-                    <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">إجمالي النقاط</CardTitle>
-                        <Star className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <div className="text-2xl font-bold">{(totalPoints || 0).toLocaleString()}</div>
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="p-4 flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">نقاط هذا الشهر</CardTitle>
-                        <Target className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                        <div className="text-2xl font-bold">{(monthlyPoints || 0).toLocaleString()}</div>
-                    </CardContent>
-                </Card>
-            </div>
-
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">كيف تكسب النقاط</CardTitle>
+                    <CardTitle className="text-base">المستويات التالية</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                    {earningMethods.map(method => (
-                        <div key={method.title} className="flex items-center p-3 rounded-md bg-muted/50">
-                            <CheckCircle className="h-5 w-5 text-primary mr-3" />
-                            <div className="flex-grow">
-                                <p className="font-medium text-sm">{method.title}</p>
+                    {levels.filter(l => l.id > user.profile.level).slice(0, 3).map(level => (
+                        <div key={level.id} className="p-3 rounded-md border">
+                            <div className="flex justify-between items-center">
+                               <h3 className="font-semibold">{level.name}</h3>
+                               <p className="text-sm text-muted-foreground">يتطلب ${level.required_total.toLocaleString()}</p>
                             </div>
-                            <p className="text-sm font-semibold text-primary">{method.points}</p>
+                            <div className="grid grid-cols-3 gap-2 mt-2 text-center text-xs">
+                                <div className="p-2 bg-muted/50 rounded-md">
+                                    <p className="text-muted-foreground">كاش باك</p>
+                                    <p className="font-bold">{level.advantage_referral_cashback}%</p>
+                                </div>
+                                <div className="p-2 bg-muted/50 rounded-md">
+                                    <p className="text-muted-foreground">متجر</p>
+                                    <p className="font-bold">{level.advantage_referral_store}%</p>
+                                </div>
+                                <div className="p-2 bg-muted/50 rounded-md">
+                                    <p className="text-muted-foreground">خصم</p>
+                                    <p className="font-bold">{level.advantage_product_discount}%</p>
+                                </div>
+                            </div>
                         </div>
                     ))}
                 </CardContent>

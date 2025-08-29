@@ -35,13 +35,13 @@ export interface UserProfile {
     // New profile fields
     phoneNumber?: string;
     phoneNumberVerified?: boolean;
-    // Referral and Loyalty fields
+    // Referral fields
     referralCode?: string;
     referredBy?: string | null; // UID of the user who referred this person
     referrals?: string[]; // Array of UIDs of users this person has referred
-    points: number; 
-    tier: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond' | 'Ambassador';
-    monthlyPoints: number; 
+    // New Level System
+    level: number; // Level from 1 to 6
+    monthlyEarnings: number; // For level calculation
 }
 
 /**
@@ -167,8 +167,10 @@ export interface CashbackTransaction {
     tradeDetails: string; // e.g., "Trade 1.5 lots EURUSD"
     cashbackAmount: number;
     // Optional referral fields
-    referralBonusTo?: string;
-    referralBonusAmount?: number;
+    referralBonusTo?: string; // UID of the referrer who received the commission
+    referralBonusAmount?: number; // The commission amount given to the referrer
+    sourceUserId?: string; // The original user who generated the cashback/order
+    sourceType?: 'cashback' | 'store_purchase'; // The type of original transaction
     // Admin-provided details
     transactionId?: string;
     notes?: string;
@@ -286,6 +288,7 @@ export interface Order {
     createdAt: Date;
     userEmail?: string;
     userName?: string;
+    referralCommissionAwarded?: boolean;
 }
 
 /**
@@ -345,47 +348,14 @@ export interface BlogPost {
     updatedAt: Date;
 }
 
-// Loyalty & Points System
-export interface LoyaltyTier {
-  name: 'New' | 'Bronze' | 'Silver' | 'Gold' | 'Diamond' | 'Ambassador';
-  monthlyPointsRequired: number;
-  referralCommissionPercent: number;
-  storeDiscountPercent: number;
-  // User Actions (Points)
-  user_signup_pts: number;
-  user_approval_pts: number;
-  user_cashback_pts: number; // per $100
-  user_store_pts: number; // per $100
-  // Partner Direct Earnings (Commission & Points)
-  partner_cashback_com: number; // %
-  partner_store_com: number; // %
-  partner_cashback_pts: number; // per $100
-  partner_store_pts: number; // per $100
-  // Referral Bonuses (Points)
-  ref_signup_pts: number;
-  ref_approval_pts: number;
-  ref_cashback_pts: number; // per $100
-  ref_store_pts: number; // per $100
-}
-
-export const POINTS_RULE_ACTIONS = [
-    'approve_account',
-    'cashback_earned',
-    'store_purchase',
-    'referral_signup',
-    'referral_becomes_active',
-    'referral_becomes_trader',
-    'referral_commission'
-] as const;
-
-export type PointsRuleAction = typeof POINTS_RULE_ACTIONS[number];
-
-export interface PointsRule {
-  id: string;
-  action: PointsRuleAction;
-  points: number;
-  isDollarBased: boolean; // True if points are per dollar, false if a fixed amount
-  description: string;
+// Client Level System
+export interface ClientLevel {
+    id: number; // Level 1-6
+    name: string; // e.g. Bronze, Silver
+    required_total: number; // Total monthly earnings required for this level
+    advantage_referral_cashback: number; // % commission
+    advantage_referral_store: number; // % commission
+    advantage_product_discount: number; // % discount
 }
 
 // Definition of a user's status based on their activity

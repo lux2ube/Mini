@@ -39,7 +39,7 @@ interface DashboardStats {
     pendingWithdrawals: number;
     completedWithdrawals: number;
     totalReferrals: number;
-    referralPoints: number;
+    referralCommission: number;
 }
 
 function PromoBanner() {
@@ -61,8 +61,8 @@ function PromoBanner() {
         const checkTargeting = async () => {
             const { targetTiers, targetCountries } = settings;
             
-            // Tier check
-            const tierMatch = !targetTiers || targetTiers.length === 0 || targetTiers.includes(user.profile!.tier);
+            // Tier check - This part is deprecated but kept for safety with old data
+            const tierMatch = !targetTiers || targetTiers.length === 0 || targetTiers.includes(user.profile!.tier as any);
 
             // Country check
             let countryMatch = !targetCountries || targetCountries.length === 0;
@@ -147,7 +147,7 @@ export default function UserDashboardPage() {
     pendingWithdrawals: 0,
     completedWithdrawals: 0,
     totalReferrals: 0,
-    referralPoints: 0,
+    referralCommission: 0,
   });
   const [transactions, setTransactions] = useState<CashbackTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -226,11 +226,15 @@ export default function UserDashboardPage() {
           
           allTransactions.sort((a,b) => b.date.getTime() - a.date.getTime());
           
+          const referralCommission = allTransactions
+            .filter(tx => tx.sourceType === 'cashback' || tx.sourceType === 'store_purchase')
+            .reduce((sum, tx) => sum + tx.cashbackAmount, 0);
+
           setStats({
             ...balanceData,
             linkedAccounts,
             totalReferrals: user.profile?.referrals?.length || 0,
-            referralPoints: user.profile?.points || 0,
+            referralCommission,
           });
           setTransactions(allTransactions);
           setActiveFeedbackForm(feedbackForm);
@@ -315,6 +319,10 @@ export default function UserDashboardPage() {
                                         <p className="text-xs text-gray-400">قيد الانتظار</p>
                                         <p className="font-semibold text-sm">${stats.pendingWithdrawals.toFixed(2)}</p>
                                     </div>
+                                </div>
+                                 <div className="mt-2 pt-2 border-t border-slate-700">
+                                    <p className="text-xs text-gray-400">أرباح الإحالات</p>
+                                    <p className="font-semibold text-sm text-green-400">+${stats.referralCommission.toFixed(2)}</p>
                                 </div>
                             </div>
                         </CardContent>
@@ -429,5 +437,3 @@ export default function UserDashboardPage() {
     </div>
   );
 }
-
-    

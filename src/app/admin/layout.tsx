@@ -24,6 +24,7 @@ import {
     Gem,
     Send,
     MessageSquare,
+    BarChart,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -44,7 +45,7 @@ const navLinks = [
     { href: "/admin/manage-payment-methods", icon: Wallet, label: "طرق الدفع" },
     { href: "/admin/manage-brokers", icon: Briefcase, label: "إدارة الوسطاء" },
     { href: "/admin/blog", icon: Newspaper, label: "إدارة المدونة"},
-    { href: "/admin/manage-loyalty", icon: Gem, label: "إدارة الولاء"},
+    { href: "/admin/manage-levels", icon: BarChart, label: "إدارة المستويات"},
     { href: "/admin/manage-notifications", icon: Send, label: "إدارة الإشعارات"},
     { href: "/admin/manage-feedback", icon: MessageSquare, label: "إدارة الملاحظات"},
     { href: "/admin/manage-banner", icon: GalleryHorizontal, label: "إدارة البانر" },
