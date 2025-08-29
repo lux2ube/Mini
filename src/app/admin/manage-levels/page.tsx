@@ -6,16 +6,27 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { getClientLevels, updateClientLevels } from "../actions";
-import { Loader2, Save, BarChart, Percent } from "lucide-react";
+import { getClientLevels, updateClientLevels, seedClientLevels } from "../actions";
+import { Loader2, Save, BarChart, Percent, Database } from "lucide-react";
 import type { ClientLevel } from "@/types";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const levelSchema = z.object({
   id: z.number(),
@@ -33,8 +44,10 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function ManageLevelsPage() {
+  const [levels, setLevels] = useState<ClientLevel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<FormData>({
@@ -44,20 +57,34 @@ export default function ManageLevelsPage() {
 
   const { fields } = useFieldArray({ control: form.control, name: "levels" });
 
-  useEffect(() => {
-    async function fetchLevels() {
+  const fetchLevels = async () => {
       setIsLoading(true);
       try {
         const data = await getClientLevels();
+        setLevels(data);
         form.reset({ levels: data });
       } catch (error) {
         toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن تحميل مستويات العملاء.'});
       } finally {
         setIsLoading(false);
       }
-    }
+  };
+
+  useEffect(() => {
     fetchLevels();
-  }, [form, toast]);
+  }, [toast]);
+
+  const handleSeedLevels = async () => {
+    setIsSeeding(true);
+    const result = await seedClientLevels();
+    if (result.success) {
+      toast({ title: "نجاح", description: result.message });
+      fetchLevels(); // Refetch to show the new data
+    } else {
+      toast({ variant: "destructive", title: "خطأ", description: result.message });
+    }
+    setIsSeeding(false);
+  };
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true);
@@ -76,6 +103,32 @@ export default function ManageLevelsPage() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
+  }
+
+  if (levels.length === 0) {
+    return (
+        <div className="container mx-auto space-y-6 text-center">
+             <PageHeader
+                title="إدارة مستويات العملاء"
+                description="تكوين متطلبات ومزايا كل مستوى."
+            />
+            <Card className="max-w-md mx-auto">
+                <CardHeader>
+                    <CardTitle>تهيئة نظام المستويات</CardTitle>
+                    <CardDescription>
+                        لا توجد مستويات مكونة في قاعدة البيانات. قم بإضافتها الآن للبدء.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={handleSeedLevels} disabled={isSeeding}>
+                        {isSeeding && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                        <Database className="ml-2 h-4 w-4" />
+                        إضافة المستويات الافتراضية
+                    </Button>
+                </CardContent>
+            </Card>
+        </div>
+    )
   }
 
   return (

@@ -5,11 +5,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getUsers, backfillUserStatuses } from '../actions';
+import { getUsers, backfillUserStatuses, backfillUserLevels } from '../actions';
 import type { UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Search, History } from 'lucide-react';
+import { Loader2, Search, History, Gem } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from '@/components/ui/badge';
 
 type EnrichedUser = UserProfile & { referredByName?: string };
 
@@ -65,12 +66,15 @@ export default function ManageUsersPage() {
         fetchUsers();
     }, [toast]);
 
-    const handleBackfill = async () => {
+    const handleBackfill = async (action: 'status' | 'level') => {
         setIsUpdating(true);
-        const result = await backfillUserStatuses();
+        const result = action === 'status' 
+            ? await backfillUserStatuses() 
+            : await backfillUserLevels();
+            
         if (result.success) {
             toast({ title: "نجاح", description: result.message });
-            fetchUsers(); // Refresh the user list to show new statuses
+            fetchUsers();
         } else {
             toast({ variant: 'destructive', title: "خطأ", description: result.message });
         }
@@ -106,26 +110,48 @@ export default function ManageUsersPage() {
         <div className="container mx-auto space-y-6">
             <div className="flex justify-between items-center flex-wrap gap-2">
                  <PageHeader title="إدارة المستخدمين" description="عرض وإدارة جميع المستخدمين المسجلين." />
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="outline" disabled={isUpdating}>
-                            {isUpdating ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <History className="ml-2 h-4 w-4" />}
-                            تحديث حالات المستخدمين القدامى
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                سيقوم هذا الإجراء بمراجعة جميع المستخدمين الذين ليس لديهم حالة وتعيينها بناءً على نشاطهم (حسابات مرتبطة، معاملات كاش باك). هذه العملية آمنة للتشغيل عدة مرات.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleBackfill}>متابعة التحديث</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                <div className="flex gap-2">
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="outline" disabled={isUpdating}>
+                                {isUpdating ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <History className="ml-2 h-4 w-4" />}
+                                تحديث حالات المستخدمين
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    سيقوم هذا الإجراء بمراجعة جميع المستخدمين الذين ليس لديهم حالة وتعيينها بناءً على نشاطهم.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleBackfill('status')}>متابعة التحديث</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                     <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="outline" disabled={isUpdating}>
+                                {isUpdating ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Gem className="ml-2 h-4 w-4" />}
+                                تحديث مستويات المستخدمين
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    سيقوم هذا الإجراء بتعيين المستوى 1 لجميع المستخدمين الذين ليس لديهم مستوى حاليًا.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleBackfill('level')}>متابعة التحديث</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
             </div>
             <Card>
                 <CardHeader>
@@ -154,9 +180,9 @@ export default function ManageUsersPage() {
                                         <TableHead>معرف العميل</TableHead>
                                         <TableHead>الاسم</TableHead>
                                         <TableHead>البريد الإلكتروني</TableHead>
-                                        <TableHead>الدولة</TableHead>
+                                        <TableHead>الحالة</TableHead>
+                                        <TableHead>المستوى</TableHead>
                                         <TableHead>تاريخ الانضمام</TableHead>
-                                        <TableHead>النقاط</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -169,9 +195,13 @@ export default function ManageUsersPage() {
                                             <TableCell className="font-mono text-xs">{user.clientId || 'N/A'}</TableCell>
                                             <TableCell className="font-medium">{user.name || 'N/A'}</TableCell>
                                             <TableCell>{user.email || 'N/A'}</TableCell>
-                                            <TableCell>{user.country || 'N/A'}</TableCell>
+                                             <TableCell>
+                                                <Badge variant={user.status === 'Trader' ? 'default' : user.status === 'Active' ? 'outline' : 'secondary'}>
+                                                    {user.status || 'N/A'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>{user.level || 'N/A'}</TableCell>
                                             <TableCell>{getSafeDate(user.createdAt)}</TableCell>
-                                            <TableCell>{user.points || 0}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

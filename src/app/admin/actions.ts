@@ -1018,38 +1018,64 @@ export async function getUserDetails(userId: string) {
 // Level System Management
 
 export async function getClientLevels(): Promise<ClientLevel[]> {
-    const docRef = doc(db, 'settings', 'clientLevels');
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        const data = docSnap.data();
-        const levelsArray = Object.values(data) as ClientLevel[];
-        levelsArray.sort((a, b) => a.id - b.id);
-        return levelsArray;
+    const levelsCollection = collection(db, 'clientLevels');
+    const snapshot = await getDocs(levelsCollection);
+    if (snapshot.empty) {
+        return []; // Return empty array if no levels are seeded
     }
-    // Return default settings if not found
-    return [
-        { id: 1, name: 'Bronze', required_total: 0, advantage_referral_cashback: 5, advantage_referral_store: 2, advantage_product_discount: 0 },
-        { id: 2, name: 'Silver', required_total: 100, advantage_referral_cashback: 7, advantage_referral_store: 4, advantage_product_discount: 2 },
-        { id: 3, name: 'Gold', required_total: 500, advantage_referral_cashback: 10, advantage_referral_store: 6, advantage_product_discount: 4 },
-        { id: 4, name: 'Platinum', required_total: 2000, advantage_referral_cashback: 15, advantage_referral_store: 8, advantage_product_discount: 6 },
-        { id: 5, name: 'Diamond', required_total: 10000, advantage_referral_cashback: 20, advantage_referral_store: 10, advantage_product_discount: 8 },
-        { id: 6, name: 'Ambassador', required_total: 50000, advantage_referral_cashback: 25, advantage_referral_store: 15, advantage_product_discount: 10 },
-    ];
+    const levelsArray = snapshot.docs.map(doc => ({
+        id: parseInt(doc.id, 10),
+        ...doc.data()
+    } as ClientLevel));
+    levelsArray.sort((a, b) => a.id - b.id);
+    return levelsArray;
 }
 
 export async function updateClientLevels(levels: ClientLevel[]) {
     try {
-        const levelsObject = levels.reduce((acc, level) => {
-            acc[level.id] = level;
-            return acc;
-        }, {} as Record<string, ClientLevel>);
-        
-        const docRef = doc(db, 'settings', 'clientLevels');
-        await setDoc(docRef, levelsObject);
+        const batch = writeBatch(db);
+        levels.forEach(level => {
+            const levelRef = doc(db, 'clientLevels', String(level.id));
+            // The 'id' is the document ID, so we don't need to save it inside the document.
+            const { id, ...levelData } = level;
+            batch.set(levelRef, levelData);
+        });
+        await batch.commit();
         return { success: true, message: 'تم تحديث مستويات العملاء بنجاح.' };
     } catch (error) {
         console.error("Error updating client levels:", error);
         return { success: false, message: 'فشل تحديث مستويات العملاء.' };
+    }
+}
+
+export async function seedClientLevels(): Promise<{ success: boolean; message: string; }> {
+    const levelsCollection = collection(db, 'clientLevels');
+    const snapshot = await getDocs(levelsCollection);
+    if (!snapshot.empty) {
+        return { success: false, message: 'مستويات العملاء موجودة بالفعل.' };
+    }
+
+    const defaultLevels: Omit<ClientLevel, 'id'>[] = [
+        { name: 'Bronze', required_total: 0, advantage_referral_cashback: 5, advantage_referral_store: 2, advantage_product_discount: 0 },
+        { name: 'Silver', required_total: 100, advantage_referral_cashback: 7, advantage_referral_store: 4, advantage_product_discount: 2 },
+        { name: 'Gold', required_total: 500, advantage_referral_cashback: 10, advantage_referral_store: 6, advantage_product_discount: 4 },
+        { name: 'Platinum', required_total: 2000, advantage_referral_cashback: 15, advantage_referral_store: 8, advantage_product_discount: 6 },
+        { name: 'Diamond', required_total: 10000, advantage_referral_cashback: 20, advantage_referral_store: 10, advantage_product_discount: 8 },
+        { name: 'Ambassador', required_total: 50000, advantage_referral_cashback: 25, advantage_referral_store: 15, advantage_product_discount: 10 },
+    ];
+
+    try {
+        const batch = writeBatch(db);
+        defaultLevels.forEach((level, index) => {
+            const levelId = String(index + 1);
+            const docRef = doc(db, 'clientLevels', levelId);
+            batch.set(docRef, level);
+        });
+        await batch.commit();
+        return { success: true, message: 'تمت إضافة مستويات العملاء الافتراضية بنجاح.' };
+    } catch (error) {
+        console.error("Error seeding client levels:", error);
+        return { success: false, message: 'فشل إضافة مستويات العملاء الافتراضية.' };
     }
 }
 
@@ -1249,5 +1275,30 @@ export async function backfillUserStatuses(): Promise<{ success: boolean; messag
         console.error("Error backfilling user statuses:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: `Failed to backfill statuses: ${errorMessage}` };
+    }
+}
+
+export async function backfillUserLevels(): Promise<{ success: boolean; message: string; }> {
+    try {
+        const usersRef = collection(db, 'users');
+        const usersSnapshot = await getDocs(query(usersRef, where('level', '==', null)));
+        const batch = writeBatch(db);
+        let updatedCount = 0;
+
+        usersSnapshot.docs.forEach(userDoc => {
+            batch.update(userDoc.ref, { level: 1 });
+            updatedCount++;
+        });
+
+        if (updatedCount > 0) {
+            await batch.commit();
+            return { success: true, message: `Successfully set ${updatedCount} users to level 1.` };
+        } else {
+            return { success: true, message: 'All users already have a level. No updates were needed.' };
+        }
+    } catch (error) {
+        console.error("Error backfilling user levels:", error);
+        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
+        return { success: false, message: `Failed to backfill levels: ${errorMessage}` };
     }
 }
