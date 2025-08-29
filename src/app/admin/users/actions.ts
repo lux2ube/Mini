@@ -102,51 +102,62 @@ export async function getClientLevels(): Promise<ClientLevel[]> {
 
 export async function backfillUserLevels(): Promise<{ success: boolean; message: string; }> {
     try {
+        // 1. Get level configuration and sort by highest requirement first
         const levels = await getClientLevels();
         if (levels.length === 0) {
             return { success: false, message: "No client levels configured. Please seed them first." };
         }
         levels.sort((a, b) => b.required_total - a.required_total);
 
-        const usersRef = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersRef);
+        // 2. Get all users
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        const users = usersSnapshot.docs.map(doc => ({ id: doc.id, ref: doc.ref, ...doc.data() } as UserProfile & { id: string, ref: any }));
+        
+        // 3. Get all cashback transactions for the current month in one go
+        const monthStart = startOfMonth(new Date());
+        const cashbackQuery = query(
+            collection(db, 'cashbackTransactions'),
+            where('date', '>=', monthStart)
+        );
+        const cashbackSnap = await getDocs(cashbackQuery);
+
+        // 4. Process data in memory: calculate monthly earnings for each user
+        const monthlyEarningsMap = new Map<string, number>();
+        cashbackSnap.forEach(doc => {
+            const tx = doc.data();
+            const currentEarnings = monthlyEarningsMap.get(tx.userId) || 0;
+            monthlyEarningsMap.set(tx.userId, currentEarnings + tx.cashbackAmount);
+        });
+
+        // 5. Create a single batch to update all users
         const batch = writeBatch(db);
         let updatedCount = 0;
 
-        for (const userDoc of usersSnapshot.docs) {
-            const user = userDoc.data() as UserProfile;
+        for (const user of users) {
+            const monthlyEarnings = monthlyEarningsMap.get(user.id) || 0;
             
-            // This script should run for all users to update their level,
-            // so we don't check if user.level already exists.
-            
-            const now = new Date();
-            const monthStart = startOfMonth(now);
-            const cashbackQuery = query(
-                collection(db, 'cashbackTransactions'),
-                where('userId', '==', userDoc.id),
-                where('date', '>=', monthStart)
-            );
-            const cashbackSnap = await getDocs(cashbackQuery);
-            const monthlyEarnings = cashbackSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
-
-            let newLevel = 1;
+            // Determine the new level
+            let newLevel = 1; // Default to level 1
             for (const level of levels) {
                 if (monthlyEarnings >= level.required_total) {
                     newLevel = level.id;
-                    break;
+                    break; // Since levels are sorted descending, the first match is the highest level achieved
                 }
             }
 
-            batch.update(userDoc.ref, { level: newLevel, monthlyEarnings: monthlyEarnings });
+            // Update user document in the batch
+            batch.update(user.ref, { level: newLevel, monthlyEarnings: monthlyEarnings });
             updatedCount++;
         }
 
+        // 6. Commit the batch
         if (updatedCount > 0) {
             await batch.commit();
             return { success: true, message: `Successfully updated ${updatedCount} users with calculated levels and earnings.` };
         } else {
             return { success: true, message: 'No users to update.' };
         }
+
     } catch (error) {
         console.error("Error backfilling user levels:", error);
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";

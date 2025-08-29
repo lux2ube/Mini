@@ -42,7 +42,7 @@ export interface UserProfile {
     referrals?: string[]; // Array of UIDs of users this person has referred
     // New Level System
     level: number; // Level from 1 to 6
-    monthlyEarnings: number; // For level calculation
+    monthlyEarnings?: number; // For level calculation
 }
 
 /**
