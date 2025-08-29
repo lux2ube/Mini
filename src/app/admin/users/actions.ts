@@ -2,8 +2,9 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, getDocs, writeBatch, query, where, limit, startOfMonth } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, query, where, limit } from 'firebase/firestore';
 import type { UserProfile, UserStatus, ClientLevel } from '@/types';
+import { startOfMonth } from 'date-fns';
 
 const safeToDate = (timestamp: any): Date | undefined => {
     if (timestamp instanceof Date) {
@@ -114,6 +115,9 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
 
         for (const userDoc of usersSnapshot.docs) {
             const user = userDoc.data() as UserProfile;
+            
+            // This script should run for all users to update their level,
+            // so we don't check if user.level already exists.
             
             const now = new Date();
             const monthStart = startOfMonth(now);
