@@ -3,7 +3,7 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit, startOfMonth } from 'firebase/firestore';
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus } from '@/types';
 import { headers } from 'next/headers';
 
@@ -1280,22 +1280,54 @@ export async function backfillUserStatuses(): Promise<{ success: boolean; messag
 
 export async function backfillUserLevels(): Promise<{ success: boolean; message: string; }> {
     try {
+        // 1. Fetch level configuration
+        const levels = await getClientLevels();
+        if (levels.length === 0) {
+            return { success: false, message: "No client levels configured. Please seed them first." };
+        }
+        // Sort descending by required amount to find the highest qualifying level first
+        levels.sort((a, b) => b.required_total - a.required_total);
+
+        // 2. Fetch all users
         const usersRef = collection(db, 'users');
         const usersSnapshot = await getDocs(usersRef);
         const batch = writeBatch(db);
         let updatedCount = 0;
 
-        usersSnapshot.docs.forEach(userDoc => {
+        // 3. For each user, calculate monthly earnings and assign level
+        for (const userDoc of usersSnapshot.docs) {
             const user = userDoc.data() as UserProfile;
-            if (user.level === undefined || user.level === null) {
-                batch.update(userDoc.ref, { level: 1, monthlyEarnings: user.monthlyEarnings || 0 });
-                updatedCount++;
+            if (user.level !== undefined && user.level !== null) {
+                continue; // Skip users who already have a level
             }
-        });
+
+            // Calculate monthly earnings from cashback transactions
+            const now = new Date();
+            const monthStart = startOfMonth(now);
+            const cashbackQuery = query(
+                collection(db, 'cashbackTransactions'),
+                where('userId', '==', userDoc.id),
+                where('date', '>=', monthStart)
+            );
+            const cashbackSnap = await getDocs(cashbackQuery);
+            const monthlyEarnings = cashbackSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
+
+            // Find the correct level
+            let newLevel = 1; // Default to level 1
+            for (const level of levels) {
+                if (monthlyEarnings >= level.required_total) {
+                    newLevel = level.id;
+                    break; // Since levels are sorted descending, the first match is the correct one
+                }
+            }
+
+            batch.update(userDoc.ref, { level: newLevel, monthlyEarnings: monthlyEarnings });
+            updatedCount++;
+        }
 
         if (updatedCount > 0) {
             await batch.commit();
-            return { success: true, message: `Successfully set ${updatedCount} users to level 1.` };
+            return { success: true, message: `Successfully updated ${updatedCount} users with calculated levels and earnings.` };
         } else {
             return { success: true, message: 'All users already have a level. No updates were needed.' };
         }
