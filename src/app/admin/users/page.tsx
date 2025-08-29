@@ -142,7 +142,7 @@ export default function ManageUsersPage() {
                             <AlertDialogHeader>
                                 <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    سيقوم هذا الإجراء بتعيين المستوى 1 لجميع المستخدمين الذين ليس لديهم مستوى حاليًا.
+                                    سيقوم هذا الإجراء بإعادة حساب وتحديث مستوى كل مستخدم بناءً على أرباحهم الشهرية الحالية.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -213,3 +213,5 @@ export default function ManageUsersPage() {
         </div>
     );
 }
+
+    
