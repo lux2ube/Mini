@@ -1281,7 +1281,8 @@ export async function backfillUserStatuses(): Promise<{ success: boolean; messag
 export async function backfillUserLevels(): Promise<{ success: boolean; message: string; }> {
     try {
         const usersRef = collection(db, 'users');
-        const usersSnapshot = await getDocs(query(usersRef, where('level', '==', null)));
+        // This query finds documents where 'level' is not set or is null.
+        const usersSnapshot = await getDocs(query(usersRef, where('level', '<=', null)));
         const batch = writeBatch(db);
         let updatedCount = 0;
 
