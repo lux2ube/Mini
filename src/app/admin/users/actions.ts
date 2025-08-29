@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, getDocs, writeBatch, query, where, limit } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, query, where, limit, getDoc, doc } from 'firebase/firestore';
 import type { UserProfile, UserStatus, ClientLevel } from '@/types';
 import { startOfMonth } from 'date-fns';
 
@@ -136,17 +136,17 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
         for (const user of users) {
             const monthlyEarnings = monthlyEarningsMap.get(user.id) || 0;
             
-            // Determine the new level
-            let newLevel = 1; // Default to level 1
+            // Determine the new level by finding the highest level they qualify for
+            let newLevelId = 1; // Default to level 1
             for (const level of levels) {
                 if (monthlyEarnings >= level.required_total) {
-                    newLevel = level.id;
-                    break; // Since levels are sorted descending, the first match is the highest level achieved
+                    newLevelId = level.id;
+                    break; // Since levels are sorted descending, the first match is the correct highest level
                 }
             }
 
             // Update user document in the batch
-            batch.update(user.ref, { level: newLevel, monthlyEarnings: monthlyEarnings });
+            batch.update(user.ref, { level: newLevelId, monthlyEarnings: monthlyEarnings });
             updatedCount++;
         }
 
