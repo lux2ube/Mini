@@ -4,9 +4,8 @@
 
 import { db } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit } from 'firebase/firestore';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, LoyaltyTier, PointsRule, PointsRuleAction, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus } from '@/types';
 import { headers } from 'next/headers';
-import { POINTS_RULE_ACTIONS } from '@/types';
 
 const safeToDate = (timestamp: any): Date | undefined => {
     if (timestamp instanceof Timestamp) {
@@ -238,14 +237,68 @@ export async function updateBrokerOrder(orderedIds: string[]) {
 }
 
 // Point Awarding Engine
-export async function awardPoints(
+export async function awardReferralCommission(
     transaction: Transaction,
     userId: string,
-    action: PointsRuleAction,
-    amountValue?: number // e.g., cashback amount or order price
+    sourceType: 'cashback' | 'store_purchase',
+    amountValue: number
 ) {
-    // SYSTEM PAUSED: The loyalty program is temporarily disabled.
-    return;
+    // 1. Get the user document to find their referrer
+    const userRef = doc(db, 'users', userId);
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists() || !userSnap.data().referredBy) {
+        return; // No referrer, nothing to do
+    }
+    const referrerId = userSnap.data().referredBy;
+
+    // 2. Get the referrer's document to find their level
+    const referrerRef = doc(db, 'users', referrerId);
+    const referrerSnap = await transaction.get(referrerRef);
+    if (!referrerSnap.exists()) {
+        return; // Referrer doesn't exist
+    }
+    const referrerLevel = referrerSnap.data().level || 1;
+
+    // 3. Get the level configuration
+    const levels = await getClientLevels();
+    const currentLevelConfig = levels.find(l => l.id === referrerLevel);
+    if (!currentLevelConfig) {
+        return; // Level config not found
+    }
+
+    // 4. Calculate commission
+    const commissionPercent = sourceType === 'cashback'
+        ? currentLevelConfig.advantage_referral_cashback
+        : currentLevelConfig.advantage_referral_store;
+    
+    if (commissionPercent <= 0) {
+        return; // No commission for this action at this level
+    }
+    
+    const commissionAmount = (amountValue * commissionPercent) / 100;
+
+    // 5. Create a new cashback transaction for the referrer
+    const newTransactionRef = doc(collection(db, 'cashbackTransactions'));
+    transaction.set(newTransactionRef, {
+        userId: referrerId,
+        accountId: 'REFERRAL_COMMISSION',
+        accountNumber: 'Referral',
+        broker: `Commission from ${userSnap.data().name}`,
+        date: serverTimestamp(),
+        tradeDetails: `Referral commission from ${sourceType}`,
+        cashbackAmount: commissionAmount,
+        sourceUserId: userId,
+        sourceType: sourceType,
+    });
+    
+    // 6. Update referrer's monthly earnings
+    transaction.update(referrerRef, {
+        monthlyEarnings: increment(commissionAmount)
+    });
+
+    // 7. Create notification for the referrer
+    const message = `لقد ربحت ${commissionAmount.toFixed(2)}$ عمولة إحالة من ${userSnap.data().name}.`;
+    await createNotification(transaction, referrerId, message, 'general', '/dashboard/referrals');
 }
 
 
@@ -293,9 +346,7 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
             if (userSnap.exists() && userSnap.data().status === 'NEW') {
                 transaction.update(userRef, { status: 'Active' });
             }
-
             updateData.rejectionReason = "";
-            await awardPoints(transaction, currentData.userId, 'approve_account');
         }
 
         transaction.update(accountRef, updateData);
@@ -332,7 +383,6 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
             createdAt: serverTimestamp(),
         });
         await createNotification(transaction, userId, `تمت إضافة حسابك ${accountNumber} والموافقة عليه من قبل المسؤول.`, 'account', '/dashboard/my-accounts');
-        await awardPoints(transaction, userId, 'approve_account');
         
         // Also set user status to Active if NEW
         const userRef = doc(db, 'users', userId);
@@ -393,10 +443,13 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 
             // Update user status to 'Trader'
             const userRef = doc(db, 'users', data.userId);
-            transaction.update(userRef, { status: 'Trader' });
+            transaction.update(userRef, { status: 'Trader', monthlyEarnings: increment(data.cashbackAmount) });
 
             const message = `لقد تلقيت ${data.cashbackAmount.toFixed(2)}$ كاش باك للحساب ${data.accountNumber}.`;
             await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
+            
+            // Award commission to referrer
+            await awardReferralCommission(transaction, data.userId, 'cashback', data.cashbackAmount);
         });
         return { success: true, message: 'تمت إضافة معاملة الكاش باك بنجاح.' };
     } catch (error) {
@@ -681,7 +734,13 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
             }
             const orderData = orderSnap.data() as Order;
 
-            transaction.update(orderRef, { status });
+            // Prevent awarding commission multiple times
+            if (status === 'Delivered' && !orderData.referralCommissionAwarded) {
+                await awardReferralCommission(transaction, orderData.userId, 'store_purchase', orderData.price);
+                transaction.update(orderRef, { status, referralCommissionAwarded: true });
+            } else {
+                 transaction.update(orderRef, { status });
+            }
 
             const message = `تم تحديث حالة طلبك لـ "${orderData.productName}" إلى ${status}.`;
             await createNotification(transaction, orderData.userId, message, 'store', '/dashboard/store/orders');
@@ -729,10 +788,10 @@ export async function placeOrder(
             userName: formData.userName,
             userEmail: formData.userEmail,
             deliveryPhoneNumber: formData.deliveryPhoneNumber,
+            referralCommissionAwarded: false,
         });
 
         await createNotification(transaction, userId, `تم تقديم طلبك لـ ${product.name}.`, 'store', '/dashboard/store/orders');
-        await awardPoints(transaction, userId, 'store_purchase', product.price);
         
         await logUserActivity(userId, 'store_purchase', clientInfo, { productId, price: product.price });
         
@@ -956,91 +1015,44 @@ export async function getUserDetails(userId: string) {
     }
 }
 
-// Loyalty System Management
+// Level System Management
 
-// Get all loyalty tiers configuration
-export async function getLoyaltyTiers(): Promise<LoyaltyTier[]> {
-    const docRef = doc(db, 'settings', 'loyaltyTiers');
+export async function getClientLevels(): Promise<ClientLevel[]> {
+    const docRef = doc(db, 'settings', 'clientLevels');
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
         const data = docSnap.data();
-        const tiersArray = Object.values(data) as LoyaltyTier[];
-        // Ensure consistent order
-        const tierOrder: LoyaltyTier['name'][] = ['New', 'Bronze', 'Silver', 'Gold', 'Diamond', 'Ambassador'];
-        tiersArray.sort((a, b) => tierOrder.indexOf(a.name) - tierOrder.indexOf(b.name));
-        return tiersArray;
+        const levelsArray = Object.values(data) as ClientLevel[];
+        levelsArray.sort((a, b) => a.id - b.id);
+        return levelsArray;
     }
     // Return default settings if not found
     return [
-        { name: 'New', monthlyPointsRequired: 0, referralCommissionPercent: 0, storeDiscountPercent: 0 },
-        { name: 'Bronze', monthlyPointsRequired: 100, referralCommissionPercent: 5, storeDiscountPercent: 2 },
-        { name: 'Silver', monthlyPointsRequired: 500, referralCommissionPercent: 7, storeDiscountPercent: 4 },
-        { name: 'Gold', monthlyPointsRequired: 2000, referralCommissionPercent: 10, storeDiscountPercent: 6 },
-        { name: 'Diamond', monthlyPointsRequired: 10000, referralCommissionPercent: 15, storeDiscountPercent: 8 },
-        { name: 'Ambassador', monthlyPointsRequired: 50000, referralCommissionPercent: 20, storeDiscountPercent: 10 },
-    ].map(tier => ({
-      ...tier,
-      user_signup_pts: 0, user_approval_pts: 0, user_cashback_pts: 0, user_store_pts: 0,
-      partner_cashback_com: 0, partner_store_com: 0, partner_cashback_pts: 0, partner_store_pts: 0,
-      ref_signup_pts: 0, ref_approval_pts: 0, ref_cashback_pts: 0, ref_store_pts: 0
-    }));
+        { id: 1, name: 'Bronze', required_total: 0, advantage_referral_cashback: 5, advantage_referral_store: 2, advantage_product_discount: 0 },
+        { id: 2, name: 'Silver', required_total: 100, advantage_referral_cashback: 7, advantage_referral_store: 4, advantage_product_discount: 2 },
+        { id: 3, name: 'Gold', required_total: 500, advantage_referral_cashback: 10, advantage_referral_store: 6, advantage_product_discount: 4 },
+        { id: 4, name: 'Platinum', required_total: 2000, advantage_referral_cashback: 15, advantage_referral_store: 8, advantage_product_discount: 6 },
+        { id: 5, name: 'Diamond', required_total: 10000, advantage_referral_cashback: 20, advantage_referral_store: 10, advantage_product_discount: 8 },
+        { id: 6, name: 'Ambassador', required_total: 50000, advantage_referral_cashback: 25, advantage_referral_store: 15, advantage_product_discount: 10 },
+    ];
 }
 
-// Update all loyalty tiers
-export async function updateLoyaltyTiers(tiers: LoyaltyTier[]) {
+export async function updateClientLevels(levels: ClientLevel[]) {
     try {
-        const tiersObject = tiers.reduce((acc, tier) => {
-            acc[tier.name] = tier;
+        const levelsObject = levels.reduce((acc, level) => {
+            acc[level.id] = level;
             return acc;
-        }, {} as Record<string, LoyaltyTier>);
+        }, {} as Record<string, ClientLevel>);
         
-        const docRef = doc(db, 'settings', 'loyaltyTiers');
-        await setDoc(docRef, tiersObject);
-        return { success: true, message: 'تم تحديث مستويات الولاء بنجاح.' };
+        const docRef = doc(db, 'settings', 'clientLevels');
+        await setDoc(docRef, levelsObject);
+        return { success: true, message: 'تم تحديث مستويات العملاء بنجاح.' };
     } catch (error) {
-        console.error("Error updating loyalty tiers:", error);
-        return { success: false, message: 'فشل تحديث مستويات الولاء.' };
+        console.error("Error updating client levels:", error);
+        return { success: false, message: 'فشل تحديث مستويات العملاء.' };
     }
 }
 
-// Get all points rules
-export async function getPointsRules(): Promise<PointsRule[]> {
-    const snapshot = await getDocs(query(collection(db, 'pointsRules'), orderBy('action')));
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PointsRule));
-}
-
-// Add a new points rule
-export async function addPointsRule(data: Omit<PointsRule, 'id'>) {
-    try {
-        await addDoc(collection(db, 'pointsRules'), data);
-        return { success: true, message: 'تمت إضافة القاعدة بنجاح.' };
-    } catch (error) {
-        console.error("Error adding points rule:", error);
-        return { success: false, message: 'فشل إضافة القاعدة.' };
-    }
-}
-
-// Update a points rule
-export async function updatePointsRule(id: string, data: Partial<PointsRule>) {
-    try {
-        await updateDoc(doc(db, 'pointsRules', id), data);
-        return { success: true, message: 'تم تحديث القاعدة بنجاح.' };
-    } catch (error) {
-        console.error("Error updating points rule:", error);
-        return { success: false, message: 'فشل تحديث القاعدة.' };
-    }
-}
-
-// Delete a points rule
-export async function deletePointsRule(id: string) {
-    try {
-        await deleteDoc(doc(db, 'pointsRules', id));
-        return { success: true, message: 'تم حذف القاعدة بنجاح.' };
-    } catch (error) {
-        console.error("Error deleting points rule:", error);
-        return { success: false, message: 'فشل حذف القاعدة.' };
-    }
-}
 
 // Feedback System Management
 export async function getFeedbackForms(): Promise<FeedbackForm[]> {
