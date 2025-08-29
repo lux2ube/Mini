@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { getTradingAccounts, getUsers } from '@/app/admin/actions';
+import { getTradingAccounts } from '@/app/admin/actions';
+import { getUsers } from '@/app/admin/users/actions';
 import type { TradingAccount, UserProfile } from '@/types';
 import { useToast } from './use-toast';
 
