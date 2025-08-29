@@ -5,8 +5,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getUsers, backfillUserStatuses, backfillUserLevels } from './actions';
-import type { UserProfile } from '@/types';
+import { getUsers, backfillUserStatuses, backfillUserLevels, getClientLevels } from './actions';
+import type { UserProfile, ClientLevel } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, Search, History, Gem } from 'lucide-react';
@@ -32,25 +32,30 @@ type EnrichedUser = UserProfile & { referredByName?: string };
 export default function ManageUsersPage() {
     const router = useRouter();
     const [users, setUsers] = useState<EnrichedUser[]>([]);
+    const [levels, setLevels] = useState<ClientLevel[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isUpdating, setIsUpdating] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { toast } = useToast();
 
-    const fetchUsers = async () => {
+    const fetchUsersAndLevels = async () => {
         setIsLoading(true);
         try {
-            const fetchedUsers = await getUsers();
+            const [fetchedUsers, fetchedLevels] = await Promise.all([
+                getUsers(),
+                getClientLevels()
+            ]);
+            
+            setLevels(fetchedLevels);
 
-            // Enrich users with referrer names
             const enriched = fetchedUsers.map(user => {
-                if (!user) return null; // Defensive check
+                if (!user) return null;
                 const referrer = fetchedUsers.find(u => u && u.uid === user.referredBy);
                 return {
                     ...user,
                     referredByName: referrer ? referrer.name : '-'
                 };
-            }).filter(Boolean) as EnrichedUser[]; // Filter out any nulls
+            }).filter(Boolean) as EnrichedUser[];
 
             enriched.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
             setUsers(enriched);
@@ -63,7 +68,7 @@ export default function ManageUsersPage() {
     };
 
     useEffect(() => {
-        fetchUsers();
+        fetchUsersAndLevels();
     }, [toast]);
 
     const handleBackfill = async (action: 'status' | 'level') => {
@@ -74,12 +79,16 @@ export default function ManageUsersPage() {
             
         if (result.success) {
             toast({ title: "نجاح", description: result.message });
-            fetchUsers();
+            fetchUsersAndLevels();
         } else {
             toast({ variant: 'destructive', title: "خطأ", description: result.message });
         }
         setIsUpdating(false);
     };
+
+    const levelMap = useMemo(() => {
+        return new Map(levels.map(level => [level.id, level.name]));
+    }, [levels]);
 
     const filteredUsers = useMemo(() => {
         if (!searchQuery) return users;
@@ -200,7 +209,7 @@ export default function ManageUsersPage() {
                                                     {user.status || 'N/A'}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell>{user.level || 'N/A'}</TableCell>
+                                            <TableCell>{levelMap.get(user.level) || 'N/A'}</TableCell>
                                             <TableCell>{getSafeDate(user.createdAt)}</TableCell>
                                         </TableRow>
                                     ))}
