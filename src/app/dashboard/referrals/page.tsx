@@ -40,14 +40,13 @@ const getStatusVariant = (status: UserStatus) => {
 };
 
 async function getCommissionHistory(userId: string): Promise<CashbackTransaction[]> {
+    // Broaden the query to get all cashback transactions for the user.
     const q = query(
         collection(db, "cashbackTransactions"),
-        where("userId", "==", userId),
-        where("sourceType", "in", ["cashback", "store_purchase"]),
-        orderBy("date", "desc")
+        where("userId", "==", userId)
     );
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => {
+    const allTransactions = querySnapshot.docs.map(doc => {
         const data = doc.data();
         return {
             id: doc.id,
@@ -55,6 +54,15 @@ async function getCommissionHistory(userId: string): Promise<CashbackTransaction
             date: (data.date as Timestamp).toDate(),
         } as CashbackTransaction;
     });
+
+    // Filter and sort in code to avoid needing a composite index.
+    const commissionTransactions = allTransactions.filter(
+        tx => tx.sourceType === 'cashback' || tx.sourceType === 'store_purchase'
+    );
+    
+    commissionTransactions.sort((a, b) => b.date.getTime() - a.date.getTime());
+    
+    return commissionTransactions;
 }
 
 
