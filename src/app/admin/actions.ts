@@ -1281,14 +1281,16 @@ export async function backfillUserStatuses(): Promise<{ success: boolean; messag
 export async function backfillUserLevels(): Promise<{ success: boolean; message: string; }> {
     try {
         const usersRef = collection(db, 'users');
-        // This query finds documents where 'level' is not set or is null.
-        const usersSnapshot = await getDocs(query(usersRef, where('level', '<=', null)));
+        const usersSnapshot = await getDocs(usersRef);
         const batch = writeBatch(db);
         let updatedCount = 0;
 
         usersSnapshot.docs.forEach(userDoc => {
-            batch.update(userDoc.ref, { level: 1 });
-            updatedCount++;
+            const user = userDoc.data() as UserProfile;
+            if (user.level === undefined || user.level === null) {
+                batch.update(userDoc.ref, { level: 1, monthlyEarnings: user.monthlyEarnings || 0 });
+                updatedCount++;
+            }
         });
 
         if (updatedCount > 0) {
@@ -1303,3 +1305,6 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
         return { success: false, message: `Failed to backfill levels: ${errorMessage}` };
     }
 }
+
+
+    
