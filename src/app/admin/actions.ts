@@ -239,67 +239,78 @@ export async function updateBrokerOrder(orderedIds: string[]) {
 
 // Point Awarding Engine
 export async function awardReferralCommission(
-    transaction: Transaction,
     userId: string,
     sourceType: 'cashback' | 'store_purchase',
     amountValue: number
 ) {
-    // 1. Get the user document to find their referrer
-    const userRef = doc(db, 'users', userId);
-    const userSnap = await transaction.get(userRef);
-    if (!userSnap.exists() || !userSnap.data().referredBy) {
-        return; // No referrer, nothing to do
+    try {
+        await runTransaction(db, async (transaction) => {
+            // 1. Get the user document to find their referrer
+            const userRef = doc(db, 'users', userId);
+            const userSnap = await transaction.get(userRef);
+            if (!userSnap.exists() || !userSnap.data().referredBy) {
+                console.log(`User ${userId} has no referrer. Skipping commission.`);
+                return; // No referrer, nothing to do
+            }
+            const referrerId = userSnap.data().referredBy;
+
+            // 2. Get the referrer's document to find their level
+            const referrerRef = doc(db, 'users', referrerId);
+            const referrerSnap = await transaction.get(referrerRef);
+            if (!referrerSnap.exists()) {
+                console.log(`Referrer ${referrerId} does not exist. Skipping commission.`);
+                return; // Referrer doesn't exist
+            }
+            const referrerLevel = referrerSnap.data().level || 1;
+
+            // 3. Get the level configuration (outside transaction for read-only data)
+            const levels = await getClientLevels(); // Assuming this reads from Firestore but it's okay for a small config collection.
+            const currentLevelConfig = levels.find(l => l.id === referrerLevel);
+            if (!currentLevelConfig) {
+                console.log(`Level config not found for level ${referrerLevel}. Skipping commission.`);
+                return; // Level config not found
+            }
+
+            // 4. Calculate commission
+            const commissionPercent = sourceType === 'cashback'
+                ? currentLevelConfig.advantage_referral_cashback
+                : currentLevelConfig.advantage_referral_store;
+            
+            if (commissionPercent <= 0) {
+                console.log(`No commission for level ${referrerLevel} and source ${sourceType}. Skipping.`);
+                return; // No commission for this action at this level
+            }
+            
+            const commissionAmount = (amountValue * commissionPercent) / 100;
+
+            // 5. Create a new cashback transaction for the referrer
+            const newTransactionRef = doc(collection(db, 'cashbackTransactions'));
+            transaction.set(newTransactionRef, {
+                userId: referrerId,
+                accountId: 'REFERRAL_COMMISSION',
+                accountNumber: 'Referral',
+                broker: `Commission from ${userSnap.data().name}`,
+                date: serverTimestamp(),
+                tradeDetails: `Referral commission from ${sourceType}`,
+                cashbackAmount: commissionAmount,
+                sourceUserId: userId,
+                sourceType: sourceType,
+            });
+            
+            // 6. Update referrer's monthly earnings
+            transaction.update(referrerRef, {
+                monthlyEarnings: increment(commissionAmount)
+            });
+
+            // 7. Create notification for the referrer
+            const message = `لقد ربحت ${commissionAmount.toFixed(2)}$ عمولة إحالة من ${userSnap.data().name}.`;
+            await createNotification(transaction, referrerId, message, 'general', '/dashboard/referrals');
+        });
+    } catch (error) {
+        console.error(`Failed to award referral commission to user ${userId}'s referrer:`, error);
+        // We don't re-throw the error, so it doesn't block the main flow.
+        // This could be logged to a separate error monitoring service.
     }
-    const referrerId = userSnap.data().referredBy;
-
-    // 2. Get the referrer's document to find their level
-    const referrerRef = doc(db, 'users', referrerId);
-    const referrerSnap = await transaction.get(referrerRef);
-    if (!referrerSnap.exists()) {
-        return; // Referrer doesn't exist
-    }
-    const referrerLevel = referrerSnap.data().level || 1;
-
-    // 3. Get the level configuration
-    const levels = await getClientLevels();
-    const currentLevelConfig = levels.find(l => l.id === referrerLevel);
-    if (!currentLevelConfig) {
-        return; // Level config not found
-    }
-
-    // 4. Calculate commission
-    const commissionPercent = sourceType === 'cashback'
-        ? currentLevelConfig.advantage_referral_cashback
-        : currentLevelConfig.advantage_referral_store;
-    
-    if (commissionPercent <= 0) {
-        return; // No commission for this action at this level
-    }
-    
-    const commissionAmount = (amountValue * commissionPercent) / 100;
-
-    // 5. Create a new cashback transaction for the referrer
-    const newTransactionRef = doc(collection(db, 'cashbackTransactions'));
-    transaction.set(newTransactionRef, {
-        userId: referrerId,
-        accountId: 'REFERRAL_COMMISSION',
-        accountNumber: 'Referral',
-        broker: `Commission from ${userSnap.data().name}`,
-        date: serverTimestamp(),
-        tradeDetails: `Referral commission from ${sourceType}`,
-        cashbackAmount: commissionAmount,
-        sourceUserId: userId,
-        sourceType: sourceType,
-    });
-    
-    // 6. Update referrer's monthly earnings
-    transaction.update(referrerRef, {
-        monthlyEarnings: increment(commissionAmount)
-    });
-
-    // 7. Create notification for the referrer
-    const message = `لقد ربحت ${commissionAmount.toFixed(2)}$ عمولة إحالة من ${userSnap.data().name}.`;
-    await createNotification(transaction, referrerId, message, 'general', '/dashboard/referrals');
 }
 
 
@@ -419,6 +430,7 @@ export async function updateUser(userId: string, data: { name: string, country?:
 // Cashback Management
 export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id' | 'date'>) {
     try {
+        // Step 1: Run the primary transaction for the user receiving cashback.
         await runTransaction(db, async (transaction) => {
             const newTransactionRef = doc(collection(db, 'cashbackTransactions'));
             transaction.set(newTransactionRef, {
@@ -426,17 +438,21 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
                 date: serverTimestamp(),
             });
 
-            // Update user status to 'Trader'
             const userRef = doc(db, 'users', data.userId);
-            transaction.update(userRef, { status: 'Trader', monthlyEarnings: increment(data.cashbackAmount) });
+            transaction.update(userRef, { 
+                status: 'Trader', 
+                monthlyEarnings: increment(data.cashbackAmount) 
+            });
 
             const message = `لقد تلقيت ${data.cashbackAmount.toFixed(2)}$ كاش باك للحساب ${data.accountNumber}.`;
             await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
-            
-            // Referral commission logic is complex and can be handled in a separate, scheduled job or trigger
-            // await awardReferralCommission(transaction, data.userId, 'cashback', data.cashbackAmount);
         });
+
+        // Step 2: After the primary transaction succeeds, award commission in a separate, non-blocking operation.
+        await awardReferralCommission(data.userId, 'cashback', data.cashbackAmount);
+
         return { success: true, message: 'تمت إضافة معاملة الكاش باك بنجاح.' };
+
     } catch (error) {
         console.error("Error adding cashback transaction:", error);
         return { success: false, message: 'فشل إضافة معاملة الكاش باك.' };
@@ -721,7 +737,7 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
 
             // Prevent awarding commission multiple times
             if (status === 'Delivered' && !orderData.referralCommissionAwarded) {
-                await awardReferralCommission(transaction, orderData.userId, 'store_purchase', orderData.price);
+                await awardReferralCommission(orderData.userId, 'store_purchase', orderData.price);
                 transaction.update(orderRef, { status, referralCommissionAwarded: true });
             } else {
                  transaction.update(orderRef, { status });
@@ -1218,4 +1234,5 @@ export async function submitFeedbackResponse(
 
 
     
+
 
