@@ -23,6 +23,7 @@ import {
     SunMoon,
     Languages,
     Gem,
+    X,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -31,7 +32,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover"
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet"
 import { AuthProvider, useAuthContext } from "@/hooks/useAuthContext";
 import { AuthGuard } from "@/components/shared/AuthGuard";
 import { useEffect, useState, useCallback } from "react";
@@ -181,14 +182,14 @@ function SettingsSidebar() {
 
     return (
         <div className="flex flex-col h-full">
-            <SheetHeader className="p-4 border-b text-right flex-shrink-0">
+            <SheetHeader className="p-4 border-b text-right flex-shrink-0 flex flex-row justify-between items-center">
                 <SheetTitle>الإعدادات</SheetTitle>
             </SheetHeader>
             <ScrollArea className="flex-grow">
                 <div className="p-4 space-y-4">
-                    <Link href="/dashboard/profile">
-                        <Card className="hover:bg-muted/50 transition-colors">
-                            <CardContent className="p-3 flex items-center gap-3">
+                    <Card>
+                        <CardContent className="p-3 space-y-3">
+                             <Link href="/dashboard/profile" className="flex items-center gap-3">
                                  <Avatar className="h-12 w-12">
                                     <AvatarFallback className="text-xl bg-primary/20 text-primary font-bold">
                                         {user?.profile?.name ? user.profile.name.charAt(0).toUpperCase() : '?'}
@@ -202,9 +203,14 @@ function SettingsSidebar() {
                                         {levelName}
                                     </Badge>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </Link>
+                            </Link>
+                            <Separator />
+                             <Button variant="ghost" onClick={onLogout} className="w-full justify-start flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10 h-auto -mx-3 -mb-3">
+                                <LogOut className="h-5 w-5" />
+                                <span className="text-sm font-medium flex-grow text-right">تسجيل الخروج</span>
+                            </Button>
+                        </CardContent>
+                    </Card>
 
                     <nav className="flex flex-col gap-2">
                         {settingsLinks.map(link => (
@@ -269,12 +275,6 @@ function SettingsSidebar() {
 
                 </div>
             </ScrollArea>
-             <div className="mt-auto p-4 border-t flex-shrink-0">
-                <Button variant="ghost" onClick={onLogout} className="w-full justify-start flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10">
-                    <LogOut className="h-5 w-5" />
-                    <span className="text-sm font-medium">تسجيل الخروج</span>
-                </Button>
-            </div>
         </div>
     )
 }
