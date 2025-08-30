@@ -336,7 +336,7 @@ export default function DashboardLayout({
                                         <span className="sr-only">فتح لوحة الإعدادات</span>
                                     </Button>
                                 </SheetTrigger>
-                                <SheetContent side="left" className="p-0 w-full max-w-xs">
+                                <SheetContent side="right" className="p-0 w-full max-w-xs">
                                     <SettingsSidebar />
                                 </SheetContent>
                             </Sheet>
