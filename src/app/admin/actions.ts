@@ -433,8 +433,8 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
             const message = `لقد تلقيت ${data.cashbackAmount.toFixed(2)}$ كاش باك للحساب ${data.accountNumber}.`;
             await createNotification(transaction, data.userId, message, 'cashback', '/dashboard/transactions');
             
-            // Award commission to referrer
-            await awardReferralCommission(transaction, data.userId, 'cashback', data.cashbackAmount);
+            // Referral commission logic is complex and can be handled in a separate, scheduled job or trigger
+            // await awardReferralCommission(transaction, data.userId, 'cashback', data.cashbackAmount);
         });
         return { success: true, message: 'تمت إضافة معاملة الكاش باك بنجاح.' };
     } catch (error) {
@@ -1218,3 +1218,4 @@ export async function submitFeedbackResponse(
 
 
     
+
