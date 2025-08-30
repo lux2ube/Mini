@@ -1,19 +1,22 @@
 
-
-
 'use server';
 
 import { generateProjectSummary } from "@/ai/flows/generate-project-summary";
 import type { GenerateProjectSummaryOutput } from "@/ai/flows/generate-project-summary";
 import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
-import { auth, db } from "@/lib/firebase/config";
-import { createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail } from "firebase/auth";
-import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion } from "firebase/firestore";
+import { firebaseConfig } from "@/lib/firebase/config";
+import { getApp, getApps, initializeApp, type FirebaseOptions } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail } from "firebase/auth";
+import { getFirestore, doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
 import { logUserActivity } from "./admin/actions";
 import { getClientSessionInfo } from "@/lib/device-info";
 
+// Helper function to initialize Firebase on the server
+function getFirebaseApp(config: FirebaseOptions) {
+    return !getApps().length ? initializeApp(config) : getApp();
+}
 
 // Hardcoded data based on https://github.com/tcb4dev/cashback1
 const projectData = {
@@ -54,6 +57,9 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
 
 export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
     const { name, email, password, referralCode } = formData;
+    const app = getFirebaseApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
     let referrerData: { id: string; ref: any; } | null = null;
 
@@ -131,6 +137,7 @@ export async function handleRegisterUser(formData: { name: string, email: string
 
 
 export async function handleLogout() {
+    const auth = getAuth(getFirebaseApp(firebaseConfig));
     try {
         await signOut(auth);
         return { success: true };
@@ -141,6 +148,7 @@ export async function handleLogout() {
 }
 
 export async function handleForgotPassword(email: string) {
+    const auth = getAuth(getFirebaseApp(firebaseConfig));
     try {
         await sendPasswordResetEmail(auth, email);
         return { success: true };
