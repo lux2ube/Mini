@@ -181,93 +181,95 @@ function SettingsSidebar() {
 
     return (
         <div className="flex flex-col h-full">
-            <SheetHeader className="p-4 border-b text-right">
+            <SheetHeader className="p-4 border-b text-right flex-shrink-0">
                 <SheetTitle>الإعدادات</SheetTitle>
             </SheetHeader>
-            <div className="p-4 space-y-4">
-                <Link href="/dashboard/profile">
-                    <Card className="hover:bg-muted/50 transition-colors">
-                        <CardContent className="p-3 flex items-center gap-3">
-                             <Avatar className="h-12 w-12">
-                                <AvatarFallback className="text-xl bg-primary/20 text-primary font-bold">
-                                    {user?.profile?.name ? user.profile.name.charAt(0).toUpperCase() : '?'}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-grow">
-                                <h3 className="font-semibold">{user?.profile?.name}</h3>
-                                <p className="text-xs text-muted-foreground">{user?.profile?.email}</p>
-                                <Badge variant="secondary" className="mt-1 gap-1.5">
-                                    <Gem className="h-3 w-3 text-primary" />
-                                    {levelName}
-                                </Badge>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </Link>
+            <ScrollArea className="flex-grow">
+                <div className="p-4 space-y-4">
+                    <Link href="/dashboard/profile">
+                        <Card className="hover:bg-muted/50 transition-colors">
+                            <CardContent className="p-3 flex items-center gap-3">
+                                 <Avatar className="h-12 w-12">
+                                    <AvatarFallback className="text-xl bg-primary/20 text-primary font-bold">
+                                        {user?.profile?.name ? user.profile.name.charAt(0).toUpperCase() : '?'}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-grow">
+                                    <h3 className="font-semibold">{user?.profile?.name}</h3>
+                                    <p className="text-xs text-muted-foreground">{user?.profile?.email}</p>
+                                    <Badge variant="secondary" className="mt-1 gap-1.5">
+                                        <Gem className="h-3 w-3 text-primary" />
+                                        {levelName}
+                                    </Badge>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </Link>
 
-                <nav className="flex flex-col gap-2">
-                    {settingsLinks.map(link => (
+                    <nav className="flex flex-col gap-2">
+                        {settingsLinks.map(link => (
+                            <Link
+                                key={link.href}
+                                href={link.href}
+                                className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10", {
+                                    "bg-primary/10 text-primary": pathname === link.href,
+                                })}
+                            >
+                                <link.icon className="h-5 w-5" />
+                                <p className="text-sm font-medium">{link.label}</p>
+                                <ChevronLeft className="h-4 w-4 mr-auto" />
+                            </Link>
+                        ))}
                         <Link
-                            key={link.href}
-                            href={link.href}
+                            href="/dashboard/loyalty"
                             className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10", {
-                                "bg-primary/10 text-primary": pathname === link.href,
-                            })}
+                                    "bg-primary/10 text-primary": pathname === '/dashboard/loyalty',
+                                })}
                         >
-                            <link.icon className="h-5 w-5" />
-                            <p className="text-sm font-medium">{link.label}</p>
+                            <Gem className="h-5 w-5" />
+                            <p className="text-sm font-medium">برنامج الولاء</p>
                             <ChevronLeft className="h-4 w-4 mr-auto" />
                         </Link>
-                    ))}
-                    <Link
-                        href="/dashboard/loyalty"
-                        className={cn("flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10", {
-                                "bg-primary/10 text-primary": pathname === '/dashboard/loyalty',
-                            })}
+                    </nav>
+                    
+                    <Separator />
+                    
+                    <p className="px-3 text-xs font-semibold text-muted-foreground">الدعم</p>
+                     <nav className="flex flex-col gap-2">
+                        {supportLinks.map(link => (
+                            <Link
+                                key={link.label}
+                                href={link.href}
+                                className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
+                            >
+                                <link.icon />
+                                <p className="text-sm font-medium">{link.label}</p>
+                                 <ChevronLeft className="h-4 w-4 mr-auto" />
+                            </Link>
+                        ))}
+                    </nav>
+
+                    <Separator />
+                    
+                     <p className="px-3 text-xs font-semibold text-muted-foreground">التفضيلات</p>
+                     <div className="flex items-center gap-3 rounded-md px-3 py-2">
+                        <SunMoon className="h-5 w-5 text-muted-foreground" />
+                        <Label htmlFor="dark-mode" className="text-sm font-medium flex-grow">السمة</Label>
+                        <Switch id="dark-mode" checked={theme === 'dark'} onCheckedChange={toggleTheme} />
+                    </div>
+                     <Link
+                        href="#"
+                        className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
                     >
-                        <Gem className="h-5 w-5" />
-                        <p className="text-sm font-medium">برنامج الولاء</p>
-                        <ChevronLeft className="h-4 w-4 mr-auto" />
+                        <Languages className="h-5 w-5" />
+                        <p className="text-sm font-medium">اللغة</p>
+                        <span className="mr-auto text-sm text-muted-foreground">العربية</span>
+                        <ChevronLeft className="h-4 w-4" />
                     </Link>
-                </nav>
-                
-                <Separator />
-                
-                <p className="px-3 text-xs font-semibold text-muted-foreground">الدعم</p>
-                 <nav className="flex flex-col gap-2">
-                    {supportLinks.map(link => (
-                        <Link
-                            key={link.label}
-                            href={link.href}
-                            className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
-                        >
-                            <link.icon />
-                            <p className="text-sm font-medium">{link.label}</p>
-                             <ChevronLeft className="h-4 w-4 mr-auto" />
-                        </Link>
-                    ))}
-                </nav>
 
-                <Separator />
-                
-                 <p className="px-3 text-xs font-semibold text-muted-foreground">التفضيلات</p>
-                 <div className="flex items-center gap-3 rounded-md px-3 py-2">
-                    <SunMoon className="h-5 w-5 text-muted-foreground" />
-                    <Label htmlFor="dark-mode" className="text-sm font-medium flex-grow">السمة</Label>
-                    <Switch id="dark-mode" checked={theme === 'dark'} onCheckedChange={toggleTheme} />
                 </div>
-                 <Link
-                    href="#"
-                    className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
-                >
-                    <Languages className="h-5 w-5" />
-                    <p className="text-sm font-medium">اللغة</p>
-                    <span className="mr-auto text-sm text-muted-foreground">العربية</span>
-                    <ChevronLeft className="h-4 w-4" />
-                </Link>
-
-            </div>
-             <div className="mt-auto p-4 border-t">
+            </ScrollArea>
+             <div className="mt-auto p-4 border-t flex-shrink-0">
                 <Button variant="ghost" onClick={onLogout} className="w-full justify-start flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10">
                     <LogOut className="h-5 w-5" />
                     <span className="text-sm font-medium">تسجيل الخروج</span>
@@ -405,7 +407,7 @@ export default function DashboardLayout({
                                             <span className="sr-only">فتح لوحة الإعدادات</span>
                                         </Button>
                                     </SheetTrigger>
-                                    <SheetContent side="right" className="p-0 w-full max-w-xs">
+                                    <SheetContent side="right" className="p-0 w-full max-w-xs flex flex-col">
                                         <SettingsSidebar />
                                     </SheetContent>
                                 </Sheet>
