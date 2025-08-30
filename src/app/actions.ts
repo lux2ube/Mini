@@ -103,6 +103,7 @@ export async function handleRegisterUser(formData: { name: string, email: string
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
+        // If user was created in Auth but Firestore transaction failed, delete the user.
         if (userCredential) {
             await deleteUser(userCredential.user);
         }
@@ -113,6 +114,7 @@ export async function handleRegisterUser(formData: { name: string, email: string
             return { success: false, error: "This email is already in use. Please log in." };
         }
         
+        // Generic error for other issues
         return { success: false, error: "An unexpected error occurred during registration. Please try again." };
     }
 }

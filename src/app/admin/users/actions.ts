@@ -108,6 +108,8 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
             return { success: false, message: "No client levels configured. Please seed them first." };
         }
         levels.sort((a, b) => b.required_total - a.required_total);
+        const lowestLevel = levels[levels.length - 1];
+
 
         // 2. Get all users
         const usersSnapshot = await getDocs(collection(db, 'users'));
@@ -136,17 +138,12 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
         for (const user of users) {
             const monthlyEarnings = monthlyEarningsMap.get(user.id) || 0;
             
-            // Determine the new level by finding the highest level they qualify for
-            let newLevelId = 1; // Default to level 1
-            for (const level of levels) {
-                if (monthlyEarnings >= level.required_total) {
-                    newLevelId = level.id;
-                    break; // Since levels are sorted descending, the first match is the correct highest level
-                }
-            }
-
+            // Find the highest level the user qualifies for.
+            // If they don't qualify for any, they get the lowest possible level.
+            const newLevel = levels.find(level => monthlyEarnings >= level.required_total) || lowestLevel;
+            
             // Update user document in the batch
-            batch.update(user.ref, { level: newLevelId, monthlyEarnings: monthlyEarnings });
+            batch.update(user.ref, { level: newLevel.id, monthlyEarnings: monthlyEarnings });
             updatedCount++;
         }
 
