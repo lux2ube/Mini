@@ -1,9 +1,10 @@
 
+
 "use client"
 
 import { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getActivityLogs } from '@/app/admin/actions';
+import { getUserActivityLogs } from '@/app/admin/actions';
 import type { ActivityLog } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,10 +27,7 @@ export default function UserActivityLogsPage() {
             if (!user) return;
             setIsLoading(true);
             try {
-                // In a real app, we would query where userId equals the current user's ID.
-                // For this demo, we'll fetch all and filter client-side.
-                const fetchedLogs = await getActivityLogs();
-                const userLogs = fetchedLogs.filter(log => log.userId === user.uid);
+                const userLogs = await getUserActivityLogs(user.uid);
                 setLogs(userLogs);
             } catch (error) {
                 console.error("Failed to fetch logs:", error);
