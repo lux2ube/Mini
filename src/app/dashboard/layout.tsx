@@ -34,7 +34,7 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { AuthProvider, useAuthContext } from "@/hooks/useAuthContext";
 import { AuthGuard } from "@/components/shared/AuthGuard";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { Notification, ClientLevel } from "@/types";
 import { getNotificationsForUser, markNotificationsAsRead, getClientLevels } from "../admin/actions";
 import { handleLogout } from "../actions";
@@ -216,8 +216,8 @@ function SettingsSidebar() {
                                 })}
                             >
                                 <link.icon className="h-5 w-5" />
-                                <p className="text-sm font-medium">{link.label}</p>
-                                <ChevronLeft className="h-4 w-4 mr-auto" />
+                                <div className="flex-grow text-sm font-medium">{link.label}</div>
+                                <ChevronLeft className="h-4 w-4" />
                             </Link>
                         ))}
                         <Link
@@ -227,8 +227,8 @@ function SettingsSidebar() {
                                 })}
                         >
                             <Gem className="h-5 w-5" />
-                            <p className="text-sm font-medium">برنامج الولاء</p>
-                            <ChevronLeft className="h-4 w-4 mr-auto" />
+                            <div className="flex-grow text-sm font-medium">برنامج الولاء</div>
+                            <ChevronLeft className="h-4 w-4" />
                         </Link>
                     </nav>
                     
@@ -243,8 +243,8 @@ function SettingsSidebar() {
                                 className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
                             >
                                 <link.icon />
-                                <p className="text-sm font-medium">{link.label}</p>
-                                 <ChevronLeft className="h-4 w-4 mr-auto" />
+                                <div className="flex-grow text-sm font-medium">{link.label}</div>
+                                 <ChevronLeft className="h-4 w-4" />
                             </Link>
                         ))}
                     </nav>
@@ -262,8 +262,8 @@ function SettingsSidebar() {
                         className="flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground transition-all hover:text-primary hover:bg-primary/10"
                     >
                         <Languages className="h-5 w-5" />
-                        <p className="text-sm font-medium">اللغة</p>
-                        <span className="mr-auto text-sm text-muted-foreground">العربية</span>
+                        <div className="flex-grow text-sm font-medium">اللغة</div>
+                        <span className="text-sm text-muted-foreground">العربية</span>
                         <ChevronLeft className="h-4 w-4" />
                     </Link>
 
