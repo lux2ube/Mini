@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import { generateProjectSummary } from "@/ai/flows/generate-project-summary";
@@ -10,6 +11,8 @@ import { auth, db } from "@/lib/firebase/config";
 import { createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail } from "firebase/auth";
 import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
+import { logUserActivity } from "./admin/actions";
+import { getClientSessionInfo } from "@/lib/device-info";
 
 
 // Hardcoded data based on https://github.com/tcb4dev/cashback1
@@ -75,6 +78,8 @@ export async function handleRegisterUser(formData: { name: string, email: string
             const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
             const newClientId = lastId + 1;
 
+            const clientInfo = await getClientSessionInfo();
+
             const newUserRef = doc(db, "users", user.uid);
             transaction.set(newUserRef, {
                 // No 'uid' field here, it's the document ID
@@ -89,6 +94,7 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 referrals: [],
                 level: 1,
                 monthlyEarnings: 0,
+                country: clientInfo.geoInfo.country || null,
             });
 
             if (referrerData) {
@@ -99,6 +105,10 @@ export async function handleRegisterUser(formData: { name: string, email: string
             
             transaction.set(counterRef, { lastId: newClientId }, { merge: true });
         });
+
+        // Log activity after successful registration
+        const clientInfo = await getClientSessionInfo();
+        await logUserActivity(user.uid, 'signup', clientInfo, { method: 'email' });
 
         return { success: true, userId: user.uid };
 

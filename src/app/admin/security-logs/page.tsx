@@ -104,7 +104,7 @@ export default function SecurityLogsPage() {
                                 <TableBody>
                                     {filteredLogs.map(log => (
                                         <TableRow key={log.id}>
-                                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{format(log.timestamp, 'Pp')}</TableCell>
+                                            <TableCell className="text-xs text-muted-foreground whitespace-nowrap">{format(log.timestamp, 'PPp')}</TableCell>
                                             <TableCell>
                                                 <Badge variant={getEventVariant(log.event)} className="capitalize">
                                                     {getEventText(log.event)}

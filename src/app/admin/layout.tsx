@@ -1,5 +1,6 @@
 
 
+
 "use client";
 
 import Link from "next/link";
@@ -174,7 +175,10 @@ export default function AdminLayout({
     return (
         <AuthProvider>
             <AdminGuard>
-                 <div className="grid min-h-screen w-full md:grid-cols-[1fr_220px] lg:grid-cols-[1fr_280px]">
+                 <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+                    <aside className="hidden border-r bg-muted/40 md:block">
+                        <DesktopNav />
+                    </aside>
                     <div className="flex flex-col">
                         <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 md:hidden">
                             <Sheet>
@@ -184,7 +188,7 @@ export default function AdminLayout({
                                         <span className="sr-only">فتح قائمة التنقل</span>
                                     </Button>
                                 </SheetTrigger>
-                                <SheetContent side="right" className="flex flex-col p-0 w-full max-w-sm">
+                                <SheetContent side="left" className="flex flex-col p-0 w-full max-w-sm">
                                     <MobileNav />
                                 </SheetContent>
                             </Sheet>
@@ -194,9 +198,6 @@ export default function AdminLayout({
                             {children}
                         </main>
                     </div>
-                    <aside className="hidden border-r bg-muted/40 md:block">
-                        <DesktopNav />
-                    </aside>
                  </div>
             </AdminGuard>
         </AuthProvider>

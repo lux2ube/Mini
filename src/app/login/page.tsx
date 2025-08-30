@@ -68,14 +68,14 @@ export default function LoginPage() {
                 email: user.email!, 
                 role: "user" as const,
                 clientId: newClientId,
+                status: 'NEW' as const,
                 createdAt: Timestamp.now(),
                 country: clientInfo.geoInfo.country || null,
                 referralCode: generateReferralCode(user.displayName || "user"),
                 referredBy: null,
                 referrals: [],
-                points: 0,
-                tier: 'New' as const,
-                monthlyPoints: 0,
+                level: 1,
+                monthlyEarnings: 0,
             };
             transaction.set(userDocRef, newUserProfile);
             transaction.set(counterRef, { lastId: newClientId }, { merge: true });

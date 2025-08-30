@@ -41,7 +41,7 @@ export interface UserProfile {
     referredBy?: string | null; // UID of the user who referred this person
     referrals?: string[]; // Array of UIDs of users this person has referred
     // New Level System
-    level: number; // Level from 1 to 6
+    level: number; // Level 1-6
     monthlyEarnings?: number; // For level calculation
 }
 
