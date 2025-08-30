@@ -2,6 +2,11 @@
 import {initializeApp} from 'firebase/app';
 import {getFirestore, collection, addDoc, getDocs, query } from 'firebase/firestore';
 import type { PointsRule } from '@/types';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load environment variables from .env file at the root of the project
+config({ path: resolve(__dirname, '../../.env') });
 
 // IMPORTANT: Paste your Firebase project configuration here.
 const firebaseConfig = {

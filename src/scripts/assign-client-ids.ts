@@ -1,17 +1,22 @@
 
 import {initializeApp} from 'firebase/app';
 import {getFirestore, collection, getDocs, doc, runTransaction, query, where, orderBy} from 'firebase/firestore';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load environment variables from .env file at the root of the project
+config({ path: resolve(__dirname, '../../.env') });
 
 // IMPORTANT: Paste your Firebase project configuration here.
 // You can find this in your Firebase project settings.
 const firebaseConfig = {
-  apiKey: "AIzaSyDW1ZPSML_OZTmKN35YFANaP4NdQHOPYNs",
-  authDomain: "cashback-56a16.firebaseapp.com",
-  projectId: "cashback-56a16",
-  storageBucket: "cashback-56a16.appspot.com",
-  messagingSenderId: "1090837702640",
-  appId: "1:1090837702640:web:be1142b8b28a374c05df35",
-  measurementId: "G-KKY66CQJ0J"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
