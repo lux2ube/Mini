@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,8 +23,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { updateUser } from "@/app/admin/actions";
+import { updateUser, getClientLevels } from "@/app/admin/actions";
 import { useRouter } from "next/navigation";
+import type { ClientLevel } from "@/types";
 
 
 const profileSchema = z.object({
@@ -39,6 +40,11 @@ export default function ProfilePage() {
     const { toast } = useToast();
     
     const [isProfileSubmitting, setIsProfileSubmitting] = useState(false);
+    const [levels, setLevels] = useState<ClientLevel[]>([]);
+
+    useEffect(() => {
+        getClientLevels().then(setLevels);
+    }, []);
 
     const profileForm = useForm<ProfileFormValues>({
         resolver: zodResolver(profileSchema),
@@ -50,6 +56,7 @@ export default function ProfilePage() {
     const handleProfileSubmit = async (values: ProfileFormValues) => {
         if (!user) return;
         setIsProfileSubmitting(true);
+        // We removed the verifyAdmin check from this function
         const result = await updateUser(user.uid, { name: values.name });
         if (result.success) {
             toast({ type: "success", title: "نجاح", description: result.message });
@@ -60,8 +67,8 @@ export default function ProfilePage() {
         setIsProfileSubmitting(false);
     };
     
-    const copyToClipboard = (text: string | number | undefined) => {
-        if (text !== undefined) {
+    const copyToClipboard = (text: string | number | undefined | null) => {
+        if (text !== undefined && text !== null) {
             navigator.clipboard.writeText(String(text));
             toast({ title: 'تم النسخ!' });
         }
@@ -76,6 +83,7 @@ export default function ProfilePage() {
     }
     
     const { profile } = user;
+    const levelName = levels.find(l => l.id === profile.level)?.name || 'New';
 
     return (
         <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
@@ -96,7 +104,7 @@ export default function ProfilePage() {
                     <p className="text-sm text-muted-foreground">{profile.email}</p>
                     <Badge variant="secondary" className="mt-2">
                         <Star className="mr-2 h-4 w-4 text-amber-500"/>
-                        {profile.tier || 'برونزي'}
+                        {levelName}
                     </Badge>
                 </div>
             </div>

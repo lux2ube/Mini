@@ -35,8 +35,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { AuthProvider, useAuthContext } from "@/hooks/useAuthContext";
 import { AuthGuard } from "@/components/shared/AuthGuard";
 import { useEffect, useState } from "react";
-import type { Notification } from "@/types";
-import { getNotificationsForUser, markNotificationsAsRead } from "../admin/actions";
+import type { Notification, ClientLevel } from "@/types";
+import { getNotificationsForUser, markNotificationsAsRead, getClientLevels } from "../admin/actions";
 import { handleLogout } from "../actions";
 import { formatDistanceToNow } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -149,8 +149,10 @@ function SettingsSidebar() {
     const router = useRouter();
     const { toast } = useToast();
     const [theme, setTheme] = useState('light');
+    const [levels, setLevels] = useState<ClientLevel[]>([]);
 
     useEffect(() => {
+        getClientLevels().then(setLevels);
         const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
         setTheme(currentTheme);
     }, []);
@@ -173,6 +175,9 @@ function SettingsSidebar() {
             toast({ variant: 'destructive', title: "خطأ", description: error });
         }
     };
+    
+    const userLevel = user?.profile?.level;
+    const levelName = levels.find(l => l.id === userLevel)?.name || 'New';
 
     return (
         <div className="flex flex-col h-full">
@@ -193,7 +198,7 @@ function SettingsSidebar() {
                                 <p className="text-xs text-muted-foreground">{user?.profile?.email}</p>
                                 <Badge variant="secondary" className="mt-1 gap-1.5">
                                     <Gem className="h-3 w-3 text-primary" />
-                                    {user?.profile?.tier || 'برونزي'}
+                                    {levelName}
                                 </Badge>
                             </div>
                         </CardContent>
@@ -284,7 +289,7 @@ function BottomNavBar() {
     const fabItem = { href: "/dashboard/brokers", icon: Briefcase, label: "الوسطاء" };
 
     return (
-        <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t">
+        <div className="fixed bottom-0 left-0 z-50 w-full h-16 bg-background border-t md:hidden">
             <div className="grid h-full grid-cols-5 max-w-lg mx-auto">
                 {navItems.slice(0, 2).map((item) => (
                     <Link key={item.href} href={item.href} className="inline-flex flex-col items-center justify-center font-medium px-5 hover:bg-muted group">
@@ -310,6 +315,69 @@ function BottomNavBar() {
     )
 }
 
+function DesktopSidebar() {
+    const pathname = usePathname();
+    const { user } = useAuthContext();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const onLogout = async () => {
+        const { success, error } = await handleLogout();
+        if (success) {
+            toast({ title: "تم تسجيل الخروج", description: "لقد قمت بتسجيل الخروج بنجاح."});
+            router.push('/login');
+        } else {
+            toast({ variant: 'destructive', title: "خطأ", description: error });
+        }
+    };
+    
+    const navItems = [
+        { href: "/dashboard", icon: Home, label: "الرئيسية" },
+        { href: "/dashboard/brokers", icon: Briefcase, label: "الوسطاء" },
+        { href: "/dashboard/my-accounts", icon: ShieldCheck, label: "حساباتي" },
+        { href: "/dashboard/withdraw", icon: Wallet, label: "المحفظة" },
+        { href: "/dashboard/store", icon: Store, label: "المتجر" },
+        { href: "/dashboard/referrals", icon: Gift, label: "الدعوات" },
+        { href: "/dashboard/loyalty", icon: Gem, label: "برنامج الولاء" },
+    ];
+
+    return (
+        <aside className="hidden md:block w-64 border-r bg-muted/40 p-4">
+             <div className="flex flex-col h-full">
+                <Link href="/dashboard" className="flex items-center gap-2 font-semibold mb-6">
+                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                        <svg className="w-6 h-6 text-primary-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"></path><path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path><path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+                    </div>
+                    <span className="font-headline text-lg">رفيق الكاش باك</span>
+                </Link>
+
+                <nav className="flex-1 space-y-2">
+                    {navItems.map(item => (
+                         <Link
+                            key={item.href}
+                            href={item.href}
+                            className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary", {
+                                "bg-primary/10 text-primary": pathname === item.href,
+                            })}
+                        >
+                            <item.icon className="h-4 w-4" />
+                            {item.label}
+                        </Link>
+                    ))}
+                </nav>
+                <div className="mt-auto space-y-2">
+                    <Button variant="ghost" className="w-full justify-start" asChild>
+                        <Link href="/dashboard/profile"><Settings className="h-4 w-4" /> الإعدادات</Link>
+                    </Button>
+                    <Button variant="ghost" onClick={onLogout} className="w-full justify-start">
+                        <LogOut className="h-4 w-4" /> تسجيل الخروج
+                    </Button>
+                </div>
+            </div>
+        </aside>
+    )
+}
+
 export default function DashboardLayout({
     children,
 }: {
@@ -318,34 +386,36 @@ export default function DashboardLayout({
     return (
         <AuthProvider>
             <AuthGuard>
-                <div className="flex flex-col min-h-screen w-full">
-                    <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 z-10">
-                         <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                                <svg className="w-6 h-6 text-primary-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"></path><path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path><path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+                <div className="flex min-h-screen w-full">
+                    <DesktopSidebar />
+                    <div className="flex flex-col flex-1">
+                        <header className="sticky top-0 flex h-14 items-center gap-4 border-b bg-background px-4 z-10 md:hidden">
+                            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+                                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                                    <svg className="w-6 h-6 text-primary-foreground" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor"></path><path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path><path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"></path></svg>
+                                </div>
+                            </Link>
+                            
+                            <div className="mr-auto flex items-center gap-2">
+                                <NotificationBell />
+                                <Sheet>
+                                    <SheetTrigger asChild>
+                                        <Button variant="secondary" size="icon" className="rounded-full h-9 w-9">
+                                            <CircleUser className="h-5 w-5" />
+                                            <span className="sr-only">فتح لوحة الإعدادات</span>
+                                        </Button>
+                                    </SheetTrigger>
+                                    <SheetContent side="right" className="p-0 w-full max-w-xs">
+                                        <SettingsSidebar />
+                                    </SheetContent>
+                                </Sheet>
                             </div>
-                            <span className="font-headline text-lg hidden sm:inline-block">رفيق الكاش باك</span>
-                        </Link>
-                        
-                        <div className="mr-auto flex items-center gap-2">
-                            <NotificationBell />
-                            <Sheet>
-                                <SheetTrigger asChild>
-                                    <Button variant="secondary" size="icon" className="rounded-full h-9 w-9">
-                                        <CircleUser className="h-5 w-5" />
-                                        <span className="sr-only">فتح لوحة الإعدادات</span>
-                                    </Button>
-                                </SheetTrigger>
-                                <SheetContent side="right" className="p-0 w-full max-w-xs">
-                                    <SettingsSidebar />
-                                </SheetContent>
-                            </Sheet>
-                        </div>
-                    </header>
-                    <main className="flex-1 pb-16">
-                        {children}
-                    </main>
-                    <BottomNavBar />
+                        </header>
+                        <main className="flex-1 pb-16 md:pb-0">
+                            {children}
+                        </main>
+                        <BottomNavBar />
+                    </div>
                 </div>
             </AuthGuard>
         </AuthProvider>
