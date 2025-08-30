@@ -84,8 +84,6 @@ export async function handleRegisterUser(formData: { name: string, email: string
             const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
             const newClientId = lastId + 1;
 
-            const clientInfo = await getClientSessionInfo();
-
             const newUserRef = doc(db, "users", user.uid);
             transaction.set(newUserRef, {
                 // No 'uid' field here, it's the document ID
@@ -100,7 +98,7 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 referrals: [],
                 level: 1,
                 monthlyEarnings: 0,
-                country: clientInfo.geoInfo.country || null,
+                country: null,
             });
 
             if (referrerData) {
@@ -113,8 +111,11 @@ export async function handleRegisterUser(formData: { name: string, email: string
         });
 
         // Log activity after successful registration
-        const clientInfo = await getClientSessionInfo();
-        await logUserActivity(user.uid, 'signup', clientInfo, { method: 'email' });
+        // Simplified logging without IP info
+        await logUserActivity(user.uid, 'signup', {
+            deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
+            geoInfo: { ip: 'Unknown' },
+        }, { method: 'email' });
 
         return { success: true, userId: user.uid };
 
