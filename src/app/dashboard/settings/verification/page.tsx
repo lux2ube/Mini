@@ -231,11 +231,7 @@ export default function VerificationPage() {
     const addressStatus = !profile.addressData ? 'Not Verified' : profile.addressData.status;
 
     return (
-        <div className="max-w-md mx-auto w-full px-4 py-4 space-y-6">
-             <Button variant="ghost" onClick={() => router.back()} className="h-auto p-0 text-sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                العودة إلى الإعدادات
-            </Button>
+        <div className="space-y-6">
             <PageHeader title="مركز التحقق" description="قم بتأمين حسابك وفتح حدود أعلى." />
 
             <div className="space-y-3">
