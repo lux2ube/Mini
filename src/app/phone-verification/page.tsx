@@ -12,6 +12,9 @@ import { useToast } from '@/hooks/use-toast';
 import { updateUserPhoneNumber } from '../actions';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+// Define a custom labels object for react-phone-number-input
+import ar from 'react-phone-number-input/locale/ar.json'
+
 function PhoneVerificationForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -23,8 +26,7 @@ function PhoneVerificationForm() {
     
     useEffect(() => {
         if (!userId) {
-            // If no user ID is present, they shouldn't be on this page.
-            toast({ variant: 'destructive', title: 'Error', description: 'Invalid session. Please log in.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: 'جلسة غير صالحة. يرجى تسجيل الدخول.' });
             router.push('/login');
         }
     }, [userId, router, toast]);
@@ -33,23 +35,24 @@ function PhoneVerificationForm() {
         if (!userId) return;
 
         if (!phoneNumber || !isPossiblePhoneNumber(phoneNumber)) {
-            toast({ variant: 'destructive', title: 'Invalid Phone Number', description: 'Please enter a valid phone number.' });
+            toast({ variant: 'destructive', title: 'رقم هاتف غير صالح', description: 'الرجاء إدخال رقم هاتف صحيح.' });
             return;
         }
 
         setIsLoading(true);
         const result = await updateUserPhoneNumber(userId, phoneNumber);
         if (result.success) {
-            toast({ type: 'success', title: 'Success', description: 'Phone number saved.' });
-            router.push('/login');
+            toast({ type: 'success', title: 'نجاح', description: 'تم حفظ رقم الهاتف.' });
+            router.push('/dashboard');
         } else {
-            toast({ variant: 'destructive', title: 'Error', description: result.error || 'Failed to save phone number.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: result.error || 'فشل حفظ رقم الهاتف.' });
         }
         setIsLoading(false);
     };
 
     const handleSkip = () => {
-        router.push('/login');
+        // If user skips, just send them to the dashboard
+        router.push('/dashboard');
     };
 
     if (!userId) {
@@ -64,37 +67,39 @@ function PhoneVerificationForm() {
         <div className="min-h-screen flex items-center justify-center bg-muted/50 p-4">
             <Card className="w-full max-w-md">
                 <CardHeader className="text-center">
-                     <Button variant="ghost" size="icon" className="absolute top-3 right-3" onClick={handleSkip}>
+                     <Button variant="ghost" size="icon" className="absolute top-3 left-3" onClick={handleSkip}>
                         <X className="h-5 w-5" />
                      </Button>
-                    <CardTitle>Verify your phone number</CardTitle>
+                    <CardTitle>التحقق من رقم هاتفك</CardTitle>
                     <CardDescription>
-                        Please enter your mobile number.
+                        الرجاء إدخال رقم هاتفك المحمول.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Alert variant="default" className="bg-amber-50 border-amber-200 text-amber-800">
+                    <Alert variant="default" className="bg-amber-50 border-amber-200 text-amber-800 text-right">
                         <AlertDescription className="text-xs">
-                             Please update your phone number for the development of personal data, so that you can receive maximum efficiency in receiving cashback.
+                             يرجى تحديث رقم هاتفك لتطوير البيانات الشخصية، حتى تتمكن من الحصول على أقصى كفاءة في تلقي الكاش باك.
                         </AlertDescription>
                     </Alert>
 
                     <div className="phone-input-container">
                         <PhoneInput
                             international
-                            defaultCountry="TH"
-                            placeholder="Enter phone number"
+                            labels={ar}
+                            placeholder="أدخل رقم الهاتف"
                             value={phoneNumber}
                             onChange={setPhoneNumber}
                             className="w-full"
+                            dir="ltr" // Keep input ltr for phone numbers
+                            countries={['SA', 'AE', 'KW', 'QA', 'BH', 'OM', 'EG', 'JO', 'LB', 'US', 'GB']}
                         />
                     </div>
                     
                     <Button onClick={handleSave} disabled={isLoading} className="w-full">
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save & Continue'}
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'حفظ ومتابعة'}
                     </Button>
                     <Button variant="link" onClick={handleSkip} className="w-full">
-                        Remind me later
+                        ذكرني لاحقًا
                     </Button>
                 </CardContent>
             </Card>
@@ -110,4 +115,3 @@ export default function PhoneVerificationPage() {
         </Suspense>
     );
 }
-

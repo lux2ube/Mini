@@ -87,13 +87,12 @@ export async function handleRegisterUser(formData: { name: string, email: string
 
             const newUserRef = doc(db, "users", user.uid);
             transaction.set(newUserRef, {
-                // No 'uid' field here, it's the document ID
                 name,
                 email,
                 clientId: newClientId,
                 role: "user",
-                status: "NEW", // Default status for new users
-                createdAt: Timestamp.now(),
+                status: "NEW", 
+                createdAt: new Date(),
                 referralCode: generateReferralCode(name),
                 referredBy: referrerData ? referrerData.id : null,
                 referrals: [],
@@ -111,18 +110,14 @@ export async function handleRegisterUser(formData: { name: string, email: string
             transaction.set(counterRef, { lastId: newClientId }, { merge: true });
         });
 
-        // Log activity after successful registration
-        // No client info needed for this simplified server-side logging
         await logUserActivity(user.uid, 'signup', {
             deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
             geoInfo: { ip: 'Not Collected' },
         }, { method: 'email' });
 
-        // We no longer redirect from the server. The client will handle login and redirection.
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
-        // If user was created in Auth but Firestore transaction failed, delete the user.
         if (userCredential) {
             await deleteUser(userCredential.user);
         }
@@ -133,7 +128,6 @@ export async function handleRegisterUser(formData: { name: string, email: string
             return { success: false, error: "This email is already in use. Please log in." };
         }
         
-        // Generic error for other issues
         return { success: false, error: "An unexpected error occurred during registration. Please try again." };
     }
 }
@@ -181,8 +175,6 @@ export async function updateUserPhoneNumber(userId: string, phoneNumber: string)
         await updateDoc(userRef, {
             phoneNumber: parsedNumber.formatInternational(),
             country: countryCode,
-            // We will set phoneNumberVerified to false for now.
-            // A real OTP flow would set this to true.
             phoneNumberVerified: false
         });
 

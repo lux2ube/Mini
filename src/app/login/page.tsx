@@ -65,13 +65,13 @@ export default function LoginPage() {
             const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
             const newClientId = lastId + 1;
             
-            const newUserProfile = { 
+            const newUserProfile: Omit<UserProfile, 'uid'> = { 
                 name: user.displayName || "New User", 
                 email: user.email!, 
                 role: "user" as const,
                 clientId: newClientId,
                 status: 'NEW' as const,
-                createdAt: Timestamp.now(),
+                createdAt: new Date(),
                 country: null,
                 referralCode: generateReferralCode(user.displayName || "user"),
                 referredBy: null,
@@ -100,18 +100,12 @@ export default function LoginPage() {
 
     toast({
         type: "success",
-        title: "Success",
-        description: "Logged in successfully.",
+        title: "تم بنجاح",
+        description: "تم تسجيل الدخول بنجاح.",
     });
 
     const userProfile = userDoc.data() as UserProfile | undefined;
     
-    // Redirect to phone verification if number is missing
-    if (userProfile && !userProfile.phoneNumber) {
-        router.push(`/phone-verification?userId=${user.uid}`);
-        return;
-    }
-
     if (userProfile?.role === 'admin') {
       router.push('/admin/dashboard');
     } else {
@@ -124,12 +118,18 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await handleLoginSuccess(userCredential);
+      // Post-login logic is now handled in the page user is redirected to
+      const userProfileDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+      if (userProfileDoc.exists() && !userProfileDoc.data().phoneNumber) {
+        router.push(`/phone-verification?userId=${userCredential.user.uid}`);
+      } else {
+        await handleLoginSuccess(userCredential);
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: "Incorrect email or password.",
+        title: "فشل تسجيل الدخول",
+        description: "بريد إلكتروني أو كلمة مرور غير صحيحة.",
       });
     } finally {
       setIsLoading(false);
@@ -144,10 +144,10 @@ export default function LoginPage() {
     } catch (error: any) {
          toast({
             variant: "destructive",
-            title: "Login Failed",
+            title: "فشل تسجيل الدخول",
             description: error.code === 'auth/account-exists-with-different-credential'
-                ? "An account with this email already exists. Please sign in with your original method."
-                : "An error occurred during sign-in.",
+                ? "يوجد حساب بهذا البريد الإلكتروني بالفعل. يرجى تسجيل الدخول بالطريقة الأصلية."
+                : "حدث خطأ أثناء تسجيل الدخول.",
         });
     } finally {
         setIsSocialLoading(false);
@@ -157,7 +157,7 @@ export default function LoginPage() {
   const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetEmail) {
-        toast({ variant: "destructive", title: "Error", description: "Please enter your email address." });
+        toast({ variant: "destructive", title: "خطأ", description: "الرجاء إدخال عنوان بريدك الإلكتروني." });
         return;
     }
     setIsResettingPassword(true);
@@ -165,14 +165,14 @@ export default function LoginPage() {
     if (result.success) {
         toast({
             type: "success",
-            title: "Check your email",
-            description: "A password reset link has been sent to your email address.",
+            title: "تحقق من بريدك الإلكتروني",
+            description: "تم إرسال رابط إعادة تعيين كلمة المرور إلى عنوان بريدك الإلكتروني.",
         });
         setIsResetDialogOpen(false);
     } else {
         toast({
             variant: "destructive",
-            title: "Error",
+            title: "خطأ",
             description: result.error,
         });
     }

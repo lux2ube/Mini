@@ -35,11 +35,11 @@ function RegisterForm() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
-      toast({ variant: "destructive", title: "Error", description: "Passwords do not match." });
+      toast({ variant: "destructive", title: "خطأ", description: "كلمات المرور غير متطابقة." });
       return;
     }
      if (password.length < 6) {
-      toast({ variant: "destructive", title: "Error", description: "Password must be at least 6 characters." });
+      toast({ variant: "destructive", title: "خطأ", description: "يجب أن تتكون كلمة المرور من 6 أحرف على الأقل." });
       return;
     }
     setIsLoading(true);
@@ -51,19 +51,18 @@ function RegisterForm() {
         referralCode,
     });
 
-    if (result.success) {
-        toast({ type: "success", title: "Success!", description: "Account created successfully. Logging you in..." });
+    if (result.success && result.userId) {
+        toast({ type: "success", title: "نجاح!", description: "تم إنشاء الحساب بنجاح. تسجيل الدخول..." });
         try {
-            // Auto-login after successful registration
             await signInWithEmailAndPassword(auth, email, password);
-            // The login page logic will now handle the redirect to phone verification or dashboard
-            router.push('/login');
+            // Redirect to phone verification immediately after login
+            router.push(`/phone-verification?userId=${result.userId}`);
         } catch (loginError) {
-            toast({ variant: 'destructive', title: "Auto-Login Failed", description: "Please log in manually." });
+            toast({ variant: 'destructive', title: "فشل تسجيل الدخول التلقائي", description: "يرجى تسجيل الدخول يدويًا." });
             router.push('/login');
         }
     } else {
-        toast({ variant: 'destructive', title: "Registration Failed", description: result.error });
+        toast({ variant: 'destructive', title: "فشل التسجيل", description: result.error });
     }
 
     setIsLoading(false);
@@ -72,57 +71,57 @@ function RegisterForm() {
   return (
     <div className="max-w-[400px] w-full mx-auto space-y-4">
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold font-headline">Create an Account</h1>
-        <p className="text-muted-foreground">Join us and start earning.</p>
+        <h1 className="text-3xl font-bold font-headline">إنشاء حساب</h1>
+        <p className="text-muted-foreground">انضم إلينا وابدأ في الكسب.</p>
       </div>
       <Card>
         <CardContent className="p-4">
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name">الاسم الكامل</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input id="name" type="text" placeholder="John Doe" required value={name} onChange={(e) => setName(e.target.value)} className="pl-10"/>
+                <Input id="name" type="text" placeholder="جون دو" required value={name} onChange={(e) => setName(e.target.value)} className="pl-10"/>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">البريد الإلكتروني</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} className="pl-10"/>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">كلمة المرور</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10"/>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <Label htmlFor="confirm-password">تأكيد كلمة المرور</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input id="confirm-password" type="password" required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="pl-10"/>
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="referral-code">Referral Code (Optional)</Label>
+              <Label htmlFor="referral-code">كود الإحالة (اختياري)</Label>
               <div className="relative">
                 <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input id="referral-code" type="text" placeholder="e.g., JOHN123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="pl-10"/>
+                <Input id="referral-code" type="text" placeholder="مثال: JOHN123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="pl-10"/>
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? <Loader2 className="animate-spin" /> : "Create Account"}
+              {isLoading ? <Loader2 className="animate-spin" /> : "إنشاء حساب"}
             </Button>
           </form>
         </CardContent>
       </Card>
       <div className="text-center text-sm">
-        Already have an account?{' '}
+        لديك حساب بالفعل؟{' '}
         <Link href="/login" className="underline text-primary">
-          Login
+          تسجيل الدخول
         </Link>
       </div>
     </div>
