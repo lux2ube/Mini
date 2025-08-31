@@ -35,7 +35,14 @@ function KycFormDialog({ onKycSubmit }: { onKycSubmit: () => void }) {
     const { user } = useAuthContext();
     const { toast } = useToast();
 
-    const form = useForm<KycFormValues>({ resolver: zodResolver(kycSchema) });
+    const form = useForm<KycFormValues>({
+        resolver: zodResolver(kycSchema),
+        defaultValues: {
+            documentType: undefined,
+            documentNumber: "",
+            gender: undefined,
+        },
+    });
 
     const onSubmit = async (data: KycFormValues) => {
         if (!user) return;
@@ -78,9 +85,7 @@ function KycFormDialog({ onKycSubmit }: { onKycSubmit: () => void }) {
                                 <FormMessage />
                             </FormItem>
                         )}/>
-                        <FormField control={form.control} name="documentNumber" render={({ field }) => (
-                            <FormItem><FormLabel>رقم الوثيقة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )}/>
+                        <FormField control={form.control} name="documentNumber" render={({ field }) => (<FormItem><FormLabel>رقم الوثيقة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="gender" render={({ field }) => (
                              <FormItem>
                                 <FormLabel>الجنس</FormLabel>
@@ -121,7 +126,14 @@ function AddressFormDialog({ onAddressSubmit }: { onAddressSubmit: () => void })
     const { user } = useAuthContext();
     const { toast } = useToast();
 
-    const form = useForm<AddressFormValues>({ resolver: zodResolver(addressSchema) });
+    const form = useForm<AddressFormValues>({
+        resolver: zodResolver(addressSchema),
+        defaultValues: {
+            country: "",
+            city: "",
+            streetAddress: "",
+        },
+    });
     
     const onSubmit = async (data: AddressFormValues) => {
         if (!user) return;
