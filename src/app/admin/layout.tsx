@@ -1,6 +1,5 @@
 
 
-
 "use client";
 
 import Link from "next/link";
@@ -26,6 +25,7 @@ import {
     Send,
     MessageSquare,
     BarChart,
+    ShieldCheck,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -41,6 +41,7 @@ const navLinks = [
     { href: "/admin/dashboard", icon: LayoutGrid, label: "لوحة التحكم" },
     { href: "/admin/users", icon: Users, label: "إدارة المستخدمين" },
     { href: "/admin/manage-accounts", icon: Briefcase, label: "إدارة الحسابات" },
+    { href: "/admin/manage-verifications", icon: ShieldCheck, label: "إدارة التحقق" },
     { href: "/admin/manage-cashback", icon: PlusCircle, label: "إدارة الكاش باك" },
     { href: "/admin/manage-withdrawals", icon: ArrowDownUp, label: "إدارة السحوبات" },
     { href: "/admin/manage-payment-methods", icon: Wallet, label: "طرق الدفع" },

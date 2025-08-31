@@ -3,9 +3,9 @@
 'use server';
 
 import { db, auth } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit, or } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData, PendingVerification } from '@/types';
 import { headers } from 'next/headers';
 import { parsePhoneNumber } from "libphonenumber-js";
 
@@ -1399,6 +1399,45 @@ export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]
 }
 
 // Verification Actions
+export async function getPendingVerifications(): Promise<PendingVerification[]> {
+    await verifyAdmin();
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, or(
+        where('kycData.status', '==', 'Pending'),
+        where('addressData.status', '==', 'Pending')
+    ));
+
+    const querySnapshot = await getDocs(q);
+    const pendingVerifications: PendingVerification[] = [];
+
+    querySnapshot.docs.forEach(doc => {
+        const user = { uid: doc.id, ...doc.data() } as UserProfile;
+        
+        if (user.kycData?.status === 'Pending') {
+            pendingVerifications.push({
+                userId: user.uid,
+                userName: user.name,
+                userEmail: user.email,
+                type: 'KYC',
+                data: user.kycData,
+                requestedAt: user.createdAt || new Date() // Fallback, consider adding a submission timestamp
+            });
+        }
+        if (user.addressData?.status === 'Pending') {
+             pendingVerifications.push({
+                userId: user.uid,
+                userName: user.name,
+                userEmail: user.email,
+                type: 'Address',
+                data: user.addressData,
+                requestedAt: user.createdAt || new Date()
+            });
+        }
+    });
+
+    return pendingVerifications.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+}
+
 export async function updateVerificationStatus(
     userId: string,
     type: 'kyc' | 'address' | 'phone',

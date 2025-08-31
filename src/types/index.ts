@@ -25,6 +25,7 @@ export interface KycData {
     documentNumber: string;
     gender: 'male' | 'female';
     status: 'Pending' | 'Verified' | 'Rejected';
+    rejectionReason?: string;
 }
 
 export interface AddressData {
@@ -32,6 +33,7 @@ export interface AddressData {
     city: string;
     streetAddress: string;
     status: 'Pending' | 'Verified' | 'Rejected';
+    rejectionReason?: string;
 }
 
 /**
@@ -407,4 +409,16 @@ export interface FeedbackResponse {
 
 export interface EnrichedFeedbackResponse extends FeedbackResponse {
     userName: string;
+}
+
+/**
+ * Represents a pending verification request for the admin panel.
+ */
+export interface PendingVerification {
+    userId: string;
+    userName: string;
+    userEmail: string;
+    type: 'KYC' | 'Address';
+    data: KycData | AddressData;
+    requestedAt: Date;
 }
