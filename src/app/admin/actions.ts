@@ -5,8 +5,9 @@
 import { db, auth } from '@/lib/firebase/config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData } from '@/types';
 import { headers } from 'next/headers';
+import { parsePhoneNumber } from "libphonenumber-js";
 
 // ====================================================================
 // SECURITY: Helper to verify admin role from the server-side.
@@ -490,7 +491,7 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
 // User Management - Moved to /users/actions.ts
 // getUsers, backfillUserStatuses, backfillUserLevels
 
-export async function updateUser(userId: string, data: { name: string, country?: string }) {
+export async function updateUser(userId: string, data: Partial<Pick<UserProfile, 'name' | 'country' | 'phoneNumber'>>) {
     await verifyAdmin();
     try {
         const userRef = doc(db, 'users', userId);
@@ -1072,7 +1073,15 @@ export async function getUserDetails(userId: string) {
             throw new Error("لم يتم العثور على المستخدم");
         }
         
-        const userProfile = { uid: userSnap.id, ...userSnap.data(), createdAt: safeToDate(userSnap.data().createdAt) } as UserProfile;
+        const userProfileData = userSnap.data();
+        const userProfile: UserProfile = {
+            uid: userSnap.id,
+            ...userProfileData,
+            createdAt: safeToDate(userProfileData.createdAt),
+            kycData: userProfileData.kycData || undefined,
+            addressData: userProfileData.addressData || undefined,
+        } as UserProfile;
+
 
         const accountsQuery = query(collection(db, "tradingAccounts"), where("userId", "==", userId));
         const transactionsQuery = query(collection(db, "cashbackTransactions"), where("userId", "==", userId));
@@ -1389,5 +1398,51 @@ export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]
     return logs;
 }
 
+// Verification Actions
+export async function updateVerificationStatus(
+    userId: string,
+    type: 'kyc' | 'address' | 'phone',
+    status: 'Verified' | 'Rejected' | 'Pending',
+    rejectionReason?: string
+) {
+    await verifyAdmin();
+    try {
+        const userRef = doc(db, 'users', userId);
+        let updateData: Record<string, any> = {};
+        let notificationMessage = '';
+        let notificationType: Notification['type'] = 'general';
 
+        if (type === 'kyc') {
+            updateData['kycData.status'] = status;
+            notificationMessage = `تم تحديث حالة التحقق من هويتك إلى: ${status}.`;
+            notificationType = 'account';
+            if (status === 'Rejected') {
+                updateData['kycData.rejectionReason'] = rejectionReason;
+                 notificationMessage += ` السبب: ${rejectionReason}`;
+            }
+        } else if (type === 'address') {
+            updateData['addressData.status'] = status;
+            notificationMessage = `تم تحديث حالة التحقق من عنوانك إلى: ${status}.`;
+            notificationType = 'account';
+             if (status === 'Rejected') {
+                updateData['addressData.rejectionReason'] = rejectionReason;
+                notificationMessage += ` السبب: ${rejectionReason}`;
+            }
+        } else if (type === 'phone') {
+            updateData['phoneNumberVerified'] = status === 'Verified';
+            notificationMessage = status === 'Verified' ? 'تم التحقق من رقم هاتفك بنجاح.' : 'فشل التحقق من رقم هاتفك.';
+            notificationType = 'account';
+        }
+
+        await runTransaction(db, async (transaction) => {
+            transaction.update(userRef, updateData);
+            await createNotification(transaction, userId, notificationMessage, notificationType, '/dashboard/settings/verification');
+        });
+
+        return { success: true, message: `تم تحديث حالة التحقق للمستخدم.` };
+    } catch (error) {
+        console.error("Error updating verification status:", error);
+        return { success: false, message: 'فشل تحديث حالة التحقق.' };
+    }
+}
     
