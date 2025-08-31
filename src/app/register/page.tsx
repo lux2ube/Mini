@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, User, Mail, Lock, KeyRound } from 'lucide-react';
 import { handleRegisterUser } from '../actions';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
 
 function RegisterForm() {
   const [name, setName] = useState('');
@@ -49,9 +51,17 @@ function RegisterForm() {
         referralCode,
     });
 
-    if (result.success && result.userId) {
-        toast({ type: "success", title: "Success!", description: "Account created successfully. Please add your phone number." });
-        router.push(`/phone-verification?userId=${result.userId}`);
+    if (result.success) {
+        toast({ type: "success", title: "Success!", description: "Account created successfully. Logging you in..." });
+        try {
+            // Auto-login after successful registration
+            await signInWithEmailAndPassword(auth, email, password);
+            // The login page logic will now handle the redirect to phone verification or dashboard
+            router.push('/login');
+        } catch (loginError) {
+            toast({ variant: 'destructive', title: "Auto-Login Failed", description: "Please log in manually." });
+            router.push('/login');
+        }
     } else {
         toast({ variant: 'destructive', title: "Registration Failed", description: result.error });
     }

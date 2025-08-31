@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db, googleProvider, appleProvider } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, signInWithPopup, UserCredential } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp, runTransaction, collection } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp, runTransaction, collection, getDocs, updateDoc } from "firebase/firestore";
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { generateReferralCode } from '@/lib/referral';
@@ -25,6 +25,7 @@ import { logUserActivity } from '../admin/actions';
 import { getClientSessionInfo } from '@/lib/device-info';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { handleForgotPassword } from '../actions';
+import type { UserProfile } from '@/types';
 
 
 const GoogleIcon = () => (
@@ -49,7 +50,8 @@ export default function LoginPage() {
 
   const handleLoginSuccess = async (userCredential: UserCredential) => {
     const user = userCredential.user;
-    const clientInfo = await getClientSessionInfo();
+    
+    // Fetch user profile from Firestore
     const userDocRef = doc(db, "users", user.uid);
     let userDoc = await getDoc(userDocRef);
 
@@ -70,7 +72,7 @@ export default function LoginPage() {
                 clientId: newClientId,
                 status: 'NEW' as const,
                 createdAt: Timestamp.now(),
-                country: clientInfo.geoInfo.country || null,
+                country: null,
                 referralCode: generateReferralCode(user.displayName || "user"),
                 referredBy: null,
                 referrals: [],
@@ -83,9 +85,15 @@ export default function LoginPage() {
         
         // Refetch the document we just created
         userDoc = await getDoc(userDocRef);
-        await logUserActivity(user.uid, 'signup', clientInfo, { method: userCredential.providerId || 'social_login_fix' });
+        await logUserActivity(user.uid, 'signup', {
+             deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
+             geoInfo: { ip: 'Not Collected' }
+        }, { method: userCredential.providerId || 'social_login_fix' });
     } else {
-        await logUserActivity(user.uid, 'login', clientInfo, { method: userCredential.providerId || 'email' });
+        await logUserActivity(user.uid, 'login', {
+             deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
+             geoInfo: { ip: 'Not Collected' }
+        }, { method: userCredential.providerId || 'email' });
     }
     
     window.dispatchEvent(new CustomEvent('refetchUser'));
@@ -96,7 +104,15 @@ export default function LoginPage() {
         description: "Logged in successfully.",
     });
 
-    if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+    const userProfile = userDoc.data() as UserProfile | undefined;
+    
+    // Redirect to phone verification if number is missing
+    if (userProfile && !userProfile.phoneNumber) {
+        router.push(`/phone-verification?userId=${user.uid}`);
+        return;
+    }
+
+    if (userProfile?.role === 'admin') {
       router.push('/admin/dashboard');
     } else {
       router.push('/dashboard');
@@ -266,5 +282,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

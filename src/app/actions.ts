@@ -112,12 +112,13 @@ export async function handleRegisterUser(formData: { name: string, email: string
         });
 
         // Log activity after successful registration
-        // Simplified logging without IP info
+        // No client info needed for this simplified server-side logging
         await logUserActivity(user.uid, 'signup', {
             deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
-            geoInfo: { ip: 'Unknown' },
+            geoInfo: { ip: 'Not Collected' },
         }, { method: 'email' });
 
+        // We no longer redirect from the server. The client will handle login and redirection.
         return { success: true, userId: user.uid };
 
     } catch (error: any) {
