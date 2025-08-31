@@ -8,24 +8,34 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Mail, Lock, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { Loader2, User, Mail, Lock, KeyRound, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { handleRegisterUser } from '../actions';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
 
 function PasswordStrength({ password }: { password: string }) {
     const hasMinLength = password.length >= 6;
-    
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+
     if (!password) return null;
 
+    const Requirement = ({ met, text }: { met: boolean; text: string }) => (
+        <p className={`flex items-center gap-2 transition-colors ${met ? 'text-green-600' : 'text-muted-foreground'}`}>
+            <CheckCircle2 className={`h-4 w-4 transition-transform ${met ? 'scale-100' : 'scale-0'}`} />
+            <span className={met ? 'font-semibold' : ''}>{text}</span>
+        </p>
+    );
+
     return (
-        <div className="text-xs space-y-1">
-            <p className={hasMinLength ? 'text-green-600' : 'text-muted-foreground'}>
-                {hasMinLength ? '✓' : '•'} 6 أحرف على الأقل
-            </p>
+        <div className="text-xs space-y-1 p-2 bg-muted/50 rounded-md">
+            <Requirement met={hasMinLength} text="6 أحرف على الأقل" />
+            <Requirement met={hasLetter} text="يحتوي على حرف واحد على الأقل" />
+            <Requirement met={hasNumber} text="يحتوي على رقم واحد على الأقل" />
         </div>
-    )
+    );
 }
+
 
 const WhatsAppIcon = () => (
     <svg viewBox="0 0 24 24" className="h-5 w-5"><path fill="currentColor" d="M16.75 13.96c.25.58.11 1.25-.37 1.62l-1.43.93c-.23.16-.54.2-.8.09c-.66-.27-1.39-.68-2.09-1.22c-.75-.58-1.38-1.29-1.89-2.07c-.16-.25-.13-.59.08-.81l.93-1.43c.37-.48 1.04-.62 1.62-.37l1.93.83c.58.25.86.9.61 1.48l-.53 1.21zM12 2a10 10 0 0 0-10 10a10 10 0 0 0 10 10c.39 0 .78-.04 1.15-.09l3.85 1.19l-1.19-3.85A9.9 9.9 0 0 0 22 12a10 10 0 0 0-10-10z"></path></svg>
