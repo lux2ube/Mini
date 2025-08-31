@@ -65,13 +65,13 @@ function KycFormDialog({ onKycSubmit }: { onKycSubmit: () => void }) {
                     <VerificationItemContent icon={User} title="التحقق من الهوية (KYC)" status="Not Verified" />
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                  <DialogHeader>
                     <DialogTitle>التحقق من الهوية (KYC)</DialogTitle>
                     <DialogDescription>أدخل تفاصيل وثيقة الهوية الخاصة بك.</DialogDescription>
                 </DialogHeader>
                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
                         <FormField control={form.control} name="documentType" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>نوع الوثيقة</FormLabel>
@@ -156,13 +156,13 @@ function AddressFormDialog({ onAddressSubmit }: { onAddressSubmit: () => void })
                     <VerificationItemContent icon={Home} title="التحقق من العنوان" status="Not Verified" />
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                  <DialogHeader>
                     <DialogTitle>التحقق من العنوان</DialogTitle>
                     <DialogDescription>أدخل تفاصيل عنوانك.</DialogDescription>
                 </DialogHeader>
                  <Form {...form}>
-                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                     <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
                         <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>الدولة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>المدينة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="streetAddress" render={({ field }) => (<FormItem><FormLabel>عنوان الشارع</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
@@ -245,7 +245,6 @@ export default function VerificationPage() {
     return (
         <div className="space-y-6">
             <PageHeader title="مركز التحقق" description="قم بتأمين حسابك وفتح حدود أعلى." />
-
             <div className="space-y-3">
                 {/* Email Verification */}
                 <button
