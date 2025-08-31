@@ -173,7 +173,7 @@ export async function updateUserPhoneNumber(userId: string, phoneNumber: string)
         const countryCode = parsedNumber.country;
 
         await updateDoc(userRef, {
-            phoneNumber: parsedNumber.formatInternational(),
+            phoneNumber: parsedNumber.number, // Store in E.164 format
             country: countryCode,
             phoneNumberVerified: false
         });
@@ -184,3 +184,4 @@ export async function updateUserPhoneNumber(userId: string, phoneNumber: string)
         return { success: false, error: error.message };
     }
 }
+

@@ -84,7 +84,7 @@ function PhoneUpdateForm() {
                                          <div className="phone-input-container">
                                             <PhoneInput
                                                 international
-                                                defaultCountry="TH"
+                                                defaultCountry={user?.profile?.country as any || 'SA'}
                                                 placeholder="أدخل رقم الهاتف"
                                                 {...field}
                                                 className="w-full"
@@ -263,3 +263,4 @@ export default function ProfilePage() {
         </div>
     )
 }
+
