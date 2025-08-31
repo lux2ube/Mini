@@ -18,6 +18,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
 
 const rejectReasonSchema = z.object({
@@ -88,9 +89,9 @@ function VerificationDataCell({ data }: { data: KycData | AddressData }) {
     return (
         <div className="text-xs space-y-1">
             {Object.entries(data).map(([key, value]) => {
-                if (key === 'status') return null;
+                if (key === 'status' || key === 'rejectionReason' || key === 'submittedAt') return null;
                 const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                return <p key={key}><span className="font-semibold">{formattedKey}:</span> {value}</p>;
+                return <p key={key}><span className="font-semibold">{formattedKey}:</span> {String(value)}</p>;
             })}
         </div>
     );
@@ -151,7 +152,7 @@ export default function ManageVerificationsPage() {
             />
 
             <Card>
-                <CardContent>
+                <CardContent className="p-0">
                     <Table>
                         <TableHeader>
                             <TableRow>
