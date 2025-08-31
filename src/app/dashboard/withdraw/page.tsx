@@ -2,7 +2,7 @@
 "use client";
 
 import { z } from "zod";
-import { useForm } from "hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -41,9 +41,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getUserBalance, getPaymentMethods, logUserActivity } from "@/app/admin/actions";
+import { getUserBalance, getPaymentMethods, requestWithdrawal } from "@/app/admin/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { getClientSessionInfo } from "@/lib/device-info";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 
@@ -232,20 +231,18 @@ function WithdrawTabContent() {
         };
 
         try {
-            await addDoc(collection(db, "withdrawals"), {
-                ...payload,
-                requestedAt: serverTimestamp(),
-            });
-
-            const clientInfo = await getClientSessionInfo();
-            await logUserActivity(user.uid, 'withdrawal_request', clientInfo, { amount: values.amount, method: paymentMethodName });
+            const result = await requestWithdrawal(payload);
+            if (!result.success) {
+                throw new Error(result.message);
+            }
             
             toast({ title: 'تم بنجاح!', description: 'تم تقديم طلب السحب الخاص بك.' });
             form.reset(formDefaultValues);
             fetchData();
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'حدثت مشكلة أثناء تقديم طلبك.';
             console.error('Error submitting withdrawal: ', error);
-            toast({ variant: 'destructive', title: 'خطأ', description: 'حدثت مشكلة أثناء تقديم طلبك.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: errorMessage });
         } finally {
             setIsLoading(false);
         }

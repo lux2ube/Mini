@@ -269,6 +269,11 @@ export async function awardReferralCommission(
                 console.log(`User ${userId} has no referrer. Skipping commission.`);
                 return; // No referrer, nothing to do
             }
+            if (amountValue <= 0) {
+                console.log(`Commission source amount is zero or negative for user ${userId}. Skipping.`);
+                return; // No commission for zero-value transactions
+            }
+
             const referrerId = userSnap.data().referredBy;
 
             // 2. Get the referrer's document to find their level
@@ -328,6 +333,56 @@ export async function awardReferralCommission(
         // We don't re-throw the error, so it doesn't block the main flow.
         // This could be logged to a separate error monitoring service.
     }
+}
+
+export async function clawbackReferralCommission(
+    transaction: Transaction,
+    originalUserId: string,
+    sourceType: 'cashback' | 'store_purchase',
+    originalAmount: number
+) {
+    const userRef = doc(db, 'users', originalUserId);
+    const userSnap = await transaction.get(userRef);
+    if (!userSnap.exists() || !userSnap.data().referredBy) {
+        return; // No referrer, nothing to claw back
+    }
+    const referrerId = userSnap.data().referredBy;
+    const referrerRef = doc(db, 'users', referrerId);
+    const referrerSnap = await transaction.get(referrerRef);
+    if (!referrerSnap.exists()) return; // Referrer doesn't exist
+
+    const referrerLevel = referrerSnap.data().level || 1;
+    const levels = await getClientLevels();
+    const currentLevelConfig = levels.find(l => l.id === referrerLevel);
+    if (!currentLevelConfig) return;
+
+    const commissionPercent = sourceType === 'cashback' ? currentLevelConfig.advantage_referral_cashback : currentLevelConfig.advantage_referral_store;
+    if (commissionPercent <= 0) return;
+
+    const commissionAmountToClawback = (originalAmount * commissionPercent) / 100;
+    
+    // Create a negative cashback transaction for the referrer
+    const newTransactionRef = doc(collection(db, 'cashbackTransactions'));
+    transaction.set(newTransactionRef, {
+        userId: referrerId,
+        accountId: 'CLAWBACK',
+        accountNumber: 'Clawback',
+        broker: `Reversed Commission from ${userSnap.data().name}`,
+        date: serverTimestamp(),
+        tradeDetails: `Commission reversed due to cancelled order/transaction from original user.`,
+        cashbackAmount: -commissionAmountToClawback, // Negative amount
+        sourceUserId: originalUserId,
+        sourceType: sourceType,
+    });
+
+    // Deduct from referrer's monthly earnings
+    transaction.update(referrerRef, {
+        monthlyEarnings: increment(-commissionAmountToClawback)
+    });
+
+    // Create notification for the referrer
+    const message = `تم خصم ${commissionAmountToClawback.toFixed(2)}$ من رصيدك بسبب إلغاء معاملة من قبل ${userSnap.data().name}.`;
+    await createNotification(transaction, referrerId, message, 'general', '/dashboard/referrals');
 }
 
 
@@ -505,6 +560,37 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
     });
 
     return withdrawals;
+}
+
+export async function requestWithdrawal(payload: Omit<Withdrawal, 'id' | 'requestedAt'>) {
+    return runTransaction(db, async (transaction) => {
+        // Validate user balance
+        const { availableBalance } = await getUserBalance(payload.userId);
+        if (payload.amount > availableBalance) {
+            throw new Error("Insufficient available balance for this withdrawal.");
+        }
+        
+        const newWithdrawalRef = doc(collection(db, "withdrawals"));
+        transaction.set(newWithdrawalRef, {
+            ...payload,
+            requestedAt: serverTimestamp()
+        });
+
+        // Log the activity without client info
+        await logUserActivity(payload.userId, 'withdrawal_request', { 
+            deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
+            geoInfo: { ip: 'Not Collected' }
+        }, {
+            amount: payload.amount,
+            method: payload.paymentMethod
+        });
+        
+        return { success: true, message: 'Withdrawal request submitted successfully.' };
+    }).catch(error => {
+        console.error('Error requesting withdrawal:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+        return { success: false, message: errorMessage };
+    });
 }
 
 export async function approveWithdrawal(withdrawalId: string, txId: string) {
@@ -774,6 +860,10 @@ export async function updateOrderStatus(orderId: string, status: Order['status']
             if (status === 'Delivered' && !orderData.referralCommissionAwarded) {
                 await awardReferralCommission(orderData.userId, 'store_purchase', orderData.price);
                 transaction.update(orderRef, { status, referralCommissionAwarded: true });
+            } else if (status === 'Cancelled' && orderData.referralCommissionAwarded) {
+                // Clawback commission if order is cancelled after delivery
+                await clawbackReferralCommission(transaction, orderData.userId, 'store_purchase', orderData.price);
+                transaction.update(orderRef, { status, referralCommissionAwarded: false });
             } else {
                  transaction.update(orderRef, { status });
             }
