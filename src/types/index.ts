@@ -62,6 +62,8 @@ export interface UserProfile {
     // Verification fields
     kycData?: KycData;
     addressData?: AddressData;
+    hasPendingKYC?: boolean;
+    hasPendingAddress?: boolean;
 }
 
 /**

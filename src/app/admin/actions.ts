@@ -3,7 +3,7 @@
 'use server';
 
 import { db, auth } from '@/lib/firebase/config';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit, or } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit, or, deleteField } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData, PendingVerification } from '@/types';
 import { headers } from 'next/headers';
@@ -1403,52 +1403,52 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
     await verifyAdmin();
     const usersRef = collection(db, 'users');
 
-    const kycQuery = query(usersRef, where('kycData.status', '==', 'Pending'));
-    const addressQuery = query(usersRef, where('addressData.status', '==', 'Pending'));
+    const kycQuery = query(usersRef, where('hasPendingKYC', '==', true));
+    const addressQuery = query(usersRef, where('hasPendingAddress', '==', true));
 
     const [kycSnapshot, addressSnapshot] = await Promise.all([
         getDocs(kycQuery),
         getDocs(addressQuery)
     ]);
     
-    const pendingMap = new Map<string, PendingVerification[]>();
+    const pendingMap = new Map<string, PendingVerification>();
+    const results: PendingVerification[] = [];
 
     kycSnapshot.docs.forEach(doc => {
         const user = { uid: doc.id, ...doc.data() } as UserProfile;
-        if (!pendingMap.has(user.uid)) {
-            pendingMap.set(user.uid, []);
+        const key = `${user.uid}-KYC`;
+        if (!pendingMap.has(key) && user.kycData?.status === 'Pending') {
+            const verification: PendingVerification = {
+                userId: user.uid,
+                userName: user.name,
+                userEmail: user.email,
+                type: 'KYC',
+                data: user.kycData!,
+                requestedAt: user.createdAt || new Date() // Fallback, should be submission date
+            };
+            pendingMap.set(key, verification);
+            results.push(verification);
         }
-        pendingMap.get(user.uid)!.push({
-            userId: user.uid,
-            userName: user.name,
-            userEmail: user.email,
-            type: 'KYC',
-            data: user.kycData!,
-            requestedAt: user.createdAt || new Date()
-        });
     });
 
     addressSnapshot.docs.forEach(doc => {
         const user = { uid: doc.id, ...doc.data() } as UserProfile;
-         if (!pendingMap.has(user.uid)) {
-            pendingMap.set(user.uid, []);
-        }
-        // Avoid adding duplicate user entry if they have both pending
-        if (!pendingMap.get(user.uid)!.some(p => p.type === 'Address')) {
-            pendingMap.get(user.uid)!.push({
+        const key = `${user.uid}-Address`;
+        if (!pendingMap.has(key) && user.addressData?.status === 'Pending') {
+            const verification: PendingVerification = {
                 userId: user.uid,
                 userName: user.name,
                 userEmail: user.email,
                 type: 'Address',
                 data: user.addressData!,
-                requestedAt: user.createdAt || new Date()
-            });
+                requestedAt: user.createdAt || new Date() // Fallback
+            };
+            pendingMap.set(key, verification);
+            results.push(verification);
         }
     });
-
-    const allPending = Array.from(pendingMap.values()).flat();
     
-    return allPending.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+    return results.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
 }
 
 export async function updateVerificationStatus(
@@ -1466,6 +1466,7 @@ export async function updateVerificationStatus(
 
         if (type === 'kyc') {
             updateData['kycData.status'] = status;
+            updateData['hasPendingKYC'] = deleteField();
             notificationMessage = `تم تحديث حالة التحقق من هويتك إلى: ${status}.`;
             notificationType = 'account';
             if (status === 'Rejected') {
@@ -1474,6 +1475,7 @@ export async function updateVerificationStatus(
             }
         } else if (type === 'address') {
             updateData['addressData.status'] = status;
+            updateData['hasPendingAddress'] = deleteField();
             notificationMessage = `تم تحديث حالة التحقق من عنوانك إلى: ${status}.`;
             notificationType = 'account';
              if (status === 'Rejected') {
@@ -1498,4 +1500,3 @@ export async function updateVerificationStatus(
     }
 }
     
-

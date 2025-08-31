@@ -213,7 +213,8 @@ export async function submitKycData(userId: string, data: KycData): Promise<{ su
             kycData: {
                 ...data,
                 status: 'Pending',
-            }
+            },
+            hasPendingKYC: true,
         });
         return { success: true };
     } catch (error: any) {
@@ -230,7 +231,8 @@ export async function submitAddressData(userId: string, data: AddressData): Prom
             addressData: {
                 ...data,
                 status: 'Pending',
-            }
+            },
+            hasPendingAddress: true,
         });
         return { success: true };
     } catch (error: any) {
@@ -238,3 +240,4 @@ export async function submitAddressData(userId: string, data: AddressData): Prom
         return { success: false, error: "Failed to submit address information." };
     }
 }
+
