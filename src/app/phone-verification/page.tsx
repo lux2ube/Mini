@@ -91,7 +91,7 @@ function PhoneVerificationForm() {
                             onChange={setPhoneNumber}
                             className="w-full"
                             dir="ltr" // Keep input ltr for phone numbers
-                            countries={['SA', 'AE', 'KW', 'QA', 'BH', 'OM', 'EG', 'JO', 'LB', 'US', 'GB']}
+                            countries={['SA', 'AE', 'KW', 'QA', 'BH', 'OM', 'EG', 'JO', 'LB', 'IQ', 'SY', 'YE', 'PS', 'SD', 'TN', 'DZ', 'MA', 'LY', 'MR', 'US', 'GB', 'TR', 'ID', 'MY']}
                         />
                     </div>
                     
