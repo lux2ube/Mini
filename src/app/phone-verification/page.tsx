@@ -82,7 +82,7 @@ function PhoneVerificationForm() {
                         </AlertDescription>
                     </Alert>
 
-                    <div className="phone-input-container">
+                    <div className="phone-input-container" dir="ltr">
                         <PhoneInput
                             international
                             labels={ar}
@@ -90,7 +90,6 @@ function PhoneVerificationForm() {
                             value={phoneNumber}
                             onChange={setPhoneNumber}
                             className="w-full"
-                            dir="ltr" // Keep input ltr for phone numbers
                             countries={['SA', 'AE', 'KW', 'QA', 'BH', 'OM', 'EG', 'JO', 'LB', 'IQ', 'SY', 'YE', 'PS', 'SD', 'TN', 'DZ', 'MA', 'LY', 'MR', 'US', 'GB', 'TR', 'ID', 'MY']}
                         />
                     </div>

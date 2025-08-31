@@ -57,14 +57,19 @@
   body {
     @apply bg-background text-foreground;
   }
-  .phone-input-container .PhoneInputInput {
-      @apply bg-transparent w-full h-10 rounded-md border-input focus:ring-2 focus:ring-ring focus:ring-offset-2;
-  }
-  .phone-input-container .PhoneInputCountry {
+  .phone-input-container .PhoneInput {
       @apply flex items-center;
   }
+  .phone-input-container .PhoneInputCountry {
+      @apply relative flex items-center;
+      order: 1;
+  }
+  .phone-input-container .PhoneInputInput {
+      @apply bg-transparent w-full h-10 rounded-md border border-input !pl-3 pr-1 focus:ring-2 focus:ring-ring focus:ring-offset-2;
+      order: 2;
+  }
   .phone-input-container .PhoneInputCountrySelect {
-      @apply appearance-none bg-transparent;
+      @apply absolute inset-0 opacity-0 w-full cursor-pointer;
   }
 }
 
