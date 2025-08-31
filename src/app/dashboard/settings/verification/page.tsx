@@ -4,7 +4,6 @@
 import { useAuthContext } from "@/hooks/useAuthContext";
 import React, { useState } from 'react';
 import { Loader2, ChevronRight, Mail, Phone, User, Home, ArrowLeft } from "lucide-react";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,7 +70,7 @@ function KycFormDialog({ onKycSubmit }: { onKycSubmit: () => void }) {
                     <DialogDescription>أدخل تفاصيل وثيقة الهوية الخاصة بك.</DialogDescription>
                 </DialogHeader>
                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <FormField control={form.control} name="documentType" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>نوع الوثيقة</FormLabel>
@@ -162,7 +161,7 @@ function AddressFormDialog({ onAddressSubmit }: { onAddressSubmit: () => void })
                     <DialogDescription>أدخل تفاصيل عنوانك.</DialogDescription>
                 </DialogHeader>
                  <Form {...form}>
-                     <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
+                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>الدولة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>المدينة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="streetAddress" render={({ field }) => (<FormItem><FormLabel>عنوان الشارع</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
@@ -210,7 +209,6 @@ function VerificationItemContent({ icon: Icon, title, status }: { icon: React.El
 
 export default function VerificationPage() {
     const { user, isLoading, refetchUserData } = useAuthContext();
-    const router = useRouter();
     const { toast } = useToast();
 
     const handleSendVerificationEmail = async () => {
@@ -222,6 +220,7 @@ export default function VerificationPage() {
         }
     };
     
+    const router = useRouter();
     const handleAddPhoneNumber = () => {
         router.push('/dashboard/profile');
     };
@@ -243,41 +242,38 @@ export default function VerificationPage() {
     const addressStatus = !profile.addressData ? 'Not Verified' : profile.addressData.status;
 
     return (
-        <div className="space-y-6">
-            <PageHeader title="مركز التحقق" description="قم بتأمين حسابك وفتح حدود أعلى." />
-            <div className="space-y-3">
-                {/* Email Verification */}
-                <button
-                    className="w-full text-left"
-                    onClick={emailStatus === 'Not Verified' ? handleSendVerificationEmail : undefined}
-                    disabled={emailStatus === 'Verified'}
-                >
-                    <VerificationItemContent icon={Mail} title="التحقق من البريد الإلكتروني" status={emailStatus} />
-                </button>
+        <div className="space-y-3">
+            {/* Email Verification */}
+            <button
+                className="w-full text-left"
+                onClick={emailStatus === 'Not Verified' ? handleSendVerificationEmail : undefined}
+                disabled={emailStatus === 'Verified'}
+            >
+                <VerificationItemContent icon={Mail} title="التحقق من البريد الإلكتروني" status={emailStatus} />
+            </button>
 
-                {/* Phone Verification */}
-                <button 
-                    className="w-full text-left"
-                    onClick={phoneStatus === 'Add' ? handleAddPhoneNumber : undefined}
-                    disabled={phoneStatus !== 'Add'}
-                >
-                    <VerificationItemContent icon={Phone} title="التحقق من رقم الهاتف" status={phoneStatus} />
-                </button>
-                 
-                {/* Identity (KYC) Verification */}
-                {kycStatus === 'Verified' || kycStatus === 'Pending' ? (
-                     <VerificationItemContent icon={User} title="التحقق من الهوية (KYC)" status={kycStatus} />
-                ) : (
-                    <KycFormDialog onKycSubmit={refetchUserData} />
-                )}
+            {/* Phone Verification */}
+            <button 
+                className="w-full text-left"
+                onClick={phoneStatus === 'Add' ? handleAddPhoneNumber : undefined}
+                disabled={phoneStatus !== 'Add'}
+            >
+                <VerificationItemContent icon={Phone} title="التحقق من رقم الهاتف" status={phoneStatus} />
+            </button>
+             
+            {/* Identity (KYC) Verification */}
+            {kycStatus === 'Verified' || kycStatus === 'Pending' ? (
+                 <VerificationItemContent icon={User} title="التحقق من الهوية (KYC)" status={kycStatus} />
+            ) : (
+                <KycFormDialog onKycSubmit={refetchUserData} />
+            )}
 
-                {/* Address Verification */}
-                {addressStatus === 'Verified' || addressStatus === 'Pending' ? (
-                     <VerificationItemContent icon={Home} title="التحقق من العنوان" status={addressStatus} />
-                ) : (
-                    <AddressFormDialog onAddressSubmit={refetchUserData} />
-                )}
-            </div>
+            {/* Address Verification */}
+            {addressStatus === 'Verified' || addressStatus === 'Pending' ? (
+                 <VerificationItemContent icon={Home} title="التحقق من العنوان" status={addressStatus} />
+            ) : (
+                <AddressFormDialog onAddressSubmit={refetchUserData} />
+            )}
         </div>
     );
 }
