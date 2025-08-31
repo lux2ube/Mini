@@ -7,12 +7,13 @@ import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 import { firebaseConfig } from "@/lib/firebase/config";
 import { getApp, getApps, initializeApp, type FirebaseOptions } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail } from "firebase/auth";
+import { getAuth, createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
 import { getFirestore, doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
 import { logUserActivity } from "./admin/actions";
 import { getClientSessionInfo } from "@/lib/device-info";
 import { parsePhoneNumber } from "libphonenumber-js";
+import type { KycData, AddressData } from "@/types";
 
 // Helper function to initialize Firebase on the server
 function getFirebaseApp(config: FirebaseOptions) {
@@ -98,7 +99,6 @@ export async function handleRegisterUser(formData: { name: string, email: string
                 referrals: [],
                 level: 1,
                 monthlyEarnings: 0,
-                country: null,
             });
 
             if (referrerData) {
@@ -109,6 +109,8 @@ export async function handleRegisterUser(formData: { name: string, email: string
             
             transaction.set(counterRef, { lastId: newClientId }, { merge: true });
         });
+        
+        await sendEmailVerification(user);
 
         await logUserActivity(user.uid, 'signup', {
             deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
@@ -185,3 +187,54 @@ export async function updateUserPhoneNumber(userId: string, phoneNumber: string)
     }
 }
 
+export async function sendVerificationEmail(): Promise<{ success: boolean; error?: string }> {
+    const auth = getAuth(getFirebaseApp(firebaseConfig));
+    const user = auth.currentUser;
+
+    if (!user) {
+        return { success: false, error: "No user is logged in." };
+    }
+
+    try {
+        await sendEmailVerification(user);
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error sending verification email:", error);
+        return { success: false, error: "Failed to send verification email. Please try again later." };
+    }
+}
+
+
+export async function submitKycData(userId: string, data: KycData): Promise<{ success: boolean; error?: string }> {
+    const db = getFirestore(getFirebaseApp(firebaseConfig));
+    const userRef = doc(db, 'users', userId);
+    try {
+        await updateDoc(userRef, {
+            kycData: {
+                ...data,
+                status: 'Pending',
+            }
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error submitting KYC data:", error);
+        return { success: false, error: "Failed to submit KYC information." };
+    }
+}
+
+export async function submitAddressData(userId: string, data: AddressData): Promise<{ success: boolean; error?: string }> {
+    const db = getFirestore(getFirebaseApp(firebaseConfig));
+    const userRef = doc(db, 'users', userId);
+    try {
+        await updateDoc(userRef, {
+            addressData: {
+                ...data,
+                status: 'Pending',
+            }
+        });
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error submitting address data:", error);
+        return { success: false, error: "Failed to submit address information." };
+    }
+}

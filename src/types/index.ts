@@ -20,6 +20,20 @@ export interface BannerSettings {
     targetCountries?: string[]; // Array of ISO 3166-1 alpha-2 country codes
 }
 
+export interface KycData {
+    documentType: 'id_card' | 'passport';
+    documentNumber: string;
+    gender: 'male' | 'female';
+    status: 'Pending' | 'Verified' | 'Rejected';
+}
+
+export interface AddressData {
+    country: string;
+    city: string;
+    streetAddress: string;
+    status: 'Pending' | 'Verified' | 'Rejected';
+}
+
 /**
  * Represents a user document in the 'users' collection.
  */
@@ -43,6 +57,9 @@ export interface UserProfile {
     // New Level System
     level: number; // Level 1-6
     monthlyEarnings?: number; // For level calculation
+    // Verification fields
+    kycData?: KycData;
+    addressData?: AddressData;
 }
 
 /**
