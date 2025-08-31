@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -291,7 +290,7 @@ export default function UserDashboardPage() {
                     <TabsTrigger value="rebate">خصم تلقائي</TabsTrigger>
                 </TabsList>
                 <TabsContent value="wallet" className="space-y-4">
-                    <h2 className="text-lg font-semibold mt-4">خصومات الحساب</h2>
+                    <h2 className="text-lg font-semibold mt-4 text-right">خصومات الحساب</h2>
                     <Card className="bg-slate-800 text-white shadow-lg overflow-hidden">
                         <CardContent className="p-4 relative">
                             <div className="absolute top-0 right-0 w-full h-full bg-slate-900/20" style={{ backgroundImage: `radial-gradient(circle at top left, hsl(var(--primary) / 0.15), transparent 50%)`}}></div>
@@ -337,13 +336,13 @@ export default function UserDashboardPage() {
                     </Card>
 
                     <div className="space-y-4">
-                         <h2 className="text-lg font-semibold mt-4">حساباتي التجارية</h2>
+                         <h2 className="text-lg font-semibold mt-4 text-right">حساباتي التجارية</h2>
                           <Card>
                             <CardContent className="p-0">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="text-xs">الحساب</TableHead>
+                                            <TableHead className="text-right text-xs">الحساب</TableHead>
                                             <TableHead className="text-left text-xs">الحالة</TableHead>
                                         </TableRow>
                                     </TableHeader>
@@ -377,14 +376,14 @@ export default function UserDashboardPage() {
                              </CardFooter>
                          </Card>
 
-                         <h2 className="text-lg font-semibold mt-4">المعاملات الأخيرة</h2>
+                         <h2 className="text-lg font-semibold mt-4 text-right">المعاملات الأخيرة</h2>
                          <Card>
                             <CardContent className="p-0">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead className="text-xs">التاريخ</TableHead>
-                                            <TableHead className="text-xs">الوسيط/الحساب</TableHead>
+                                            <TableHead className="text-right text-xs">التاريخ</TableHead>
+                                            <TableHead className="text-right text-xs">الوسيط/الحساب</TableHead>
                                             <TableHead className="text-left text-xs">المبلغ</TableHead>
                                         </TableRow>
                                     </TableHeader>

@@ -87,15 +87,15 @@ export default function TransactionsPage() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle>إجمالي المكتسب</CardTitle>
-                    <CardDescription className="text-3xl font-bold text-primary">${totalEarned.toFixed(2)}</CardDescription>
+                    <CardTitle className="text-right">إجمالي المكتسب</CardTitle>
+                    <CardDescription className="text-3xl font-bold text-primary text-right">${totalEarned.toFixed(2)}</CardDescription>
                 </CardHeader>
             </Card>
 
             <Card>
                 <CardHeader>
                     <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                        <CardTitle>سجل المعاملات</CardTitle>
+                        <CardTitle className="text-right">سجل المعاملات</CardTitle>
                         <div className="relative">
                             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input 

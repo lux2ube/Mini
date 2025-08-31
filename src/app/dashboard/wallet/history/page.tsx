@@ -62,9 +62,9 @@ function WithdrawalsList({ withdrawals, isLoading }: { withdrawals: Withdrawal[]
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="text-xs">التاريخ</TableHead>
-                                <TableHead className="text-xs">المبلغ</TableHead>
-                                <TableHead className="text-xs">الحالة</TableHead>
+                                <TableHead className="text-right text-xs">التاريخ</TableHead>
+                                <TableHead className="text-right text-xs">المبلغ</TableHead>
+                                <TableHead className="text-left text-xs">الحالة</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -73,7 +73,7 @@ function WithdrawalsList({ withdrawals, isLoading }: { withdrawals: Withdrawal[]
                                     <TableRow key={w.id} onClick={() => router.push(`/dashboard/withdraw/${w.id}`)} className="cursor-pointer">
                                         <TableCell className="text-xs">{format(new Date(w.requestedAt), "PP")}</TableCell>
                                         <TableCell className="font-medium text-xs">${w.amount.toFixed(2)}</TableCell>
-                                        <TableCell>
+                                        <TableCell className="text-left">
                                             <Badge variant={getStatusVariant(w.status)}>{getStatusText(w.status)}</Badge>
                                         </TableCell>
                                     </TableRow>

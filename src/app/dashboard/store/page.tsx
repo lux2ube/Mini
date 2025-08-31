@@ -247,10 +247,10 @@ export default function StorePage() {
                             <ScrollArea className="w-full whitespace-nowrap rounded-md pb-4">
                                 <div className="flex items-center gap-2">
                                      <TabsList className="p-1 h-auto">
+                                        <TabsTrigger value="all">كل المنتجات</TabsTrigger>
                                         {categories.map(cat => (
                                             <TabsTrigger key={cat.id} value={cat.id}>{cat.name}</TabsTrigger>
                                         ))}
-                                        <TabsTrigger value="all">كل المنتجات</TabsTrigger>
                                     </TabsList>
                                 </div>
                                 <ScrollBar orientation="horizontal" />

@@ -91,8 +91,8 @@ function CommissionHistoryTab() {
     return (
         <Card>
             <CardHeader className="p-4">
-                <CardTitle className="text-base">سجل العمولات</CardTitle>
-                <CardDescription className="text-xs">
+                <CardTitle className="text-base text-right">سجل العمولات</CardTitle>
+                <CardDescription className="text-xs text-right">
                     جميع العمولات التي كسبتها من إحالاتك.
                 </CardDescription>
             </CardHeader>
@@ -100,8 +100,8 @@ function CommissionHistoryTab() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>التاريخ</TableHead>
-                            <TableHead>المصدر</TableHead>
+                            <TableHead className="text-right">التاريخ</TableHead>
+                            <TableHead className="text-right">المصدر</TableHead>
                             <TableHead className="text-left">المبلغ</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -178,7 +178,7 @@ function ReferralsListTab() {
 
     return (
         <Card>
-            <CardHeader className="p-4">
+            <CardHeader className="p-4 text-right">
                 <CardTitle className="text-base">سجل الإحالات الخاص بك</CardTitle>
                 <CardDescription className="text-xs">
                     قائمة بالمستخدمين الذين دعوتهم بنجاح.
@@ -238,7 +238,7 @@ export default function ReferralsPage() {
             <Card className="bg-gradient-to-br from-primary/10 to-accent/10">
                 <CardContent className="p-4 space-y-4">
                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">كود الإحالة الخاص بك</p>
+                        <p className="text-sm text-muted-foreground text-right">كود الإحالة الخاص بك</p>
                         <div className="flex items-center gap-2">
                             <div className="flex-grow p-2 text-center rounded-md border border-dashed border-primary/50 bg-background/50">
                                 <p className="font-bold text-2xl text-primary tracking-widest">{referralCode}</p>
@@ -249,7 +249,7 @@ export default function ReferralsPage() {
                         </div>
                     </div>
                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">رابط الإحالة الخاص بك</p>
+                        <p className="text-sm text-muted-foreground text-right">رابط الإحالة الخاص بك</p>
                          <div className="flex items-center gap-2">
                             <Input readOnly value={referralLink || ''} className="text-xs bg-background/50" />
                             <Button variant="default" size="icon" onClick={() => copyToClipboard(referralLink || '', 'link')}>
