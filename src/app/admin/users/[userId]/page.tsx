@@ -290,21 +290,6 @@ function VerificationCard<T extends KycData | AddressData>({
   userId: string;
   onSuccess: () => void;
 }) {
-  const [isUpdating, setIsUpdating] = useState(false);
-  const { toast } = useToast();
-
-  const handleApprove = async () => {
-    setIsUpdating(true);
-    const result = await updateVerificationStatus(userId, type, 'Verified');
-    if (result.success) {
-      toast({ title: 'نجاح', description: 'تم تحديث حالة التحقق.' });
-      onSuccess();
-    } else {
-      toast({ variant: 'destructive', title: 'خطأ', description: result.message });
-    }
-    setIsUpdating(false);
-  };
-  
   const getStatusText = (status: string) => ({'Pending': 'قيد المراجعة', 'Verified': 'تم التحقق', 'Rejected': 'مرفوض'}[status] || status);
   const getStatusVariant = (status: string) => ({'Pending': 'secondary', 'Verified': 'default', 'Rejected': 'destructive'}[status] || 'outline') as any;
 
@@ -327,15 +312,6 @@ function VerificationCard<T extends KycData | AddressData>({
           })
         )}
       </CardContent>
-      {data && data.status === 'Pending' && (
-        <CardFooter className="gap-2">
-            <Button size="sm" onClick={handleApprove} disabled={isUpdating}>
-                {isUpdating ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="ml-2 h-4 w-4"/>}
-                موافقة
-            </Button>
-            <RejectDialog type={type} userId={userId} onSuccess={onSuccess} />
-        </CardFooter>
-      )}
     </Card>
   );
 }
