@@ -1402,40 +1402,53 @@ export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]
 export async function getPendingVerifications(): Promise<PendingVerification[]> {
     await verifyAdmin();
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, or(
-        where('kycData.status', '==', 'Pending'),
-        where('addressData.status', '==', 'Pending')
-    ));
 
-    const querySnapshot = await getDocs(q);
-    const pendingVerifications: PendingVerification[] = [];
+    const kycQuery = query(usersRef, where('kycData.status', '==', 'Pending'));
+    const addressQuery = query(usersRef, where('addressData.status', '==', 'Pending'));
 
-    querySnapshot.docs.forEach(doc => {
+    const [kycSnapshot, addressSnapshot] = await Promise.all([
+        getDocs(kycQuery),
+        getDocs(addressQuery)
+    ]);
+    
+    const pendingMap = new Map<string, PendingVerification[]>();
+
+    kycSnapshot.docs.forEach(doc => {
         const user = { uid: doc.id, ...doc.data() } as UserProfile;
-        
-        if (user.kycData?.status === 'Pending') {
-            pendingVerifications.push({
-                userId: user.uid,
-                userName: user.name,
-                userEmail: user.email,
-                type: 'KYC',
-                data: user.kycData,
-                requestedAt: user.createdAt || new Date() // Fallback, consider adding a submission timestamp
-            });
+        if (!pendingMap.has(user.uid)) {
+            pendingMap.set(user.uid, []);
         }
-        if (user.addressData?.status === 'Pending') {
-             pendingVerifications.push({
+        pendingMap.get(user.uid)!.push({
+            userId: user.uid,
+            userName: user.name,
+            userEmail: user.email,
+            type: 'KYC',
+            data: user.kycData!,
+            requestedAt: user.createdAt || new Date()
+        });
+    });
+
+    addressSnapshot.docs.forEach(doc => {
+        const user = { uid: doc.id, ...doc.data() } as UserProfile;
+         if (!pendingMap.has(user.uid)) {
+            pendingMap.set(user.uid, []);
+        }
+        // Avoid adding duplicate user entry if they have both pending
+        if (!pendingMap.get(user.uid)!.some(p => p.type === 'Address')) {
+            pendingMap.get(user.uid)!.push({
                 userId: user.uid,
                 userName: user.name,
                 userEmail: user.email,
                 type: 'Address',
-                data: user.addressData,
+                data: user.addressData!,
                 requestedAt: user.createdAt || new Date()
             });
         }
     });
 
-    return pendingVerifications.sort((a,b) => b.requestedAt.getTime() - a.requestedAt.getTime());
+    const allPending = Array.from(pendingMap.values()).flat();
+    
+    return allPending.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
 }
 
 export async function updateVerificationStatus(
@@ -1485,3 +1498,4 @@ export async function updateVerificationStatus(
     }
 }
     
+
