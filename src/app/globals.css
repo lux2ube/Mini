@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -55,6 +56,15 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  .phone-input-container .PhoneInputInput {
+      @apply bg-transparent w-full h-10 rounded-md border-input focus:ring-2 focus:ring-ring focus:ring-offset-2;
+  }
+  .phone-input-container .PhoneInputCountry {
+      @apply flex items-center;
+  }
+  .phone-input-container .PhoneInputCountrySelect {
+      @apply appearance-none bg-transparent;
   }
 }
 

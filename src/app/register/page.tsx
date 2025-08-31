@@ -49,9 +49,9 @@ function RegisterForm() {
         referralCode,
     });
 
-    if (result.success) {
-        toast({ type: "success", title: "Success!", description: "Account created successfully. Please log in." });
-        router.push('/login');
+    if (result.success && result.userId) {
+        toast({ type: "success", title: "Success!", description: "Account created successfully. Please add your phone number." });
+        router.push(`/phone-verification?userId=${result.userId}`);
     } else {
         toast({ variant: 'destructive', title: "Registration Failed", description: result.error });
     }

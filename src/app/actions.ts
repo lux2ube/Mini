@@ -12,6 +12,7 @@ import { getFirestore, doc, setDoc, Timestamp, runTransaction, query, where, get
 import { generateReferralCode } from "@/lib/referral";
 import { logUserActivity } from "./admin/actions";
 import { getClientSessionInfo } from "@/lib/device-info";
+import { parsePhoneNumber } from "libphonenumber-js";
 
 // Helper function to initialize Firebase on the server
 function getFirebaseApp(config: FirebaseOptions) {
@@ -159,5 +160,34 @@ export async function handleForgotPassword(email: string) {
             return { success: false, error: "No user found with this email address." };
         }
         return { success: false, error: "An unexpected error occurred. Please try again." };
+    }
+}
+
+
+export async function updateUserPhoneNumber(userId: string, phoneNumber: string) {
+    const app = getFirebaseApp(firebaseConfig);
+    const db = getFirestore(app);
+    const userRef = doc(db, 'users', userId);
+
+    try {
+        const parsedNumber = parsePhoneNumber(phoneNumber);
+        if (!parsedNumber) {
+            throw new Error('Invalid phone number format.');
+        }
+        
+        const countryCode = parsedNumber.country;
+
+        await updateDoc(userRef, {
+            phoneNumber: parsedNumber.formatInternational(),
+            country: countryCode,
+            // We will set phoneNumberVerified to false for now.
+            // A real OTP flow would set this to true.
+            phoneNumberVerified: false
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error updating phone number:", error);
+        return { success: false, error: error.message };
     }
 }

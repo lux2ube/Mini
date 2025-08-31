@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { Loader2, User, KeyRound, Copy, Star, Mail, ArrowLeft, Hash } from "lucide-react";
+import { Loader2, User, KeyRound, Copy, Star, Mail, ArrowLeft, Hash, Phone } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import {
     Card,
@@ -23,9 +23,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { updateUser, getClientLevels } from "@/app/admin/actions";
+import { updateUser, getClientLevels, updateUserPhoneNumber } from "@/app/admin/actions";
 import { useRouter } from "next/navigation";
 import type { ClientLevel } from "@/types";
+import PhoneInput, { isPossiblePhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 
 const profileSchema = z.object({
@@ -33,6 +35,78 @@ const profileSchema = z.object({
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
+
+const phoneSchema = z.object({
+    phoneNumber: z.string().refine(value => isPossiblePhoneNumber(value), { message: "الرجاء إدخال رقم هاتف صحيح."})
+});
+type PhoneFormValues = z.infer<typeof phoneSchema>;
+
+function PhoneUpdateForm() {
+    const { user, refetchUserData } = useAuthContext();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const form = useForm<PhoneFormValues>({
+        resolver: zodResolver(phoneSchema),
+        defaultValues: {
+            phoneNumber: user?.profile?.phoneNumber || "",
+        }
+    });
+
+    const onSubmit = async (values: PhoneFormValues) => {
+        if (!user) return;
+        setIsSubmitting(true);
+        const result = await updateUserPhoneNumber(user.uid, values.phoneNumber);
+         if (result.success) {
+            toast({ type: "success", title: "نجاح", description: "تم تحديث رقم الهاتف." });
+            refetchUserData();
+        } else {
+            toast({ type: "error", title: "خطأ", description: result.error });
+        }
+        setIsSubmitting(false);
+    };
+
+    return (
+         <Card>
+            <CardHeader>
+                <CardTitle className="text-base">رقم الهاتف</CardTitle>
+            </CardHeader>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)}>
+                    <CardContent>
+                        <FormField
+                            control={form.control}
+                            name="phoneNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>تعديل رقم الهاتف</FormLabel>
+                                    <FormControl>
+                                         <div className="phone-input-container">
+                                            <PhoneInput
+                                                international
+                                                defaultCountry="TH"
+                                                placeholder="أدخل رقم الهاتف"
+                                                {...field}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </CardContent>
+                    <CardFooter className="p-4 pt-0 justify-end">
+                        <Button type="submit" size="sm" disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            حفظ الهاتف
+                        </Button>
+                    </CardFooter>
+                </form>
+            </Form>
+        </Card>
+    );
+}
 
 export default function ProfilePage() {
     const { user, isLoading, refetchUserData } = useAuthContext();
@@ -150,6 +224,8 @@ export default function ProfilePage() {
                     </Card>
                 </form>
             </Form>
+            
+            <PhoneUpdateForm />
 
              {/* --- IDs Card --- */}
             <Card>
