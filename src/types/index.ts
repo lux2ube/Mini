@@ -26,6 +26,7 @@ export interface KycData {
     gender: 'male' | 'female';
     status: 'Pending' | 'Verified' | 'Rejected';
     rejectionReason?: string;
+    submittedAt?: Date;
 }
 
 export interface AddressData {
@@ -34,6 +35,7 @@ export interface AddressData {
     streetAddress: string;
     status: 'Pending' | 'Verified' | 'Rejected';
     rejectionReason?: string;
+    submittedAt?: Date;
 }
 
 /**

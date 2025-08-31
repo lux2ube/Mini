@@ -205,7 +205,7 @@ export async function sendVerificationEmail(): Promise<{ success: boolean; error
 }
 
 
-export async function submitKycData(userId: string, data: KycData): Promise<{ success: boolean; error?: string }> {
+export async function submitKycData(userId: string, data: Omit<KycData, 'status' | 'submittedAt'>): Promise<{ success: boolean; error?: string }> {
     const db = getFirestore(getFirebaseApp(firebaseConfig));
     const userRef = doc(db, 'users', userId);
     try {
@@ -213,6 +213,7 @@ export async function submitKycData(userId: string, data: KycData): Promise<{ su
             kycData: {
                 ...data,
                 status: 'Pending',
+                submittedAt: new Date(),
             },
             hasPendingKYC: true,
         });
@@ -223,7 +224,7 @@ export async function submitKycData(userId: string, data: KycData): Promise<{ su
     }
 }
 
-export async function submitAddressData(userId: string, data: AddressData): Promise<{ success: boolean; error?: string }> {
+export async function submitAddressData(userId: string, data: Omit<AddressData, 'status' | 'submittedAt'>): Promise<{ success: boolean; error?: string }> {
     const db = getFirestore(getFirebaseApp(firebaseConfig));
     const userRef = doc(db, 'users', userId);
     try {
@@ -231,6 +232,7 @@ export async function submitAddressData(userId: string, data: AddressData): Prom
             addressData: {
                 ...data,
                 status: 'Pending',
+                submittedAt: new Date(),
             },
             hasPendingAddress: true,
         });
@@ -240,4 +242,3 @@ export async function submitAddressData(userId: string, data: AddressData): Prom
         return { success: false, error: "Failed to submit address information." };
     }
 }
-

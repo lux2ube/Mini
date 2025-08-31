@@ -1424,7 +1424,7 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
                 userEmail: user.email,
                 type: 'KYC',
                 data: user.kycData!,
-                requestedAt: user.createdAt || new Date() // Fallback, should be submission date
+                requestedAt: safeToDate(user.kycData.submittedAt) || new Date()
             };
             pendingMap.set(key, verification);
             results.push(verification);
@@ -1441,7 +1441,7 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
                 userEmail: user.email,
                 type: 'Address',
                 data: user.addressData!,
-                requestedAt: user.createdAt || new Date() // Fallback
+                requestedAt: safeToDate(user.addressData.submittedAt) || new Date()
             };
             pendingMap.set(key, verification);
             results.push(verification);
