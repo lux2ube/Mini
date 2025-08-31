@@ -111,14 +111,14 @@ function RegisterForm() {
             <Label htmlFor="name">الاسم الكامل</Label>
             <div className="relative">
               <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="name" type="text" placeholder="جون دو" required value={name} onChange={(e) => setName(e.target.value)} className="pr-10"/>
+              <Input id="name" type="text" placeholder="أدخل اسمك الكامل" required value={name} onChange={(e) => setName(e.target.value)} className="pr-10"/>
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">البريد الإلكتروني</Label>
             <div className="relative">
               <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} className="pr-10"/>
+              <Input id="email" type="email" placeholder="أدخل بريدك الإلكتروني" required value={email} onChange={(e) => setEmail(e.target.value)} className="pr-10"/>
             </div>
           </div>
           <div className="space-y-2">
@@ -136,7 +136,7 @@ function RegisterForm() {
             <Label htmlFor="referral-code">كود الإحالة (اختياري)</Label>
             <div className="relative">
               <KeyRound className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input id="referral-code" type="text" placeholder="مثال: JOHN123" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="pr-10"/>
+              <Input id="referral-code" type="text" placeholder="أدخل كود الدعوة (إن وجد)" value={referralCode} onChange={(e) => setReferralCode(e.target.value)} className="pr-10"/>
             </div>
           </div>
           <Button type="submit" className="w-full" disabled={isLoading}>
