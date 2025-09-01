@@ -3,19 +3,14 @@
 'use server';
 
 import { db, auth } from '@/lib/firebase/config';
+import { adminDb } from '@/lib/firebase/admin-config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit, or, deleteField } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData, PendingVerification } from '@/types';
 import { headers } from 'next/headers';
 import { parsePhoneNumber } from "libphonenumber-js";
+import { getUsers } from './users/actions';
 
-// ====================================================================
-// SECURITY NOTE: The `verifyAdmin` function has been removed.
-// All admin actions are now protected by Firestore Security Rules.
-// The rules check if `request.auth.uid` has the `role: 'admin'`
-// in their user profile before allowing any sensitive writes.
-// This is a more secure and reliable method than a manual check here.
-// ====================================================================
 
 const safeToDate = (timestamp: any): Date | undefined => {
     if (timestamp instanceof Timestamp) {
@@ -474,10 +469,6 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
         return { success: false, message: `فشل إضافة الحساب: ${errorMessage}` };
     });
 }
-
-
-// User Management - Moved to /users/actions.ts
-// getUsers, backfillUserStatuses, backfillUserLevels
 
 export async function updateUser(userId: string, data: Partial<Pick<UserProfile, 'name' | 'country' | 'phoneNumber'>>) {
     try {
@@ -1498,3 +1489,4 @@ export async function adminUpdateAddress(userId: string, data: AddressData) {
         return { success: false, message: "فشل تحديث بيانات العنوان." };
     }
 }
+    

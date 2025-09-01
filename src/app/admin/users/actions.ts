@@ -2,11 +2,10 @@
 
 'use server';
 
-import { db } from '@/lib/firebase/config';
 import { adminDb } from '@/lib/firebase/admin-config';
-import { collection, getDocs, writeBatch, query, where, limit, getDoc, doc, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
+import { collection, getDocs, writeBatch, query, where, limit, getDoc, doc, Timestamp, startOfMonth } from 'firebase/firestore';
 import type { UserProfile, UserStatus, ClientLevel } from '@/types';
-import { startOfMonth } from 'date-fns';
 
 const safeToDate = (timestamp: any): Date | undefined => {
     if (timestamp instanceof Timestamp) {
@@ -18,7 +17,6 @@ const safeToDate = (timestamp: any): Date | undefined => {
     return undefined;
 };
 
-// User Management
 export async function getUsers(): Promise<UserProfile[]> {
   const usersSnapshot = await adminDb.collection('users').get();
   const users: UserProfile[] = [];
@@ -37,7 +35,6 @@ export async function getUsers(): Promise<UserProfile[]> {
   return users;
 }
 
-// Admin migration script for user statuses
 export async function backfillUserStatuses(): Promise<{ success: boolean; message: string; }> {
     try {
         const usersRef = collection(db, 'users');
@@ -86,21 +83,6 @@ export async function backfillUserStatuses(): Promise<{ success: boolean; messag
         return { success: false, message: `Failed to backfill statuses: ${errorMessage}` };
     }
 }
-
-export async function getClientLevels(): Promise<ClientLevel[]> {
-    const levelsCollection = collection(db, 'clientLevels');
-    const snapshot = await getDocs(levelsCollection);
-    if (snapshot.empty) {
-        return []; // Return empty array if no levels are seeded
-    }
-    const levelsArray = snapshot.docs.map(doc => ({
-        id: parseInt(doc.id, 10),
-        ...doc.data()
-    } as ClientLevel));
-    levelsArray.sort((a, b) => a.id - b.id);
-    return levelsArray;
-}
-
 
 export async function backfillUserLevels(): Promise<{ success: boolean; message: string; }> {
     try {
@@ -162,4 +144,18 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
         const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
         return { success: false, message: `Failed to backfill levels: ${errorMessage}` };
     }
+}
+
+export async function getClientLevels(): Promise<ClientLevel[]> {
+    const levelsCollection = collection(db, 'clientLevels');
+    const snapshot = await getDocs(levelsCollection);
+    if (snapshot.empty) {
+        return []; // Return empty array if no levels are seeded
+    }
+    const levelsArray = snapshot.docs.map(doc => ({
+        id: parseInt(doc.id, 10),
+        ...doc.data()
+    } as ClientLevel));
+    levelsArray.sort((a, b) => a.id - b.id);
+    return levelsArray;
 }
