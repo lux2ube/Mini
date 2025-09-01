@@ -5,22 +5,15 @@ import { generateProjectSummary } from "@/ai/flows/generate-project-summary";
 import type { GenerateProjectSummaryOutput } from "@/ai/flows/generate-project-summary";
 import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
-import { firebaseConfig } from "@/lib/firebase/config";
-import { getApp, getApps, initializeApp, type FirebaseOptions } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
-import { getFirestore, doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase/config";
+import { createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
+import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
 import { logUserActivity } from "./admin/actions";
 import { getClientSessionInfo } from "@/lib/device-info";
 import { parsePhoneNumber } from "libphonenumber-js";
 import type { KycData, AddressData } from "@/types";
 
-// Helper function to initialize Firebase on the server
-function getFirebaseApp(config: FirebaseOptions) {
-    return !getApps().length ? initializeApp(config) : getApp();
-}
-
-// Hardcoded data based on https://github.com/tcb4dev/cashback1
 const projectData = {
     projectDescription: "A cashback calculation system in Go that processes customer transactions. It determines cashback rewards based on a set of configurable rules, including handling for blacklisted Merchant Category Codes (MCCs). The system is exposed via a RESTful API.",
     architectureDetails: "The project is a single microservice built in Go. It exposes a REST API for calculating cashback. The core logic is encapsulated within a rules engine that evaluates transactions against a list of rules to determine the final cashback amount. It has handlers for different API endpoints, and a main function to set up the server.",
@@ -59,9 +52,6 @@ export async function handleCalculateCashback(input: CalculateCashbackInput): Pr
 
 export async function handleRegisterUser(formData: { name: string, email: string, password: string, referralCode?: string }) {
     const { name, email, password, referralCode } = formData;
-    const app = getFirebaseApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
 
     let referrerData: { id: string; ref: any; } | null = null;
 
@@ -136,7 +126,6 @@ export async function handleRegisterUser(formData: { name: string, email: string
 
 
 export async function handleLogout() {
-    const auth = getAuth(getFirebaseApp(firebaseConfig));
     try {
         await signOut(auth);
         return { success: true };
@@ -147,7 +136,6 @@ export async function handleLogout() {
 }
 
 export async function handleForgotPassword(email: string) {
-    const auth = getAuth(getFirebaseApp(firebaseConfig));
     try {
         await sendPasswordResetEmail(auth, email);
         return { success: true };
@@ -162,8 +150,6 @@ export async function handleForgotPassword(email: string) {
 
 
 export async function updateUserPhoneNumber(userId: string, phoneNumber: string) {
-    const app = getFirebaseApp(firebaseConfig);
-    const db = getFirestore(app);
     const userRef = doc(db, 'users', userId);
 
     try {
@@ -189,7 +175,6 @@ export async function updateUserPhoneNumber(userId: string, phoneNumber: string)
 }
 
 export async function sendVerificationEmail(): Promise<{ success: boolean; error?: string }> {
-    const auth = getAuth(getFirebaseApp(firebaseConfig));
     const user = auth.currentUser;
 
     if (!user) {
@@ -207,7 +192,6 @@ export async function sendVerificationEmail(): Promise<{ success: boolean; error
 
 
 export async function submitKycData(userId: string, data: Omit<KycData, 'status' | 'submittedAt'>): Promise<{ success: boolean; error?: string }> {
-    const db = getFirestore(getFirebaseApp(firebaseConfig));
     const userRef = doc(db, 'users', userId);
     try {
         await updateDoc(userRef, {
@@ -226,7 +210,6 @@ export async function submitKycData(userId: string, data: Omit<KycData, 'status'
 }
 
 export async function submitAddressData(userId: string, data: Omit<AddressData, 'status' | 'submittedAt'>): Promise<{ success: boolean; error?: string }> {
-    const db = getFirestore(getFirebaseApp(firebaseConfig));
     const userRef = doc(db, 'users', userId);
     try {
         await updateDoc(userRef, {
