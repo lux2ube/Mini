@@ -8,14 +8,14 @@ import { cookies } from 'next/headers';
 import { adminDb, adminAuth } from '@/lib/firebase/admin-config';
 
 // Helper function to safely convert Firestore Timestamps to a serializable format
-const safeToJSON = (timestamp: any): string | null => {
+const safeToDate = (timestamp: any): Date | undefined => {
     if (timestamp instanceof admin.firestore.Timestamp) {
-        return timestamp.toDate().toISOString();
+        return timestamp.toDate();
     }
     if (timestamp instanceof Date) {
-        return timestamp.toISOString();
+        return timestamp;
     }
-    return null;
+    return undefined;
 };
 
 // This helper function is the new gatekeeper for all secure admin actions.
