@@ -52,11 +52,12 @@ export default function LoginPage() {
   const handleLoginSuccess = async (userCredential: UserCredential) => {
     const user = userCredential.user;
     
-    // Fetch user profile from Firestore
+    // Force refresh of ID token to get latest custom claims
+    await user.getIdToken(true);
+    
     const userDocRef = doc(db, "users", user.uid);
     let userDoc = await getDoc(userDocRef);
 
-    // Self-healing: If user exists in Auth but not Firestore, create their profile now.
     if (!userDoc.exists()) {
         console.warn(`User ${user.uid} authenticated but has no profile. Creating one now.`);
         
@@ -84,7 +85,6 @@ export default function LoginPage() {
             transaction.set(counterRef, { lastId: newClientId }, { merge: true });
         });
         
-        // Refetch the document we just created
         userDoc = await getDoc(userDocRef);
         await logUserActivity(user.uid, 'signup', {
              deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
@@ -105,9 +105,11 @@ export default function LoginPage() {
         description: "تم تسجيل الدخول بنجاح.",
     });
 
-    const userProfile = userDoc.data() as UserProfile | undefined;
-    
-    if (userProfile?.role === 'admin') {
+    // Check for admin claim after refetching data
+    const idTokenResult = await user.getIdTokenResult();
+    const isAdmin = idTokenResult.claims.admin === true;
+
+    if (isAdmin) {
       router.push('/admin/dashboard');
     } else {
       router.push('/dashboard');

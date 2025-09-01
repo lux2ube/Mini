@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
-  const { userProfile, isLoading } = useAuthContext();
+  const { user, isLoading } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
@@ -15,20 +15,20 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
       return; // Wait until auth state is loaded
     }
 
-    if (!userProfile) {
+    if (!user) {
       router.push("/login"); // Not logged in, redirect to login
       return;
     }
 
-    // Check the role from the Firestore profile
-    if (userProfile.role !== 'admin') {
+    // Check the admin claim from the ID token.
+    if (!user.isAdmin) {
       router.push("/dashboard"); // Logged in but not an admin
     }
 
-  }, [isLoading, userProfile, router]);
+  }, [isLoading, user, router]);
 
   // While loading or if user is not an admin yet, show a spinner
-  if (isLoading || !userProfile || userProfile.role !== 'admin') {
+  if (isLoading || !user?.isAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

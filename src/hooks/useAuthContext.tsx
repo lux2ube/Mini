@@ -8,9 +8,10 @@ import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 
 // The user object from the Auth Provider will now have a 'profile' property
-// containing the user's data from the Firestore 'users' collection.
+// containing the user's data from the Firestore 'users' collection, and an 'isAdmin' flag from the token.
 export interface AppUser extends FirebaseAuthUser {
   profile?: UserProfile | null;
+  isAdmin?: boolean;
 }
 
 interface AuthContextType {
@@ -29,46 +30,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserData = useCallback(async (firebaseUser: FirebaseAuthUser) => {
+  const fetchUserData = useCallback(async (firebaseUser: FirebaseAuthUser | null) => {
     if (!firebaseUser) {
         setUser(null);
+        setIsLoading(false);
         return;
     }
+
     try {
+        const idTokenResult = await firebaseUser.getIdTokenResult();
+        const isAdmin = idTokenResult.claims.admin === true;
+        
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
         const profile = userDocSnap.exists() 
             ? { uid: firebaseUser.uid, ...userDocSnap.data() } as UserProfile
             : null;
-
+        
         setUser({
             ...firebaseUser,
-            profile: profile,
+            profile,
+            isAdmin,
         });
 
     } catch (error) {
-        console.error("Error fetching user profile:", error);
-        setUser({ ...firebaseUser, profile: null });
+        console.error("Error fetching user data:", error);
+        setUser({ ...firebaseUser, profile: null, isAdmin: false });
+    } finally {
+        setIsLoading(false);
     }
   }, []);
 
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setIsLoading(true);
-      if (firebaseUser) {
-        await fetchUserData(firebaseUser);
-      } else {
-        setUser(null);
-      }
-      setIsLoading(false);
+      fetchUserData(firebaseUser);
     });
 
     const handleRefetch = () => {
-        if(auth.currentUser) {
-            fetchUserData(auth.currentUser);
-        }
+      if(auth.currentUser) {
+          fetchUserData(auth.currentUser);
+      }
     };
     window.addEventListener('refetchUser', handleRefetch);
 
@@ -81,7 +85,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refetchUserData = useCallback(() => {
       if(auth.currentUser) {
           setIsLoading(true);
-          fetchUserData(auth.currentUser).finally(() => setIsLoading(false));
+          fetchUserData(auth.currentUser);
       }
   }, [fetchUserData]);
 
