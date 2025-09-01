@@ -1,13 +1,10 @@
-
 'use server';
 
 import * as admin from 'firebase-admin';
-import { collection, getDocs, Timestamp, writeBatch, doc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 import { cookies } from 'next/headers';
-import { adminDb, adminAuth } from '@/lib/firebase/admin-config';
+import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
 
-// Helper function to safely convert Firestore Timestamps to a serializable format
 const safeToDate = (timestamp: any): Date | undefined => {
     if (timestamp instanceof admin.firestore.Timestamp) {
         return timestamp.toDate();
@@ -18,8 +15,6 @@ const safeToDate = (timestamp: any): Date | undefined => {
     return undefined;
 };
 
-// This helper function is the new gatekeeper for all secure admin actions.
-// It verifies the user's session cookie and checks for the 'admin' custom claim.
 async function verifyAdmin() {
     const sessionCookie = cookies().get('session')?.value;
     if (!sessionCookie) {
@@ -56,7 +51,6 @@ export async function getUsers(): Promise<UserProfile[]> {
             users.push({
                 uid: doc.id,
                 ...data,
-                // Ensure timestamps are converted to Date objects for use in the app
                 createdAt: data.createdAt ? (data.createdAt as admin.firestore.Timestamp).toDate() : undefined,
             } as UserProfile);
         });
@@ -65,7 +59,6 @@ export async function getUsers(): Promise<UserProfile[]> {
 
     } catch (error) {
         console.error("Error fetching users with Admin SDK:", error);
-        // Throw the error so the frontend knows something went wrong.
         if (error instanceof Error) {
             throw new Error(`Failed to fetch users: ${error.message}`);
         }

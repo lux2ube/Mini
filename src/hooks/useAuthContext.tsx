@@ -7,8 +7,6 @@ import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 
-// The user object from the Auth Provider will now have a 'profile' property
-// containing the user's data from the Firestore 'users' collection, and an 'isAdmin' flag from the token.
 export interface AppUser extends FirebaseAuthUser {
   profile?: UserProfile | null;
   isAdmin?: boolean;
@@ -26,6 +24,17 @@ const AuthContext = createContext<AuthContextType>({
     refetchUserData: () => {},
 });
 
+async function handleSession(token: string | null) {
+    const endpoint = token ? '/api/login' : '/api/logout';
+    const options: RequestInit = {
+        method: 'POST',
+    };
+    if (token) {
+        options.headers = { 'Authorization': `Bearer ${token}` };
+    }
+    await fetch(endpoint, options);
+}
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,10 +43,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!firebaseUser) {
         setUser(null);
         setIsLoading(false);
+        await handleSession(null); // Clear session on logout
         return;
     }
 
     try {
+        const token = await firebaseUser.getIdToken();
+        await handleSession(token); // Create session on login
+
         const idTokenResult = await firebaseUser.getIdTokenResult();
         const isAdmin = idTokenResult.claims.admin === true;
         
@@ -57,11 +70,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
         console.error("Error fetching user data:", error);
         setUser({ ...firebaseUser, profile: null, isAdmin: false });
+        await handleSession(null); // Clear session on error
     } finally {
         setIsLoading(false);
     }
   }, []);
-
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
