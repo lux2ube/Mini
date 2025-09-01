@@ -528,8 +528,7 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
                 ...data,
                 requestedAt: safeToDate(data.requestedAt) || new Date(),
                 completedAt: safeToDate(data.completedAt),
-                // This complex logic is removed for stability. It can be re-added later if needed.
-                previousWithdrawalDetails: null, 
+                previousWithdrawalDetails: data.previousWithdrawalDetails || null,
             } as Withdrawal);
         } catch (error) {
             console.error(`Error processing withdrawal ${doc.id}:`, error);

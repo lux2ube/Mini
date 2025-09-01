@@ -1,3 +1,4 @@
+
 import * as admin from 'firebase-admin';
 
 // This is the recommended pattern for initializing the Firebase Admin SDK in a Next.js environment.
