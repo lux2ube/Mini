@@ -1,7 +1,13 @@
 import * as admin from 'firebase-admin';
 
-// Ensure the SDK is initialized only once
-if (!admin.apps.length) {
+// This is the recommended pattern for initializing the Firebase Admin SDK in a Next.js environment.
+// It ensures that the SDK is initialized only once, preventing errors caused by re-initialization.
+
+function getAdminApp() {
+  if (admin.apps.length > 0) {
+    return admin.apps[0]!;
+  }
+
   try {
     const serviceAccountB64 = process.env.FIREBASE_ADMIN_JSON_B64;
 
@@ -15,15 +21,19 @@ if (!admin.apps.length) {
     // Parse the JSON string into an object
     const serviceAccount = JSON.parse(serviceAccountJson);
 
-    admin.initializeApp({
+    return admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
   } catch (error) {
     console.error('Firebase admin initialization error:', error);
+    // Throw the error to make it clear that initialization failed.
+    // This will prevent other parts of the app from trying to use a non-existent admin app.
+    throw new Error('Failed to initialize Firebase Admin SDK.');
   }
 }
 
-const adminAuth = admin.auth();
-const adminDb = admin.firestore();
+const adminApp = getAdminApp();
+const adminAuth = admin.auth(adminApp);
+const adminDb = admin.firestore(adminApp);
 
 export { adminAuth, adminDb };
