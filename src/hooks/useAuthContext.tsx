@@ -43,13 +43,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!firebaseUser) {
         setUser(null);
         setIsLoading(false);
-        await handleSession(null); // Clear session on logout
+        await handleSession(null);
         return;
     }
 
     try {
         const token = await firebaseUser.getIdToken();
-        await handleSession(token); // Create session on login
+        await handleSession(token);
 
         const idTokenResult = await firebaseUser.getIdTokenResult();
         const isAdmin = idTokenResult.claims.admin === true;
@@ -70,7 +70,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
         console.error("Error fetching user data:", error);
         setUser({ ...firebaseUser, profile: null, isAdmin: false });
-        await handleSession(null); // Clear session on error
+        await handleSession(null);
     } finally {
         setIsLoading(false);
     }

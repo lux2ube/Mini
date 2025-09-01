@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { adminAuth } from '@/lib/firebase/admin-config';
 
-// The duration of the session cookie.
 const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
 
 export async function POST(request: NextRequest) {
@@ -20,8 +19,6 @@ export async function POST(request: NextRequest) {
   try {
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
     
-    // Set the cookie in the response.
-    // httpOnly makes it so the cookie is not accessible via JavaScript on the client.
     cookies().set('session', sessionCookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

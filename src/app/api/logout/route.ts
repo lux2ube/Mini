@@ -8,17 +8,13 @@ export async function POST() {
 
   if (sessionCookie) {
     try {
-      // Clear the session cookie
       cookies().set('session', '', { expires: new Date(0), path: '/' });
-      
-      // Optional: Revoke the session on Firebase side
       const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie).catch(() => null);
       if (decodedClaims) {
         await adminAuth.revokeRefreshTokens(decodedClaims.sub);
       }
     } catch (error) {
       console.error('Error during logout:', error);
-      // Even if revoke fails, the cookie is cleared, so we can return success.
     }
   }
 

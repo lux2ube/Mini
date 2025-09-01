@@ -105,7 +105,6 @@ export default function LoginPage() {
         description: "تم تسجيل الدخول بنجاح.",
     });
 
-    // Check for admin claim after refetching data
     const idTokenResult = await user.getIdTokenResult();
     const isAdmin = idTokenResult.claims.admin === true;
 
@@ -121,7 +120,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      await handleLoginSuccess(userCredential);
+      // Let the AuthProvider handle the rest
     } catch (error: any) {
         let description = "بريد إلكتروني أو كلمة مرور غير صحيحة.";
         if (error.code === 'auth/user-not-found') {
@@ -144,8 +143,8 @@ export default function LoginPage() {
   const handleSocialLogin = async (provider: typeof googleProvider | typeof appleProvider) => {
     setIsSocialLoading(true);
     try {
-        const userCredential = await signInWithPopup(auth, provider);
-        await handleLoginSuccess(userCredential);
+        await signInWithPopup(auth, provider);
+        // Let the AuthProvider handle the rest
     } catch (error: any) {
          toast({
             variant: "destructive",
@@ -192,14 +191,6 @@ export default function LoginPage() {
             <p className="text-muted-foreground">الوصول إلى حسابك.</p>
         </div>
         
-        <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>ملاحظة للمطور</AlertTitle>
-            <AlertDescription>
-                إذا استمر فشل تسجيل الدخول، يرجى التأكد من أن متغيرات `NEXT_PUBLIC_FIREBASE_*` في ملف `.env` الخاص بك صحيحة للمشروع الذي تختبره.
-            </AlertDescription>
-        </Alert>
-
         <Card>
             <CardContent className="p-4">
                 <div className="grid grid-cols-2 gap-2">
