@@ -3,18 +3,20 @@ import * as admin from 'firebase-admin';
 // Ensure the SDK is initialized only once
 if (!admin.apps.length) {
   try {
-    const privateKey = process.env.ADMIN_FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+    const serviceAccountB64 = process.env.FIREBASE_ADMIN_JSON_B64;
 
-    if (!privateKey || !process.env.ADMIN_FIREBASE_CLIENT_EMAIL || !process.env.ADMIN_FIREBASE_PROJECT_ID) {
-      throw new Error("Firebase admin credentials are not set in environment variables.");
+    if (!serviceAccountB64) {
+      throw new Error("Firebase admin credentials (base64) are not set in environment variables.");
     }
     
+    // Decode the Base64 string to get the JSON string
+    const serviceAccountJson = Buffer.from(serviceAccountB64, 'base64').toString('utf8');
+
+    // Parse the JSON string into an object
+    const serviceAccount = JSON.parse(serviceAccountJson);
+
     admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.ADMIN_FIREBASE_PROJECT_ID,
-        clientEmail: process.env.ADMIN_FIREBASE_CLIENT_EMAIL,
-        privateKey: privateKey,
-      }),
+      credential: admin.credential.cert(serviceAccount),
     });
   } catch (error) {
     console.error('Firebase admin initialization error:', error);
