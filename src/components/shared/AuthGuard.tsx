@@ -7,16 +7,19 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { firebaseUser, isLoading } = useAuthContext();
+  const { user, isLoading } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !firebaseUser) {
+    // Wait until the loading is complete before checking for a user
+    if (!isLoading && !user) {
       router.push("/");
     }
-  }, [isLoading, firebaseUser, router]);
+  }, [isLoading, user, router]);
 
-  if (isLoading || !firebaseUser) {
+  // If we are still loading, or if there's no user yet, show the loader.
+  // This prevents rendering the page content prematurely.
+  if (isLoading || !user) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -24,5 +27,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // If loading is complete and we have a user, render the protected content.
   return <>{children}</>;
 }
