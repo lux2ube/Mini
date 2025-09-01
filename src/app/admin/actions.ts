@@ -1043,8 +1043,8 @@ export async function getUserDetails(userId: string) {
             uid: userSnap.id,
             ...userProfileData,
             createdAt: safeToDate(userProfileData.createdAt),
-            kycData: userProfileData.kycData || undefined,
-            addressData: userProfileData.addressData || undefined,
+            kycData: userProfileData.kycData ? { ...userProfileData.kycData, submittedAt: safeToDate(userProfileData.kycData.submittedAt) } : undefined,
+            addressData: userProfileData.addressData ? { ...userProfileData.addressData, submittedAt: safeToDate(userProfileData.addressData.submittedAt) } : undefined,
         } as UserProfile;
 
 
@@ -1480,7 +1480,7 @@ export async function updateVerificationStatus(
 export async function adminUpdateKyc(userId: string, data: KycData) {
     try {
         const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, { kycData: data });
+        await updateDoc(userRef, { kycData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });
         return { success: true, message: "تم تحديث بيانات KYC للمستخدم." };
     } catch (error) {
         console.error("Error updating KYC by admin:", error);
@@ -1491,7 +1491,7 @@ export async function adminUpdateKyc(userId: string, data: KycData) {
 export async function adminUpdateAddress(userId: string, data: AddressData) {
     try {
         const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, { addressData: data });
+        await updateDoc(userRef, { addressData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });
         return { success: true, message: "تم تحديث بيانات العنوان للمستخدم." };
     } catch (error) {
         console.error("Error updating address by admin:", error);

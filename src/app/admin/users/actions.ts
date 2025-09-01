@@ -1,14 +1,15 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { collection, getDocs, writeBatch, query, where, limit, getDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, writeBatch, query, where, limit, getDoc, doc, Timestamp } from 'firebase/firestore';
 import type { UserProfile, UserStatus, ClientLevel } from '@/types';
 import { startOfMonth } from 'date-fns';
 
 const safeToDate = (timestamp: any): Date | undefined => {
-    if (timestamp instanceof Date) {
-        return timestamp;
+    if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
     }
     if (timestamp && typeof timestamp.toDate === 'function') {
         return timestamp.toDate();
