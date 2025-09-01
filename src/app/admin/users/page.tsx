@@ -5,7 +5,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getUsers, backfillUserStatuses, backfillUserLevels, getClientLevels } from './actions';
+import { getUsers, backfillUserStatuses, backfillUserLevels } from './actions';
+import { getClientLevels } from '@/app/admin/actions';
 import type { UserProfile, ClientLevel } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -69,7 +70,7 @@ export default function ManageUsersPage() {
 
     useEffect(() => {
         fetchUsersAndLevels();
-    }, [toast]);
+    }, []);
 
     const handleBackfill = async (action: 'status' | 'level') => {
         setIsUpdating(true);

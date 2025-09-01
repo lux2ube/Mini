@@ -72,7 +72,7 @@ export default function ManageLevelsPage() {
 
   useEffect(() => {
     fetchLevels();
-  }, [toast]);
+  }, []);
 
   const handleSeedLevels = async () => {
     setIsSeeding(true);
