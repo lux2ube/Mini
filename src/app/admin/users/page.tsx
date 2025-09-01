@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getClientLevels } from '@/app/admin/actions';
+import { getUsers } from './actions';
 import type { UserProfile, ClientLevel } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -30,26 +31,6 @@ import { backfillUserLevels, backfillUserStatuses } from './actions';
 
 type EnrichedUser = UserProfile & { referredByName?: string };
 
-async function getAdminUsers(): Promise<UserProfile[]> {
-    try {
-        const response = await fetch('/api/admin/users');
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to fetch users');
-        }
-        const data = await response.json();
-        // Convert timestamp strings back to Date objects
-        return data.users.map((user: any) => ({
-            ...user,
-            createdAt: user.createdAt ? new Date(user.createdAt) : undefined,
-        }));
-    } catch (error) {
-        console.error("Error fetching admin users:", error);
-        throw error; // Rethrow to be caught by the calling function
-    }
-}
-
-
 export default function ManageUsersPage() {
     const router = useRouter();
     const [users, setUsers] = useState<EnrichedUser[]>([]);
@@ -63,7 +44,7 @@ export default function ManageUsersPage() {
         setIsLoading(true);
         try {
             const [fetchedUsers, fetchedLevels] = await Promise.all([
-                getAdminUsers(),
+                getUsers(),
                 getClientLevels()
             ]);
             
