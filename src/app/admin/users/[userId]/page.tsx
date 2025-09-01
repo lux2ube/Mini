@@ -16,8 +16,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { getUserDetails, getBrokers, adminAddTradingAccount, updateUser, updateVerificationStatus, adminUpdateKyc, adminUpdateAddress } from "../../actions";
-import { Loader2, User, Wallet, Briefcase, Gift, ArrowRight, ArrowUpFromLine, ShoppingBag, PlusCircle, Globe, Phone, Check, X, ShieldAlert, Home, Edit2, ShieldCheck, FileText } from "lucide-react";
+import { getUserDetails, getBrokers, adminAddTradingAccount, updateUser, adminUpdateKyc, adminUpdateAddress } from "../../actions";
+import { Loader2, User, Wallet, Briefcase, Gift, ArrowRight, ArrowUpFromLine, ShoppingBag, PlusCircle, Globe, Phone, Check, X, ShieldAlert, Home, Edit2, ShieldCheck, FileText, ArrowLeft } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -48,70 +48,6 @@ const editUserSchema = z.object({
 })
 type EditUserForm = z.infer<typeof editUserSchema>;
 
-const rejectReasonSchema = z.object({
-    reason: z.string().min(10, "سبب الرفض مطلوب."),
-});
-type RejectReasonForm = z.infer<typeof rejectReasonSchema>;
-
-
-function RejectDialog({ type, userId, onSuccess }: { type: 'kyc' | 'address', userId: string, onSuccess: () => void }) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const { toast } = useToast();
-
-    const form = useForm<RejectReasonForm>({
-        resolver: zodResolver(rejectReasonSchema),
-        defaultValues: { reason: "" },
-    });
-
-    const onSubmit = async (values: RejectReasonForm) => {
-        setIsSubmitting(true);
-        const result = await updateVerificationStatus(userId, type, 'Rejected', values.reason);
-        if (result.success) {
-            toast({ title: "نجاح", description: result.message });
-            onSuccess();
-            setIsOpen(false);
-        } else {
-            toast({ variant: "destructive", title: "خطأ", description: result.message });
-        }
-        setIsSubmitting(false);
-    };
-
-    return (
-         <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button size="sm" variant="destructive"><X className="ml-2 h-4 w-4"/>رفض</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>رفض طلب التحقق</DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="reason"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>سبب الرفض</FormLabel>
-                                    <FormControl><Textarea placeholder="أدخل سببًا واضحًا للرفض..." {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="secondary">إلغاء</Button></DialogClose>
-                            <Button type="submit" variant="destructive" disabled={isSubmitting}>
-                                {isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                                تأكيد الرفض
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
-    )
-}
 
 function EditUserDialog({ userProfile, onSuccess }: { userProfile: UserProfile, onSuccess: () => void }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -390,8 +326,8 @@ function VerificationCard<T extends KycData | AddressData>({
   userId: string;
   onSuccess: () => void;
 }) {
-  const getStatusText = (status: string) => ({'Pending': 'قيد المراجعة', 'Verified': 'تم التحقق', 'Rejected': 'مرفوض'}[status] || status);
-  const getStatusVariant = (status: string) => ({'Pending': 'secondary', 'Verified': 'default', 'Rejected': 'destructive'}[status] || 'outline') as any;
+  const getStatusText = (status?: string) => ({'Pending': 'قيد المراجعة', 'Verified': 'تم التحقق', 'Rejected': 'مرفوض'}[status || ''] || status);
+  const getStatusVariant = (status?: string) => ({'Pending': 'secondary', 'Verified': 'default', 'Rejected': 'destructive'}[status || ''] || 'outline') as any;
 
   return (
     <Card>
@@ -569,11 +505,6 @@ export default function UserDetailPage() {
                                 <CardContent>
                                     <p className="text-sm text-muted-foreground">{userProfile.phoneNumber || 'لم يتم تقديم رقم هاتف.'}</p>
                                 </CardContent>
-                                {userProfile.phoneNumber && !userProfile.phoneNumberVerified &&
-                                    <CardFooter>
-                                        <Button size="sm" onClick={() => updateVerificationStatus(userId, 'phone', 'Verified').then(fetchDetails)}><Check className="ml-2 h-4 w-4" /> موافقة</Button>
-                                    </CardFooter>
-                                }
                             </Card>
                         </CardContent>
                     </Card>
@@ -684,3 +615,5 @@ export default function UserDetailPage() {
         </div>
     )
 }
+
+    
