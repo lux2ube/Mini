@@ -7,16 +7,16 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuthContext();
+  const { firebaseUser, isLoading } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !firebaseUser) {
       router.push("/");
     }
-  }, [isLoading, user, router]);
+  }, [isLoading, firebaseUser, router]);
 
-  if (isLoading || !user) {
+  if (isLoading || !firebaseUser) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

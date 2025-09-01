@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -106,7 +105,8 @@ function SidebarHeader() {
     )
 }
 
-function UserInfoFooter({ user }: { user: any }) {
+function UserInfoFooter() {
+    const { firebaseUser, userProfile } = useAuthContext();
     const router = useRouter();
     const { toast } = useToast();
     
@@ -123,8 +123,8 @@ function UserInfoFooter({ user }: { user: any }) {
     return (
         <div className="mt-auto p-4 border-t space-y-2">
             <div className="text-sm">
-                <p className="font-semibold">{user?.profile?.name || 'مشرف'}</p>
-                <p className="text-muted-foreground">{user?.email}</p>
+                <p className="font-semibold">{userProfile?.name || 'مشرف'}</p>
+                <p className="text-muted-foreground">{firebaseUser?.email}</p>
             </div>
              <Button
                 variant="ghost"
@@ -145,14 +145,13 @@ export default function AdminLayout({
     children: React.ReactNode
 }) {
     
-    const { user } = useAuthContext();
     const pathname = usePathname();
 
     const DesktopNav = () => (
          <div className="flex flex-col h-full">
             <SidebarHeader />
             <NavLinks currentPathname={pathname} />
-            <UserInfoFooter user={user} />
+            <UserInfoFooter />
         </div>
     );
     
@@ -169,7 +168,7 @@ export default function AdminLayout({
                 </SheetTitle>
             </SheetHeader>
             <NavLinks currentPathname={pathname} />
-            <UserInfoFooter user={user} />
+            <UserInfoFooter />
         </>
     );
 

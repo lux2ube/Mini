@@ -7,71 +7,63 @@ import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 
-
-// Extend the user object to include the profile
-export interface AppUser extends FirebaseAuthUser {
-    profile?: UserProfile;
-}
-
+// The user object from the Auth Provider will now have two distinct properties
+// to prevent stripping methods from the core firebase user object.
 interface AuthContextType {
-  user: AppUser | null;
+  firebaseUser: FirebaseAuthUser | null;
+  userProfile: UserProfile | null;
   isLoading: boolean;
-  refetchUserData: () => void;
+  refetchUserProfile: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({ 
-    user: null, 
+    firebaseUser: null, 
+    userProfile: null,
     isLoading: true,
-    refetchUserData: () => {},
+    refetchUserProfile: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<AppUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthUser | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserData = useCallback(async (firebaseUser: FirebaseAuthUser) => {
-    if (!firebaseUser) {
-        setUser(null);
-        setIsLoading(false);
+  const fetchUserProfile = useCallback(async (user: FirebaseAuthUser) => {
+    if (!user) {
+        setUserProfile(null);
         return;
     }
     try {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDocRef = doc(db, 'users', user.uid);
         const userDocSnap = await getDoc(userDocRef);
         
-        const userProfile = userDocSnap.exists() 
-            ? { uid: firebaseUser.uid, ...userDocSnap.data() } as UserProfile
-            : undefined;
-
-        setUser({ 
-            ...firebaseUser, 
-            profile: userProfile,
-        });
+        const profile = userDocSnap.exists() 
+            ? { uid: user.uid, ...userDocSnap.data() } as UserProfile
+            : null;
+        setUserProfile(profile);
 
     } catch (error) {
-        console.error("Error fetching user data:", error);
-        setUser(firebaseUser); // Fallback to just firebase user
-    } finally {
-        setIsLoading(false);
+        console.error("Error fetching user profile:", error);
+        setUserProfile(null); 
     }
   }, []);
 
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setIsLoading(true);
-      if (firebaseUser) {
-        fetchUserData(firebaseUser);
+      setFirebaseUser(user);
+      if (user) {
+        await fetchUserProfile(user);
       } else {
-        setUser(null);
-        setIsLoading(false);
+        setUserProfile(null);
       }
+      setIsLoading(false);
     });
 
-    // Custom event to trigger a refetch
     const handleRefetch = () => {
         if(auth.currentUser) {
-            fetchUserData(auth.currentUser);
+            fetchUserProfile(auth.currentUser);
         }
     };
     window.addEventListener('refetchUser', handleRefetch);
@@ -80,17 +72,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         unsubscribe();
         window.removeEventListener('refetchUser', handleRefetch);
     };
-  }, [fetchUserData]);
+  }, [fetchUserProfile]);
   
-  const refetchUserData = useCallback(() => {
+  const refetchUserProfile = useCallback(() => {
       if(auth.currentUser) {
           setIsLoading(true);
-          fetchUserData(auth.currentUser);
+          fetchUserProfile(auth.currentUser).finally(() => setIsLoading(false));
       }
-  }, [fetchUserData]);
+  }, [fetchUserProfile]);
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, refetchUserData }}>
+    <AuthContext.Provider value={{ firebaseUser, userProfile, isLoading, refetchUserProfile }}>
       {children}
     </AuthContext.Provider>
   );

@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuthContext();
+  const { firebaseUser, isLoading } = useAuthContext();
   const router = useRouter();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
@@ -16,13 +16,13 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
       return; // Wait until auth state is loaded
     }
 
-    if (!user) {
+    if (!firebaseUser) {
       router.push("/login"); // Not logged in, redirect to login
       return;
     }
 
     // Check for custom admin claim
-    user.getIdTokenResult()
+    firebaseUser.getIdTokenResult()
       .then((idTokenResult) => {
         if (idTokenResult.claims.admin) {
           setIsAdmin(true);
@@ -36,7 +36,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
         router.push("/dashboard"); // Error getting token, assume not admin
       });
 
-  }, [isLoading, user, router]);
+  }, [isLoading, firebaseUser, router]);
 
   // While loading or verifying claims, show a spinner
   if (isLoading || isAdmin === null) {
