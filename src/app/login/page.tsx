@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { auth, db, googleProvider, appleProvider } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, signInWithPopup, UserCredential } from 'firebase/auth';
 import { doc, getDoc, setDoc, Timestamp, runTransaction, collection, getDocs, updateDoc } from "firebase/firestore";
-import { Loader2, Mail, Lock } from 'lucide-react';
+import { Loader2, Mail, Lock, AlertTriangle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { generateReferralCode } from '@/lib/referral';
 import { logUserActivity } from '../admin/actions';
@@ -26,6 +26,7 @@ import { getClientSessionInfo } from '@/lib/device-info';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { handleForgotPassword } from '../actions';
 import type { UserProfile } from '@/types';
+import { Alert, AlertTitle } from '@/components/ui/alert';
 
 
 const GoogleIcon = () => (
@@ -120,11 +121,19 @@ export default function LoginPage() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       await handleLoginSuccess(userCredential);
     } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "فشل تسجيل الدخول",
-        description: "بريد إلكتروني أو كلمة مرور غير صحيحة.",
-      });
+        let description = "بريد إلكتروني أو كلمة مرور غير صحيحة.";
+        if (error.code === 'auth/user-not-found') {
+            description = "لم يتم العثور على حساب بهذا البريد الإلكتروني. الرجاء إنشاء حساب.";
+        } else if (error.code === 'auth/wrong-password') {
+            description = "كلمة المرور غير صحيحة. الرجاء المحاولة مرة أخرى.";
+        } else if (error.code === 'auth/too-many-requests') {
+            description = "تم حظر الوصول إلى هذا الحساب مؤقتًا بسبب كثرة محاولات تسجيل الدخول الفاشلة.";
+        }
+        toast({
+            variant: "destructive",
+            title: "فشل تسجيل الدخول",
+            description,
+        });
     } finally {
       setIsLoading(false);
     }
@@ -180,6 +189,15 @@ export default function LoginPage() {
             <h1 className="text-3xl font-bold font-headline">تسجيل الدخول</h1>
             <p className="text-muted-foreground">الوصول إلى حسابك.</p>
         </div>
+        
+        <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>ملاحظة للمطور</AlertTitle>
+            <AlertDescription>
+                إذا استمر فشل تسجيل الدخول، يرجى التأكد من أن متغيرات `NEXT_PUBLIC_FIREBASE_*` في ملف `.env` الخاص بك صحيحة للمشروع الذي تختبره.
+            </AlertDescription>
+        </Alert>
+
         <Card>
             <CardContent className="p-4">
                 <div className="grid grid-cols-2 gap-2">
