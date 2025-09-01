@@ -15,18 +15,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { auth, db, googleProvider, appleProvider } from '@/lib/firebase/config';
+import { auth, googleProvider, appleProvider } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, signInWithPopup, UserCredential } from 'firebase/auth';
-import { doc, getDoc, setDoc, Timestamp, runTransaction, collection, getDocs, updateDoc } from "firebase/firestore";
-import { Loader2, Mail, Lock, AlertTriangle } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
-import { generateReferralCode } from '@/lib/referral';
-import { logUserActivity } from '../admin/actions';
-import { getClientSessionInfo } from '@/lib/device-info';
+import { Loader2, Mail, Lock } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { handleForgotPassword } from '../actions';
-import type { UserProfile } from '@/types';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 
 const GoogleIcon = () => (
@@ -49,78 +42,12 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleLoginSuccess = async (userCredential: UserCredential) => {
-    const user = userCredential.user;
-    
-    // Force refresh of ID token to get latest custom claims
-    await user.getIdToken(true);
-    
-    const userDocRef = doc(db, "users", user.uid);
-    let userDoc = await getDoc(userDocRef);
-
-    if (!userDoc.exists()) {
-        console.warn(`User ${user.uid} authenticated but has no profile. Creating one now.`);
-        
-        await runTransaction(db, async (transaction) => {
-            const counterRef = doc(db, 'counters', 'userCounter');
-            const counterSnap = await transaction.get(counterRef);
-            const lastId = counterSnap.exists() ? counterSnap.data().lastId : 100000;
-            const newClientId = lastId + 1;
-            
-            const newUserProfile: Omit<UserProfile, 'uid'> = { 
-                name: user.displayName || "New User", 
-                email: user.email!, 
-                role: "user" as const,
-                clientId: newClientId,
-                status: 'NEW' as const,
-                createdAt: new Date(),
-                country: null,
-                referralCode: generateReferralCode(user.displayName || "user"),
-                referredBy: null,
-                referrals: [],
-                level: 1,
-                monthlyEarnings: 0,
-            };
-            transaction.set(userDocRef, newUserProfile);
-            transaction.set(counterRef, { lastId: newClientId }, { merge: true });
-        });
-        
-        userDoc = await getDoc(userDocRef);
-        await logUserActivity(user.uid, 'signup', {
-             deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
-             geoInfo: { ip: 'Not Collected' }
-        }, { method: userCredential.providerId || 'social_login_fix' });
-    } else {
-        await logUserActivity(user.uid, 'login', {
-             deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
-             geoInfo: { ip: 'Not Collected' }
-        }, { method: userCredential.providerId || 'email' });
-    }
-    
-    window.dispatchEvent(new CustomEvent('refetchUser'));
-
-    toast({
-        type: "success",
-        title: "تم بنجاح",
-        description: "تم تسجيل الدخول بنجاح.",
-    });
-
-    const idTokenResult = await user.getIdTokenResult();
-    const isAdmin = idTokenResult.claims.admin === true;
-
-    if (isAdmin) {
-      router.push('/admin/dashboard');
-    } else {
-      router.push('/dashboard');
-    }
-  }
-
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Let the AuthProvider handle the rest
+      // AuthProvider will handle the redirect
     } catch (error: any) {
         let description = "بريد إلكتروني أو كلمة مرور غير صحيحة.";
         if (error.code === 'auth/user-not-found') {
@@ -144,7 +71,7 @@ export default function LoginPage() {
     setIsSocialLoading(true);
     try {
         await signInWithPopup(auth, provider);
-        // Let the AuthProvider handle the rest
+        // AuthProvider will handle the redirect
     } catch (error: any) {
          toast({
             variant: "destructive",

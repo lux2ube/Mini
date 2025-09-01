@@ -6,6 +6,7 @@ import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
+import { useRouter } from 'next/navigation';
 
 export interface AppUser extends FirebaseAuthUser {
   profile?: UserProfile | null;
@@ -38,6 +39,7 @@ async function handleSession(token: string | null) {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   const fetchUserData = useCallback(async (firebaseUser: FirebaseAuthUser | null) => {
     if (!firebaseUser) {
@@ -61,11 +63,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             ? { uid: firebaseUser.uid, ...userDocSnap.data() } as UserProfile
             : null;
         
-        setUser({
+        const appUser = {
             ...firebaseUser,
             profile,
             isAdmin,
-        });
+        };
+
+        setUser(appUser);
+        
+        // Redirect after setting user state
+        if (isAdmin) {
+            router.push('/admin/dashboard');
+        } else {
+            router.push('/dashboard');
+        }
 
     } catch (error) {
         console.error("Error fetching user data:", error);
@@ -74,17 +85,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } finally {
         setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setIsLoading(true);
-      fetchUserData(firebaseUser);
+      if (firebaseUser) {
+          fetchUserData(firebaseUser);
+      } else {
+          // If no user, just set loading to false and clear session
+          setUser(null);
+          setIsLoading(false);
+          handleSession(null);
+      }
     });
 
     const handleRefetch = () => {
       if(auth.currentUser) {
-          fetchUserData(auth.currentUser);
+          // A lighter refetch, no redirect needed
+           getDoc(doc(db, 'users', auth.currentUser.uid)).then(userDocSnap => {
+               const profile = userDocSnap.exists() ? { uid: auth.currentUser!.uid, ...userDocSnap.data() } as UserProfile : null;
+               setUser(prevUser => prevUser ? {...prevUser, profile} : null);
+           });
       }
     };
     window.addEventListener('refetchUser', handleRefetch);
@@ -98,9 +120,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const refetchUserData = useCallback(() => {
       if(auth.currentUser) {
           setIsLoading(true);
-          fetchUserData(auth.currentUser);
+          getDoc(doc(db, 'users', auth.currentUser.uid)).then(userDocSnap => {
+               const profile = userDocSnap.exists() ? { uid: auth.currentUser!.uid, ...userDocSnap.data() } as UserProfile : null;
+               setUser(prevUser => prevUser ? {...prevUser, profile} : null);
+               setIsLoading(false);
+           });
       }
-  }, [fetchUserData]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, refetchUserData }}>
