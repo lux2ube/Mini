@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { getUserDetails, getBrokers, adminAddTradingAccount, updateUser, updateVerificationStatus } from "../../actions";
+import { getUserDetails, getBrokers, adminAddTradingAccount, updateUser, updateVerificationStatus, adminUpdateKyc, adminUpdateAddress } from "../../actions";
 import { Loader2, User, Wallet, Briefcase, Gift, ArrowRight, ArrowUpFromLine, ShoppingBag, PlusCircle, Globe, Phone, Check, X, ShieldAlert, Home, Edit2, ShieldCheck, FileText } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -275,6 +275,106 @@ function InfoRow({ label, value, children }: { label: string, value?: any, child
     )
 }
 
+const kycSchema = z.object({
+  documentType: z.enum(['id_card', 'passport']),
+  documentNumber: z.string().min(5, "رقم الوثيقة مطلوب"),
+  gender: z.enum(['male', 'female']),
+  status: z.enum(['Pending', 'Verified', 'Rejected']),
+  rejectionReason: z.string().optional(),
+});
+type KycFormValues = z.infer<typeof kycSchema>;
+
+function KycEditDialog({ data, userId, onSuccess }: { data?: KycData; userId: string; onSuccess: () => void; }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+    const form = useForm<KycFormValues>({
+        resolver: zodResolver(kycSchema),
+        defaultValues: data || { documentType: 'id_card', documentNumber: '', gender: 'male', status: 'Pending', rejectionReason: '' },
+    });
+
+    const onSubmit = async (values: KycFormValues) => {
+        setIsSubmitting(true);
+        const result = await adminUpdateKyc(userId, { ...values, submittedAt: data?.submittedAt || new Date() });
+        if (result.success) {
+            toast({ title: "نجاح", description: result.message });
+            onSuccess();
+            setIsOpen(false);
+        } else {
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
+        }
+        setIsSubmitting(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline">{data ? <Edit2 className="ml-2 h-4 w-4"/> : <PlusCircle className="ml-2 h-4 w-4"/>}{data ? "تعديل" : "إضافة"}</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader><DialogTitle>{data ? "تعديل" : "إضافة"} بيانات KYC</DialogTitle></DialogHeader>
+                <Form {...form}><form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField control={form.control} name="documentType" render={({ field }) => (<FormItem><FormLabel>نوع الوثيقة</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="id_card">بطاقة هوية</SelectItem><SelectItem value="passport">جواز سفر</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="documentNumber" render={({ field }) => (<FormItem><FormLabel>رقم الوثيقة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="gender" render={({ field }) => (<FormItem><FormLabel>الجنس</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="male">ذكر</SelectItem><SelectItem value="female">أنثى</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>الحالة</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Pending">معلق</SelectItem><SelectItem value="Verified">مقبول</SelectItem><SelectItem value="Rejected">مرفوض</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="rejectionReason" render={({ field }) => (<FormItem><FormLabel>سبب الرفض (إن وجد)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}حفظ</Button></DialogFooter>
+                </form></Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+const addressSchema = z.object({
+  country: z.string().min(2, "الدولة مطلوبة"),
+  city: z.string().min(2, "المدينة مطلوبة"),
+  streetAddress: z.string().min(5, "عنوان الشارع مطلوب"),
+  status: z.enum(['Pending', 'Verified', 'Rejected']),
+  rejectionReason: z.string().optional(),
+});
+type AddressFormValues = z.infer<typeof addressSchema>;
+
+function AddressEditDialog({ data, userId, onSuccess }: { data?: AddressData; userId: string; onSuccess: () => void; }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+    const form = useForm<AddressFormValues>({
+        resolver: zodResolver(addressSchema),
+        defaultValues: data || { country: '', city: '', streetAddress: '', status: 'Pending', rejectionReason: '' },
+    });
+
+    const onSubmit = async (values: AddressFormValues) => {
+        setIsSubmitting(true);
+        const result = await adminUpdateAddress(userId, { ...values, submittedAt: data?.submittedAt || new Date() });
+        if (result.success) {
+            toast({ title: "نجاح", description: result.message });
+            onSuccess();
+            setIsOpen(false);
+        } else {
+            toast({ variant: "destructive", title: "خطأ", description: result.message });
+        }
+        setIsSubmitting(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild><Button size="sm" variant="outline">{data ? <Edit2 className="ml-2 h-4 w-4"/> : <PlusCircle className="ml-2 h-4 w-4"/>}{data ? "تعديل" : "إضافة"}</Button></DialogTrigger>
+            <DialogContent>
+                <DialogHeader><DialogTitle>{data ? "تعديل" : "إضافة"} بيانات العنوان</DialogTitle></DialogHeader>
+                <Form {...form}><form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField control={form.control} name="country" render={({ field }) => (<FormItem><FormLabel>الدولة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="city" render={({ field }) => (<FormItem><FormLabel>المدينة</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="streetAddress" render={({ field }) => (<FormItem><FormLabel>عنوان الشارع</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>الحالة</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Pending">معلق</SelectItem><SelectItem value="Verified">مقبول</SelectItem><SelectItem value="Rejected">مرفوض</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="rejectionReason" render={({ field }) => (<FormItem><FormLabel>سبب الرفض (إن وجد)</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}حفظ</Button></DialogFooter>
+                </form></Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function VerificationCard<T extends KycData | AddressData>({
   type,
   title,
@@ -295,12 +395,19 @@ function VerificationCard<T extends KycData | AddressData>({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-            {React.createElement(icon)}
-            {title}
-        </CardTitle>
-        {data && <Badge variant={getStatusVariant(data.status)} className="w-fit">{getStatusText(data.status)}</Badge>}
+      <CardHeader className="flex flex-row justify-between items-start">
+        <div>
+            <CardTitle className="text-base flex items-center gap-2">
+                {React.createElement(icon)}
+                {title}
+            </CardTitle>
+            {data && <Badge variant={getStatusVariant(data.status)} className="w-fit mt-2">{getStatusText(data.status)}</Badge>}
+        </div>
+        {type === 'kyc' ? (
+             <KycEditDialog data={data as KycData} userId={userId} onSuccess={onSuccess} />
+        ) : (
+             <AddressEditDialog data={data as AddressData} userId={userId} onSuccess={onSuccess} />
+        )}
       </CardHeader>
       <CardContent className="space-y-2">
         {!data ? (

@@ -1402,17 +1402,20 @@ export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]
 export async function getPendingVerifications(): Promise<PendingVerification[]> {
     await verifyAdmin();
     const usersRef = collection(db, 'users');
+    const results: PendingVerification[] = [];
 
+    // Query for each type of pending verification
     const kycQuery = query(usersRef, where('hasPendingKYC', '==', true));
     const addressQuery = query(usersRef, where('hasPendingAddress', '==', true));
+    const phoneQuery = query(usersRef, where('hasPendingPhone', '==', true));
 
-    const [kycSnapshot, addressSnapshot] = await Promise.all([
+    const [kycSnapshot, addressSnapshot, phoneSnapshot] = await Promise.all([
         getDocs(kycQuery),
-        getDocs(addressQuery)
+        getDocs(addressQuery),
+        getDocs(phoneQuery),
     ]);
     
     const pendingMap = new Map<string, PendingVerification>();
-    const results: PendingVerification[] = [];
 
     kycSnapshot.docs.forEach(doc => {
         const user = { uid: doc.id, ...doc.data() } as UserProfile;
@@ -1442,6 +1445,23 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
                 type: 'Address',
                 data: user.addressData!,
                 requestedAt: safeToDate(user.addressData.submittedAt) || new Date()
+            };
+            pendingMap.set(key, verification);
+            results.push(verification);
+        }
+    });
+
+    phoneSnapshot.docs.forEach(doc => {
+        const user = { uid: doc.id, ...doc.data() } as UserProfile;
+        const key = `${user.uid}-Phone`;
+        if (!pendingMap.has(key) && !user.phoneNumberVerified) {
+            const verification: PendingVerification = {
+                userId: user.uid,
+                userName: user.name,
+                userEmail: user.email,
+                type: 'Phone',
+                data: { phoneNumber: user.phoneNumber! },
+                requestedAt: safeToDate(user.createdAt) || new Date() // Use createdAt as a fallback date
             };
             pendingMap.set(key, verification);
             results.push(verification);
@@ -1484,6 +1504,7 @@ export async function updateVerificationStatus(
             }
         } else if (type === 'phone') {
             updateData['phoneNumberVerified'] = status === 'Verified';
+            updateData['hasPendingPhone'] = deleteField();
             notificationMessage = status === 'Verified' ? 'تم التحقق من رقم هاتفك بنجاح.' : 'فشل التحقق من رقم هاتفك.';
             notificationType = 'account';
         }
@@ -1500,3 +1521,27 @@ export async function updateVerificationStatus(
     }
 }
     
+
+export async function adminUpdateKyc(userId: string, data: KycData) {
+    await verifyAdmin();
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, { kycData: data });
+        return { success: true, message: "تم تحديث بيانات KYC للمستخدم." };
+    } catch (error) {
+        console.error("Error updating KYC by admin:", error);
+        return { success: false, message: "فشل تحديث بيانات KYC." };
+    }
+}
+
+export async function adminUpdateAddress(userId: string, data: AddressData) {
+    await verifyAdmin();
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, { addressData: data });
+        return { success: true, message: "تم تحديث بيانات العنوان للمستخدم." };
+    } catch (error) {
+        console.error("Error updating address by admin:", error);
+        return { success: false, message: "فشل تحديث بيانات العنوان." };
+    }
+}

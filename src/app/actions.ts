@@ -177,7 +177,8 @@ export async function updateUserPhoneNumber(userId: string, phoneNumber: string)
         await updateDoc(userRef, {
             phoneNumber: parsedNumber.number, // Store in E.164 format
             country: countryCode,
-            phoneNumberVerified: false
+            phoneNumberVerified: false,
+            hasPendingPhone: true, // Add this flag for the admin queue
         });
 
         return { success: true };

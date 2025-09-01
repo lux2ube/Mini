@@ -66,6 +66,7 @@ export interface UserProfile {
     addressData?: AddressData;
     hasPendingKYC?: boolean;
     hasPendingAddress?: boolean;
+    hasPendingPhone?: boolean;
 }
 
 /**
@@ -422,7 +423,7 @@ export interface PendingVerification {
     userId: string;
     userName: string;
     userEmail: string;
-    type: 'KYC' | 'Address';
-    data: KycData | AddressData;
+    type: 'KYC' | 'Address' | 'Phone';
+    data: KycData | AddressData | { phoneNumber: string };
     requestedAt: Date;
 }
