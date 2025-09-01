@@ -1,0 +1,144 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Helper function to check for admin role
+    function isAdmin() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
+    // Helper function to check if the user is the owner of the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // =====================================================================
+    // Users Collection
+    // =====================================================================
+    match /users/{userId} {
+      // ANY authenticated user can create their own user document
+      allow create: if isOwner(userId) &&
+                       request.resource.data.uid == userId &&
+                       request.resource.data.role == 'user'; // Can't create themselves as admin
+                       
+      // Admins can read any user profile. Users can only read their own.
+      allow read: if isAdmin() || isOwner(userId);
+      
+      // Admins can update any user profile (except role). 
+      // Users can only update their own profile, and cannot change critical fields.
+      allow update: if (isAdmin() && !('role' in request.resource.data)) || 
+                       (isOwner(userId) && 
+                        !('role' in request.resource.data) &&
+                        !('clientId' in request.resource.data) &&
+                        !('level' in request.resource.data) &&
+                        !('monthlyEarnings' in request.resource.data));
+
+      // No one can delete users from the client side.
+      allow delete: if false;
+    }
+
+    // =====================================================================
+    // Admin-Managed Collections (Read-only for public, Write for Admins)
+    // =====================================================================
+    match /brokers/{brokerId} {
+      allow read: if request.auth != null; // Any authenticated user can read
+      allow write: if isAdmin(); // Only admins can write
+    }
+    
+    match /productCategories/{categoryId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /products/{productId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /paymentMethods/{methodId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    match /clientLevels/{levelId} {
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+    
+    match /feedbackForms/{formId} {
+        allow read: if request.auth != null; // Users can read forms to respond
+        allow write: if isAdmin();
+    }
+
+    match /blogPosts/{postId} {
+        // Anyone can read published posts. Admins can read any post.
+        allow read: if resource.data.status == 'published' || isAdmin();
+        allow write: if isAdmin(); // Only admins can create/update/delete posts.
+    }
+
+
+    // =====================================================================
+    // User-Specific Data (Read for Owner, Write for Admin)
+    // =====================================================================
+    match /tradingAccounts/{accountId} {
+      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+    
+    match /cashbackTransactions/{txId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create, update, delete: if isAdmin(); // Only admins can manage transactions
+    }
+    
+    match /withdrawals/{withdrawalId} {
+      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+    
+    match /orders/{orderId} {
+      allow create: if isOwner(request.resource.data.userId);
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+    
+    match /notifications/{notificationId} {
+      allow read: if isOwner(resource.data.userId) || isAdmin();
+      allow create: if isAdmin(); // Notifications are created by the system/admin
+      allow update: if isOwner(resource.data.userId); // User can only update 'isRead'
+      allow delete: if isAdmin();
+    }
+    
+    match /feedbackResponses/{responseId} {
+        allow create: if isOwner(request.resource.data.userId);
+        allow read: if isAdmin(); // Only admin can see all responses
+        allow write: if false; // Can't be edited after creation
+    }
+
+
+    // =====================================================================
+    // System & Logging Collections (Admin-only)
+    // =====================================================================
+    match /counters/{counterId} {
+      allow read, write: if false; // Should only be updated via backend transactions
+    }
+    
+    match /activityLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Logs are written by the server, not deletable.
+    }
+    
+    match /adminNotifications/{notificationId} {
+        allow read, write: if isAdmin();
+    }
+    
+    match /settings/{settingId} {
+        allow read: if request.auth != null; // All authenticated users can read banner settings
+        allow write: if isAdmin();
+    }
+  }
+}
