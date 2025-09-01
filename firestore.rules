@@ -1,105 +1,102 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
-    // Helper function to check for admin role
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
     }
     
-    // Helper function to check if the user is the owner of the document
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
+    
+    function isAdmin() {
+      // Check the 'role' field in the user's own document
+      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
 
-    // =====================================================================
-    // Users Collection
-    // =====================================================================
+    // ====================================================
+    // User Profiles
+    // ====================================================
     match /users/{userId} {
-      // ANY authenticated user can create their own user document
-      allow create: if isOwner(userId) &&
-                       request.resource.data.uid == userId &&
-                       request.resource.data.role == 'user'; // Can't create themselves as admin
-                       
-      // Admins can read any user profile. Users can only read their own.
-      allow read: if isAdmin() || isOwner(userId);
+      // Users can read their own profile. Admins can read any profile.
+      allow read: if isOwner(userId) || isAdmin();
       
-      // Admins can update any user profile (except role). 
-      // Users can only update their own profile, and cannot change critical fields.
-      allow update: if (isAdmin() && !('role' in request.resource.data)) || 
-                       (isOwner(userId) && 
-                        !('role' in request.resource.data) &&
-                        !('clientId' in request.resource.data) &&
-                        !('level' in request.resource.data) &&
-                        !('monthlyEarnings' in request.resource.data));
-
-      // No one can delete users from the client side.
-      allow delete: if false;
+      // Users can create their own profile during signup.
+      // The `handleRegisterUser` action ensures the doc id matches the auth uid.
+      allow create: if isOwner(userId);
+      
+      // Users can update their own profile, but cannot change their role or clientId.
+      allow update: if isOwner(userId) 
+                    && request.resource.data.role == resource.data.role
+                    && request.resource.data.clientId == resource.data.clientId;
     }
 
-    // =====================================================================
-    // Admin-Managed Collections (Read-only for public, Write for Admins)
-    // =====================================================================
+    // ====================================================
+    // Admin & Public Collections
+    // ====================================================
     match /brokers/{brokerId} {
-      allow read: if request.auth != null; // Any authenticated user can read
-      allow write: if isAdmin(); // Only admins can write
-    }
-    
-    match /productCategories/{categoryId} {
-      allow read: if request.auth != null;
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
     }
     
-    match /products/{productId} {
-      allow read: if request.auth != null;
+    match /blogPosts/{postId} {
+      // Anyone can read published posts. Admins can do anything.
+      allow read: if resource.data.status == 'published' || isAdmin();
       allow write: if isAdmin();
     }
     
-    match /paymentMethods/{methodId} {
-      allow read: if request.auth != null;
-      allow write: if isAdmin();
+    match /productCategories/{catId} {
+       allow read: if isAuthenticated();
+       allow write: if isAdmin();
+    }
+    
+    match /products/{prodId} {
+       allow read: if isAuthenticated();
+       allow write: if isAdmin();
     }
 
-    match /clientLevels/{levelId} {
-      allow read: if request.auth != null;
+    match /paymentMethods/{methodId} {
+      allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+    
+    match /clientLevels/{levelId} {
+        allow read: if isAuthenticated();
+        allow write: if isAdmin();
     }
     
     match /feedbackForms/{formId} {
-        allow read: if request.auth != null; // Users can read forms to respond
+        allow read: if isAuthenticated();
         allow write: if isAdmin();
     }
 
-    match /blogPosts/{postId} {
-        // Anyone can read published posts. Admins can read any post.
-        allow read: if resource.data.status == 'published' || isAdmin();
-        allow write: if isAdmin(); // Only admins can create/update/delete posts.
-    }
-
-
-    // =====================================================================
-    // User-Specific Data (Read for Owner, Write for Admin)
-    // =====================================================================
+    // ====================================================
+    // User-Specific Data
+    // ====================================================
     match /tradingAccounts/{accountId} {
-      allow create: if isOwner(request.resource.data.userId);
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow update, delete: if isAdmin();
+      // User can create their own account. Read/Update/Delete is based on ownership.
+      allow create, read, update, delete: if isOwner(request.resource.data.userId) || isAdmin();
+      // Allow admin to read/update any account
+      allow read, update: if isAdmin();
     }
     
     match /cashbackTransactions/{txId} {
+      // Only admin can create transactions. User can only read their own.
       allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow create, update, delete: if isAdmin(); // Only admins can manage transactions
+      allow create, update, delete: if isAdmin();
     }
     
     match /withdrawals/{withdrawalId} {
+      // User can create their own request. User can read their own.
       allow create: if isOwner(request.resource.data.userId);
       allow read: if isOwner(resource.data.userId) || isAdmin();
+      // Only admin can update/delete
       allow update, delete: if isAdmin();
     }
-    
+
     match /orders/{orderId} {
       allow create: if isOwner(request.resource.data.userId);
       allow read: if isOwner(resource.data.userId) || isAdmin();
@@ -107,38 +104,34 @@ service cloud.firestore {
     }
     
     match /notifications/{notificationId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isAdmin(); // Notifications are created by the system/admin
-      allow update: if isOwner(resource.data.userId); // User can only update 'isRead'
-      allow delete: if isAdmin();
+        allow read: if isOwner(resource.data.userId) || isAdmin();
+        allow update(writeFields: ['isRead']): if isOwner(resource.data.userId);
+        allow create, delete: if isAdmin(); // Only admin can create notifications
     }
     
     match /feedbackResponses/{responseId} {
         allow create: if isOwner(request.resource.data.userId);
-        allow read: if isAdmin(); // Only admin can see all responses
-        allow write: if false; // Can't be edited after creation
-    }
-
-
-    // =====================================================================
-    // System & Logging Collections (Admin-only)
-    // =====================================================================
-    match /counters/{counterId} {
-      allow read, write: if false; // Should only be updated via backend transactions
+        allow read: if isOwner(resource.data.userId) || isAdmin();
+        allow write: if isAdmin();
     }
     
-    match /activityLogs/{logId} {
+    // ====================================================
+    // System & Logging Collections
+    // ====================================================
+    match /counters/{counterId} {
+      // Only backend logic should touch counters. Restrict to admins for safety.
+      allow read, write: if isAdmin();
+    }
+    
+     match /activityLogs/{logId} {
+      // Only backend should create logs. Only admins can read them.
       allow read: if isAdmin();
-      allow write: if false; // Logs are written by the server, not deletable.
+      allow create: if isAuthenticated(); // Allow creation from server actions for logged-in users.
     }
     
     match /adminNotifications/{notificationId} {
+        // Only admins can read/write their own notification history
         allow read, write: if isAdmin();
-    }
-    
-    match /settings/{settingId} {
-        allow read: if request.auth != null; // All authenticated users can read banner settings
-        allow write: if isAdmin();
     }
   }
 }

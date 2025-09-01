@@ -3,43 +3,32 @@
 
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
-  const { firebaseUser, isLoading } = useAuthContext();
+  const { userProfile, isLoading } = useAuthContext();
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (isLoading) {
       return; // Wait until auth state is loaded
     }
 
-    if (!firebaseUser) {
+    if (!userProfile) {
       router.push("/login"); // Not logged in, redirect to login
       return;
     }
 
-    // Check for custom admin claim
-    firebaseUser.getIdTokenResult()
-      .then((idTokenResult) => {
-        if (idTokenResult.claims.admin) {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-          router.push("/dashboard"); // Logged in but not an admin
-        }
-      })
-      .catch(() => {
-        setIsAdmin(false);
-        router.push("/dashboard"); // Error getting token, assume not admin
-      });
+    // Check the role from the Firestore profile
+    if (userProfile.role !== 'admin') {
+      router.push("/dashboard"); // Logged in but not an admin
+    }
 
-  }, [isLoading, firebaseUser, router]);
+  }, [isLoading, userProfile, router]);
 
-  // While loading or verifying claims, show a spinner
-  if (isLoading || isAdmin === null) {
+  // While loading or if user is not an admin yet, show a spinner
+  if (isLoading || !userProfile || userProfile.role !== 'admin') {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -48,10 +37,5 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   }
 
   // If verification is complete and user is an admin, render children
-  if (isAdmin) {
-    return <>{children}</>;
-  }
-
-  // Fallback, though the redirect should have already happened
-  return null;
+  return <>{children}</>;
 }

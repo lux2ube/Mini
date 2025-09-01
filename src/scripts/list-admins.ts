@@ -1,15 +1,5 @@
 
-import admin from 'firebase-admin';
-
-// The type assertion is necessary because the default import might not be what tsx expects.
-const serviceAccount = require('../../serviceAccountKey.json') as admin.ServiceAccount;
-
-// Initialize the Firebase Admin SDK if not already initialized
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-  });
-}
+import { adminAuth } from '@/lib/firebase/admin-config';
 
 async function listAdminUsers() {
   const adminUsers: { uid: string, email?: string }[] = [];
@@ -17,7 +7,7 @@ async function listAdminUsers() {
     console.log('Fetching all users to check for admin claims...');
     let nextPageToken;
     do {
-      const listUsersResult = await admin.auth().listUsers(1000, nextPageToken);
+      const listUsersResult = await adminAuth.listUsers(1000, nextPageToken);
       listUsersResult.users.forEach((userRecord) => {
         if (userRecord.customClaims && userRecord.customClaims['admin'] === true) {
           adminUsers.push({ uid: userRecord.uid, email: userRecord.email });
