@@ -4,12 +4,14 @@ import * as admin from 'firebase-admin';
 // It ensures that the SDK is initialized only once, preventing errors caused by re-initialization.
 
 function getAdminApp() {
+  // If the app is already initialized, return it.
   if (admin.apps.length > 0) {
     return admin.apps[0]!;
   }
 
+  // Otherwise, initialize it.
   try {
-    const serviceAccountB64 = process.env.FIREBASE_ADMIN_JSON_B64;
+    const serviceAccountB64 = process.env.NEXT_PRIVATE_FIREBASE_ADMIN_JSON_B64;
 
     if (!serviceAccountB64) {
       throw new Error("Firebase admin credentials (base64) are not set in environment variables.");
@@ -21,6 +23,7 @@ function getAdminApp() {
     // Parse the JSON string into an object
     const serviceAccount = JSON.parse(serviceAccountJson);
 
+    // Initialize the app with the service account credentials
     return admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
@@ -32,6 +35,7 @@ function getAdminApp() {
   }
 }
 
+// Export the initialized admin app and its services.
 const adminApp = getAdminApp();
 const adminAuth = admin.auth(adminApp);
 const adminDb = admin.firestore(adminApp);
