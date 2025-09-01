@@ -26,7 +26,7 @@ import { getClientSessionInfo } from '@/lib/device-info';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { handleForgotPassword } from '../actions';
 import type { UserProfile } from '@/types';
-import { Alert, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 
 const GoogleIcon = () => (
