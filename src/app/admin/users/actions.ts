@@ -7,18 +7,23 @@ import { collection, getDocs, writeBatch, query, where, limit, getDoc, doc, Time
 import type { UserProfile, UserStatus, ClientLevel } from '@/types';
 
 const safeToDate = (timestamp: any): Date | undefined => {
+    if (!timestamp) return undefined;
     if (timestamp instanceof Timestamp) {
         return timestamp.toDate();
     }
     if (timestamp && typeof timestamp.toDate === 'function') {
         return timestamp.toDate();
     }
+    // Attempt to parse if it's a string or number, though this is less ideal
+    const date = new Date(timestamp);
+    if (!isNaN(date.getTime())) {
+        return date;
+    }
     return undefined;
 };
 
 export async function getUsers(): Promise<UserProfile[]> {
-  // Switched from adminDb to the client db to ensure reliable data fetching.
-  const usersSnapshot = await getDocs(collection(db, 'users'));
+  const usersSnapshot = await adminDb.collection('users').get();
   const users: UserProfile[] = [];
   usersSnapshot.docs.forEach(doc => {
       try {
