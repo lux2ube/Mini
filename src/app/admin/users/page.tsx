@@ -27,7 +27,6 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
-import { backfillUserLevels, backfillUserStatuses } from './actions';
 
 type EnrichedUser = UserProfile & { referredByName?: string };
 
@@ -36,7 +35,6 @@ export default function ManageUsersPage() {
     const [users, setUsers] = useState<EnrichedUser[]>([]);
     const [levels, setLevels] = useState<ClientLevel[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isUpdating, setIsUpdating] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { toast } = useToast();
 
@@ -73,21 +71,6 @@ export default function ManageUsersPage() {
         fetchUsersAndLevels();
     }, []);
 
-    const handleBackfill = async (action: 'status' | 'level') => {
-        setIsUpdating(true);
-        const result = action === 'status' 
-            ? await backfillUserStatuses() 
-            : await backfillUserLevels();
-            
-        if (result.success) {
-            toast({ title: "نجاح", description: result.message });
-            fetchUsersAndLevels();
-        } else {
-            toast({ variant: 'destructive', title: "خطأ", description: result.message });
-        }
-        setIsUpdating(false);
-    };
-
     const levelMap = useMemo(() => {
         return new Map(levels.map(level => [level.id, level.name]));
     }, [levels]);
@@ -121,48 +104,6 @@ export default function ManageUsersPage() {
         <div className="container mx-auto space-y-6">
             <div className="flex justify-between items-center flex-wrap gap-2">
                  <PageHeader title="إدارة المستخدمين" description="عرض وإدارة جميع المستخدمين المسجلين." />
-                <div className="flex gap-2">
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="outline" disabled={isUpdating}>
-                                {isUpdating ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <History className="ml-2 h-4 w-4" />}
-                                تحديث حالات المستخدمين
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    سيقوم هذا الإجراء بمراجعة جميع المستخدمين الذين ليس لديهم حالة وتعيينها بناءً على نشاطهم.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleBackfill('status')}>متابعة التحديث</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                     <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="outline" disabled={isUpdating}>
-                                {isUpdating ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Gem className="ml-2 h-4 w-4" />}
-                                تحديث مستويات المستخدمين
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    سيقوم هذا الإجراء بإعادة حساب وتحديث مستوى كل مستخدم بناءً على أرباحهم الشهرية الحالية.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleBackfill('level')}>متابعة التحديث</AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </div>
             </div>
             <Card>
                 <CardHeader>

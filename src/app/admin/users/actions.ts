@@ -1,3 +1,4 @@
+
 'use server';
 
 import * as admin from 'firebase-admin';
@@ -63,66 +64,5 @@ export async function getUsers(): Promise<UserProfile[]> {
             throw new Error(`Failed to fetch users: ${error.message}`);
         }
         throw new Error("An unknown error occurred while fetching users.");
-    }
-}
-
-
-export async function backfillUserStatuses(): Promise<{ success: boolean; message: string; }> {
-    try {
-        await verifyAdmin();
-        const usersRef = adminDb.collection('users');
-        const snapshot = await usersRef.where('status', '==', null).get();
-
-        if (snapshot.empty) {
-            return { success: true, message: 'No users found needing a status update.' };
-        }
-
-        const batch = adminDb.batch();
-        let count = 0;
-        snapshot.forEach(doc => {
-            const userRef = usersRef.doc(doc.id);
-            batch.update(userRef, { status: 'NEW' });
-            count++;
-        });
-
-        await batch.commit();
-        const message = `Successfully backfilled status for ${count} users.`;
-        console.log(message);
-        return { success: true, message };
-
-    } catch (error) {
-        console.error("Error backfilling user statuses:", error);
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        return { success: false, message: `Failed to backfill statuses: ${errorMessage}` };
-    }
-}
-
-export async function backfillUserLevels(): Promise<{ success: boolean; message: string; }> {
-    try {
-        await verifyAdmin();
-        const usersRef = adminDb.collection('users');
-        const snapshot = await usersRef.where('level', '==', null).get();
-        
-        if (snapshot.empty) {
-            return { success: true, message: 'No users found needing a level update.' };
-        }
-
-        const batch = adminDb.batch();
-        let count = 0;
-        snapshot.forEach(doc => {
-            const userRef = usersRef.doc(doc.id);
-            batch.update(userRef, { level: 1, monthlyEarnings: 0 });
-            count++;
-        });
-
-        await batch.commit();
-        const message = `Successfully backfilled level for ${count} users.`;
-        console.log(message);
-        return { success: true, message };
-
-    } catch (error) {
-        console.error("Error backfilling user levels:", error);
-        const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-        return { success: false, message: `Failed to backfill levels: ${errorMessage}` };
     }
 }
