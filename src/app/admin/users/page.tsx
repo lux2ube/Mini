@@ -5,7 +5,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getUsers, backfillUserStatuses, backfillUserLevels } from './actions';
 import { getClientLevels } from '@/app/admin/actions';
 import type { UserProfile, ClientLevel } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -27,8 +26,29 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
+import { backfillUserLevels, backfillUserStatuses } from './actions';
 
 type EnrichedUser = UserProfile & { referredByName?: string };
+
+async function getAdminUsers(): Promise<UserProfile[]> {
+    try {
+        const response = await fetch('/api/admin/users');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to fetch users');
+        }
+        const data = await response.json();
+        // Convert timestamp strings back to Date objects
+        return data.users.map((user: any) => ({
+            ...user,
+            createdAt: user.createdAt ? new Date(user.createdAt) : undefined,
+        }));
+    } catch (error) {
+        console.error("Error fetching admin users:", error);
+        throw error; // Rethrow to be caught by the calling function
+    }
+}
+
 
 export default function ManageUsersPage() {
     const router = useRouter();
@@ -43,7 +63,7 @@ export default function ManageUsersPage() {
         setIsLoading(true);
         try {
             const [fetchedUsers, fetchedLevels] = await Promise.all([
-                getUsers(),
+                getAdminUsers(),
                 getClientLevels()
             ]);
             
@@ -61,8 +81,8 @@ export default function ManageUsersPage() {
             enriched.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
             setUsers(enriched);
         } catch (error) {
-            console.error("Failed to fetch users:", error);
-            toast({ variant: 'destructive', title: 'خطأ', description: 'تعذر جلب المستخدمين.' });
+            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+            toast({ variant: 'destructive', title: 'خطأ في تحميل البيانات', description: `تعذر جلب المستخدمين: ${errorMessage}` });
         } finally {
             setIsLoading(false);
         }
@@ -223,5 +243,3 @@ export default function ManageUsersPage() {
         </div>
     );
 }
-
-    
