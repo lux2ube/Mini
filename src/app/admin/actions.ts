@@ -1,8 +1,7 @@
 
-
 'use server';
 
-import { db, auth } from '@/lib/firebase/config';
+import { db } from '@/lib/firebase/config';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit, or, deleteField } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
@@ -44,7 +43,7 @@ export async function logUserActivity(
             },
             details,
         };
-        await addDoc(collection(db, 'activityLogs'), logEntry);
+        await addDoc(collection(adminDb, 'activityLogs'), logEntry);
     } catch (error) {
         console.error(`Failed to log activity for event ${event}:`, error);
         // We don't want to block the user's action if logging fails
@@ -472,7 +471,7 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
 
 export async function updateUser(userId: string, data: Partial<Pick<UserProfile, 'name' | 'country' | 'phoneNumber'>>) {
     try {
-        const userRef = doc(db, 'users', userId);
+        const userRef = doc(adminDb, 'users', userId);
         await updateDoc(userRef, data);
         return { success: true, message: 'تم تحديث الملف الشخصي بنجاح.' };
     } catch (error) {
@@ -670,7 +669,7 @@ export async function sendAdminNotification(
 ): Promise<{ success: boolean; message: string }> {
     try {
         // Log the admin notification itself
-        const adminNotifRef = doc(collection(db, 'adminNotifications'));
+        const adminNotifRef = doc(collection(adminDb, 'adminNotifications'));
         await setDoc(adminNotifRef, {
             message,
             target,
@@ -679,7 +678,6 @@ export async function sendAdminNotification(
         });
 
         // Create notifications for the targeted users
-        const batch = writeBatch(db);
         let targetUsers: { id: string }[] = [];
 
         if (target === 'all') {
@@ -1347,7 +1345,7 @@ export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]
 
 // Verification Actions
 export async function getPendingVerifications(): Promise<PendingVerification[]> {
-    const usersRef = collection(db, 'users');
+    const usersRef = collection(adminDb, 'users');
     const results: PendingVerification[] = [];
 
     // Query for each type of pending verification
@@ -1424,7 +1422,7 @@ export async function updateVerificationStatus(
     rejectionReason?: string
 ) {
     try {
-        const userRef = doc(db, 'users', userId);
+        const userRef = doc(adminDb, 'users', userId);
         let updateData: Record<string, any> = {};
         let notificationMessage = '';
         let notificationType: Notification['type'] = 'general';
@@ -1469,7 +1467,7 @@ export async function updateVerificationStatus(
 
 export async function adminUpdateKyc(userId: string, data: KycData) {
     try {
-        const userRef = doc(db, 'users', userId);
+        const userRef = doc(adminDb, 'users', userId);
         await updateDoc(userRef, { kycData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });
         return { success: true, message: "تم تحديث بيانات KYC للمستخدم." };
     } catch (error) {
@@ -1480,7 +1478,7 @@ export async function adminUpdateKyc(userId: string, data: KycData) {
 
 export async function adminUpdateAddress(userId: string, data: AddressData) {
     try {
-        const userRef = doc(db, 'users', userId);
+        const userRef = doc(adminDb, 'users', userId);
         await updateDoc(userRef, { addressData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });
         return { success: true, message: "تم تحديث بيانات العنوان للمستخدم." };
     } catch (error) {
