@@ -19,8 +19,7 @@ import { auth, googleProvider, appleProvider } from '@/lib/firebase/config';
 import { signInWithEmailAndPassword, signInWithPopup, UserCredential } from 'firebase/auth';
 import { Loader2, Mail, Lock } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { handleForgotPassword, handleRegisterUser } from '../actions';
-import { useAuthContext } from '@/hooks/useAuthContext';
+import { handleForgotPassword } from '../actions';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
@@ -43,11 +42,14 @@ export default function LoginPage() {
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { refetchUserData } = useAuthContext();
 
   const handleLoginSuccess = async (userCredential: UserCredential) => {
     // This function will be called after any successful login
     const user = userCredential.user;
+    
+    // The AuthProvider will handle session creation and redirection.
+    // We just need to wait a moment for the context to update.
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     const idTokenResult = await user.getIdTokenResult();
     const isAdmin = idTokenResult.claims.admin === true;
@@ -57,22 +59,8 @@ export default function LoginPage() {
       return;
     }
 
-    // Self-healing: Check if user profile exists, if not, create it.
     const userDocRef = doc(db, 'users', user.uid);
     const userDocSnap = await getDoc(userDocRef);
-
-    if (!userDocSnap.exists()) {
-        console.log("User profile not found. Creating one now (self-healing).");
-        // We use the handleRegisterUser action but without a password, as the auth user already exists.
-        await handleRegisterUser({
-            name: user.displayName || 'New User',
-            email: user.email!,
-            password: '', // Password is not needed here.
-        });
-        // We refetch data after creating the profile to ensure context is updated.
-        refetchUserData();
-    }
-
     const profileData = userDocSnap.exists() ? userDocSnap.data() : null;
 
     if (profileData && !profileData.phoneNumber) {
