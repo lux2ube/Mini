@@ -7,63 +7,67 @@ import { auth, db } from '@/lib/firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 
-// The user object from the Auth Provider will now have two distinct properties
-// to prevent stripping methods from the core firebase user object.
+// The user object from the Auth Provider will now have a 'profile' property
+// containing the user's data from the Firestore 'users' collection.
+export interface AppUser extends FirebaseAuthUser {
+  profile?: UserProfile | null;
+}
+
 interface AuthContextType {
-  firebaseUser: FirebaseAuthUser | null;
-  userProfile: UserProfile | null;
+  user: AppUser | null;
   isLoading: boolean;
-  refetchUserProfile: () => void;
+  refetchUserData: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({ 
-    firebaseUser: null, 
-    userProfile: null,
+    user: null, 
     isLoading: true,
-    refetchUserProfile: () => {},
+    refetchUserData: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseAuthUser | null>(null);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchUserProfile = useCallback(async (user: FirebaseAuthUser) => {
-    if (!user) {
-        setUserProfile(null);
+  const fetchUserData = useCallback(async (firebaseUser: FirebaseAuthUser) => {
+    if (!firebaseUser) {
+        setUser(null);
         return;
     }
     try {
-        const userDocRef = doc(db, 'users', user.uid);
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
         const userDocSnap = await getDoc(userDocRef);
         
         const profile = userDocSnap.exists() 
-            ? { uid: user.uid, ...userDocSnap.data() } as UserProfile
+            ? { uid: firebaseUser.uid, ...userDocSnap.data() } as UserProfile
             : null;
-        setUserProfile(profile);
+
+        setUser({
+            ...firebaseUser,
+            profile: profile,
+        });
 
     } catch (error) {
         console.error("Error fetching user profile:", error);
-        setUserProfile(null); 
+        setUser({ ...firebaseUser, profile: null });
     }
   }, []);
 
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setIsLoading(true);
-      setFirebaseUser(user);
-      if (user) {
-        await fetchUserProfile(user);
+      if (firebaseUser) {
+        await fetchUserData(firebaseUser);
       } else {
-        setUserProfile(null);
+        setUser(null);
       }
       setIsLoading(false);
     });
 
     const handleRefetch = () => {
         if(auth.currentUser) {
-            fetchUserProfile(auth.currentUser);
+            fetchUserData(auth.currentUser);
         }
     };
     window.addEventListener('refetchUser', handleRefetch);
@@ -72,17 +76,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         unsubscribe();
         window.removeEventListener('refetchUser', handleRefetch);
     };
-  }, [fetchUserProfile]);
+  }, [fetchUserData]);
   
-  const refetchUserProfile = useCallback(() => {
+  const refetchUserData = useCallback(() => {
       if(auth.currentUser) {
           setIsLoading(true);
-          fetchUserProfile(auth.currentUser).finally(() => setIsLoading(false));
+          fetchUserData(auth.currentUser).finally(() => setIsLoading(false));
       }
-  }, [fetchUserProfile]);
+  }, [fetchUserData]);
 
   return (
-    <AuthContext.Provider value={{ firebaseUser, userProfile, isLoading, refetchUserProfile }}>
+    <AuthContext.Provider value={{ user, isLoading, refetchUserData }}>
       {children}
     </AuthContext.Provider>
   );
