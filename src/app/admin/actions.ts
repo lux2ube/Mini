@@ -2,7 +2,7 @@
 'use server';
 
 import { db } from '@/lib/firebase/config';
-import { adminDb } from '@/lib/firebase/admin-config';
+import { adminDb, verifyAdmin } from '@/lib/firebase/admin-config';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit, or, deleteField } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData, PendingVerification } from '@/types';
@@ -51,6 +51,7 @@ export async function logUserActivity(
 }
 
 export async function getActivityLogs(): Promise<ActivityLog[]> {
+    await verifyAdmin();
     const logsSnapshot = await getDocs(query(collection(db, 'activityLogs'), orderBy('timestamp', 'desc')));
     return logsSnapshot.docs.map(doc => {
         const data = doc.data();
@@ -146,6 +147,7 @@ export async function getBannerSettings(): Promise<BannerSettings> {
 }
 
 export async function updateBannerSettings(settings: BannerSettings) {
+    await verifyAdmin();
     try {
         const docRef = doc(db, 'settings', 'banner');
         await setDoc(docRef, settings, { merge: true });
@@ -164,6 +166,7 @@ export async function getBrokers(): Promise<Broker[]> {
 }
 
 export async function addBroker(data: Omit<Broker, 'id' | 'order'>) {
+    await verifyAdmin();
     try {
         // Get current max order
         const brokersSnapshot = await getDocs(query(collection(db, 'brokers'), orderBy('order', 'desc')));
@@ -181,6 +184,7 @@ export async function addBroker(data: Omit<Broker, 'id' | 'order'>) {
 }
 
 export async function addBrokersBatch(brokers: Omit<Broker, 'id' | 'order'>[]) {
+    await verifyAdmin();
     try {
         const batch = writeBatch(db);
         const brokersCollection = collection(db, 'brokers');
@@ -205,6 +209,7 @@ export async function addBrokersBatch(brokers: Omit<Broker, 'id' | 'order'>[]) {
 
 
 export async function updateBroker(brokerId: string, data: Partial<Omit<Broker, 'id'>>) {
+    await verifyAdmin();
     try {
         const brokerRef = doc(db, 'brokers', brokerId);
         await updateDoc(brokerRef, data);
@@ -216,6 +221,7 @@ export async function updateBroker(brokerId: string, data: Partial<Omit<Broker, 
 }
 
 export async function deleteBroker(brokerId: string) {
+    await verifyAdmin();
     try {
         await deleteDoc(doc(db, 'brokers', brokerId));
         return { success: true, message: 'تم حذف الوسيط بنجاح.' };
@@ -226,6 +232,7 @@ export async function deleteBroker(brokerId: string) {
 }
 
 export async function updateBrokerOrder(orderedIds: string[]) {
+    await verifyAdmin();
     try {
         const batch = writeBatch(db);
         orderedIds.forEach((id, index) => {
@@ -246,6 +253,7 @@ export async function awardReferralCommission(
     sourceType: 'cashback' | 'store_purchase',
     amountValue: number
 ) {
+    await verifyAdmin();
     try {
         await runTransaction(db, async (transaction) => {
             // 1. Get the user document to find their referrer
@@ -327,6 +335,7 @@ export async function clawbackReferralCommission(
     sourceType: 'cashback' | 'store_purchase',
     originalAmount: number
 ) {
+    await verifyAdmin();
     const userRef = doc(db, 'users', originalUserId);
     const userSnap = await transaction.get(userRef);
     if (!userSnap.exists() || !userSnap.data().referredBy) {
@@ -374,6 +383,7 @@ export async function clawbackReferralCommission(
 
 // Trading Account Management
 export async function getTradingAccounts(): Promise<TradingAccount[]> {
+  await verifyAdmin();
   const accountsSnapshot = await getDocs(collection(db, 'tradingAccounts'));
   const accounts: TradingAccount[] = [];
   accountsSnapshot.docs.forEach(doc => {
@@ -392,6 +402,7 @@ export async function getTradingAccounts(): Promise<TradingAccount[]> {
 }
 
 export async function updateTradingAccountStatus(accountId: string, status: 'Approved' | 'Rejected', reason?: string) {
+    await verifyAdmin();
     return runTransaction(db, async (transaction) => {
         const accountRef = doc(db, 'tradingAccounts', accountId);
         const accountSnap = await transaction.get(accountRef);
@@ -432,6 +443,7 @@ export async function updateTradingAccountStatus(accountId: string, status: 'App
 
 
 export async function adminAddTradingAccount(userId: string, brokerName: string, accountNumber: string) {
+    await verifyAdmin();
     return runTransaction(db, async (transaction) => {
         const q = query(
             collection(db, 'tradingAccounts'),
@@ -470,6 +482,7 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
 }
 
 export async function updateUser(userId: string, data: Partial<Pick<UserProfile, 'name' | 'country' | 'phoneNumber'>>) {
+    await verifyAdmin();
     try {
         const userRef = doc(adminDb, 'users', userId);
         await updateDoc(userRef, data);
@@ -483,6 +496,7 @@ export async function updateUser(userId: string, data: Partial<Pick<UserProfile,
 
 // Cashback Management
 export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id' | 'date'>) {
+    await verifyAdmin();
     try {
         // Step 1: Run the primary transaction for the user receiving cashback.
         await runTransaction(db, async (transaction) => {
@@ -516,6 +530,7 @@ export async function addCashbackTransaction(data: Omit<CashbackTransaction, 'id
 
 // Withdrawal Management
 export async function getWithdrawals(): Promise<Withdrawal[]> {
+    await verifyAdmin();
     const withdrawalsSnapshot = await getDocs(query(collection(db, 'withdrawals'), orderBy('requestedAt', 'desc')));
     const withdrawals: Withdrawal[] = [];
 
@@ -569,6 +584,7 @@ export async function requestWithdrawal(payload: Omit<Withdrawal, 'id' | 'reques
 }
 
 export async function approveWithdrawal(withdrawalId: string, txId: string) {
+    await verifyAdmin();
     try {
         await runTransaction(db, async (transaction) => {
             const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
@@ -595,6 +611,7 @@ export async function approveWithdrawal(withdrawalId: string, txId: string) {
 }
 
 export async function rejectWithdrawal(withdrawalId: string, reason: string) {
+    await verifyAdmin();
      try {
         await runTransaction(db, async (transaction) => {
             const withdrawalRef = doc(db, 'withdrawals', withdrawalId);
@@ -651,6 +668,7 @@ export async function markNotificationsAsRead(notificationIds: string[]) {
 }
 
 export async function getAdminNotifications(): Promise<AdminNotification[]> {
+    await verifyAdmin();
     const snapshot = await getDocs(query(collection(db, 'adminNotifications'), orderBy('createdAt', 'desc')));
     return snapshot.docs.map(doc => {
         const data = doc.data();
@@ -667,6 +685,7 @@ export async function sendAdminNotification(
     target: 'all' | 'specific',
     userIds: string[]
 ): Promise<{ success: boolean; message: string }> {
+    await verifyAdmin();
     try {
         // Log the admin notification itself
         const adminNotifRef = doc(collection(adminDb, 'adminNotifications'));
@@ -721,6 +740,7 @@ export async function getCategories(): Promise<ProductCategory[]> {
 }
 
 export async function addCategory(data: Omit<ProductCategory, 'id'>) {
+    await verifyAdmin();
     try {
         await addDoc(collection(db, 'productCategories'), data);
         return { success: true, message: 'تمت إضافة الفئة بنجاح.' };
@@ -731,6 +751,7 @@ export async function addCategory(data: Omit<ProductCategory, 'id'>) {
 }
 
 export async function updateCategory(id: string, data: Partial<ProductCategory>) {
+    await verifyAdmin();
     try {
         await updateDoc(doc(db, 'productCategories', id), data);
         return { success: true, message: 'تم تحديث الفئة بنجاح.' };
@@ -741,6 +762,7 @@ export async function updateCategory(id: string, data: Partial<ProductCategory>)
 }
 
 export async function deleteCategory(id: string) {
+    await verifyAdmin();
     try {
         // TODO: Check if any products use this category before deleting.
         await deleteDoc(doc(db, 'productCategories', id));
@@ -758,6 +780,7 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 export async function addProduct(data: Omit<Product, 'id'>) {
+    await verifyAdmin();
     try {
         await addDoc(collection(db, 'products'), data);
         return { success: true, message: 'تمت إضافة المنتج بنجاح.' };
@@ -768,6 +791,7 @@ export async function addProduct(data: Omit<Product, 'id'>) {
 }
 
 export async function updateProduct(id: string, data: Partial<Product>) {
+    await verifyAdmin();
     try {
         await updateDoc(doc(db, 'products', id), data);
         return { success: true, message: 'تم تحديث المنتج بنجاح.' };
@@ -778,6 +802,7 @@ export async function updateProduct(id: string, data: Partial<Product>) {
 }
 
 export async function deleteProduct(id: string) {
+    await verifyAdmin();
     try {
         await deleteDoc(doc(db, 'products', id));
         return { success: true, message: 'تم حذف المنتج بنجاح.' };
@@ -790,6 +815,7 @@ export async function deleteProduct(id: string) {
 
 // Store Management - Orders
 export async function getOrders(): Promise<Order[]> {
+    await verifyAdmin();
     // This query is on the entire collection, so sorting is fine.
     const snapshot = await getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc')));
     const orders: Order[] = [];
@@ -809,6 +835,7 @@ export async function getOrders(): Promise<Order[]> {
 }
 
 export async function updateOrderStatus(orderId: string, status: Order['status']) {
+    await verifyAdmin();
     try {
         await runTransaction(db, async (transaction) => {
             const orderRef = doc(db, 'orders', orderId);
@@ -899,6 +926,7 @@ export async function getPaymentMethods(): Promise<PaymentMethod[]> {
 }
 
 export async function addPaymentMethod(data: Omit<PaymentMethod, 'id'>) {
+    await verifyAdmin();
     try {
         await addDoc(collection(db, 'paymentMethods'), data);
         return { success: true, message: 'تمت إضافة طريقة الدفع بنجاح.' };
@@ -909,6 +937,7 @@ export async function addPaymentMethod(data: Omit<PaymentMethod, 'id'>) {
 }
 
 export async function updatePaymentMethod(id: string, data: Partial<PaymentMethod>) {
+    await verifyAdmin();
     try {
         await updateDoc(doc(db, 'paymentMethods', id), data);
         return { success: true, message: 'تم تحديث طريقة الدفع بنجاح.' };
@@ -919,6 +948,7 @@ export async function updatePaymentMethod(id: string, data: Partial<PaymentMetho
 }
 
 export async function deletePaymentMethod(id: string) {
+    await verifyAdmin();
     try {
         await deleteDoc(doc(db, 'paymentMethods', id));
         return { success: true, message: 'تم حذف طريقة الدفع بنجاح.' };
@@ -942,6 +972,7 @@ function convertTimestamps(docData: any) {
 
 // Get all posts (for admin view)
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
+    await verifyAdmin();
     const snapshot = await getDocs(query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc')));
     return snapshot.docs.map(convertTimestamps);
 }
@@ -977,6 +1008,7 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> 
 
 // Add a new blog post
 export async function addBlogPost(data: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>) {
+    await verifyAdmin();
     try {
         await addDoc(collection(db, 'blogPosts'), {
             ...data,
@@ -992,6 +1024,7 @@ export async function addBlogPost(data: Omit<BlogPost, 'id' | 'createdAt' | 'upd
 
 // Update a blog post
 export async function updateBlogPost(id: string, data: Partial<Omit<BlogPost, 'id' | 'createdAt'>>) {
+    await verifyAdmin();
     try {
         const postRef = doc(db, 'blogPosts', id);
         await updateDoc(postRef, {
@@ -1007,6 +1040,7 @@ export async function updateBlogPost(id: string, data: Partial<Omit<BlogPost, 'i
 
 // Delete a blog post
 export async function deleteBlogPost(id: string) {
+    await verifyAdmin();
     try {
         await deleteDoc(doc(db, 'blogPosts', id));
         return { success: true, message: 'تم حذف المقال بنجاح.' };
@@ -1018,6 +1052,7 @@ export async function deleteBlogPost(id: string) {
 
 // CRM User Detail Fetcher
 export async function getUserDetails(userId: string) {
+    await verifyAdmin();
     try {
         const userRef = doc(db, 'users', userId);
         const userSnap = await getDoc(userRef);
@@ -1128,6 +1163,7 @@ export async function getClientLevels(): Promise<ClientLevel[]> {
 }
 
 export async function updateClientLevels(levels: ClientLevel[]) {
+    await verifyAdmin();
     try {
         const batch = writeBatch(db);
         levels.forEach(level => {
@@ -1145,6 +1181,7 @@ export async function updateClientLevels(levels: ClientLevel[]) {
 }
 
 export async function seedClientLevels(): Promise<{ success: boolean; message: string; }> {
+    await verifyAdmin();
     const levelsCollection = collection(db, 'clientLevels');
     const snapshot = await getDocs(levelsCollection);
     if (!snapshot.empty) {
@@ -1178,6 +1215,7 @@ export async function seedClientLevels(): Promise<{ success: boolean; message: s
 
 // Feedback System
 export async function getFeedbackForms(): Promise<FeedbackForm[]> {
+    await verifyAdmin();
     const snapshot = await getDocs(query(collection(db, 'feedbackForms'), orderBy('createdAt', 'desc')));
     return snapshot.docs.map(doc => {
         const data = doc.data();
@@ -1190,6 +1228,7 @@ export async function getFeedbackForms(): Promise<FeedbackForm[]> {
 }
 
 export async function addFeedbackForm(data: Omit<FeedbackForm, 'id' | 'createdAt' | 'responseCount'>) {
+    await verifyAdmin();
     try {
         await addDoc(collection(db, 'feedbackForms'), {
             ...data,
@@ -1204,6 +1243,7 @@ export async function addFeedbackForm(data: Omit<FeedbackForm, 'id' | 'createdAt
 }
 
 export async function updateFeedbackForm(id: string, data: Partial<Omit<FeedbackForm, 'id' | 'createdAt'>>) {
+    await verifyAdmin();
     try {
         await updateDoc(doc(db, 'feedbackForms', id), data);
         return { success: true, message: 'تم تحديث النموذج بنجاح.' };
@@ -1214,6 +1254,7 @@ export async function updateFeedbackForm(id: string, data: Partial<Omit<Feedback
 }
 
 export async function deleteFeedbackForm(id: string) {
+    await verifyAdmin();
     try {
         await deleteDoc(doc(db, 'feedbackForms', id));
         return { success: true, message: 'تم حذف النموذج بنجاح.' };
@@ -1224,6 +1265,7 @@ export async function deleteFeedbackForm(id: string) {
 }
 
 export async function getFeedbackFormById(formId: string): Promise<FeedbackForm | null> {
+    await verifyAdmin();
     const docRef = doc(db, 'feedbackForms', formId);
     const docSnap = await getDoc(docRef);
     if (!docSnap.exists()) {
@@ -1238,6 +1280,7 @@ export async function getFeedbackFormById(formId: string): Promise<FeedbackForm 
 }
 
 export async function getFeedbackResponses(formId: string): Promise<EnrichedFeedbackResponse[]> {
+    await verifyAdmin();
     const responsesQuery = query(collection(db, 'feedbackResponses'), where('formId', '==', formId));
     const responsesSnap = await getDocs(responsesQuery);
 
@@ -1325,6 +1368,7 @@ export async function submitFeedbackResponse(
 }
 
 export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]> {
+    await verifyAdmin();
     const q = query(
         collection(db, 'activityLogs'),
         where('userId', '==', userId),
@@ -1345,6 +1389,7 @@ export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]
 
 // Verification Actions
 export async function getPendingVerifications(): Promise<PendingVerification[]> {
+    await verifyAdmin();
     const usersRef = collection(adminDb, 'users');
     const results: PendingVerification[] = [];
 
@@ -1421,6 +1466,7 @@ export async function updateVerificationStatus(
     status: 'Verified' | 'Rejected' | 'Pending',
     rejectionReason?: string
 ) {
+    await verifyAdmin();
     try {
         const userRef = doc(adminDb, 'users', userId);
         let updateData: Record<string, any> = {};
@@ -1466,6 +1512,7 @@ export async function updateVerificationStatus(
     
 
 export async function adminUpdateKyc(userId: string, data: KycData) {
+    await verifyAdmin();
     try {
         const userRef = doc(adminDb, 'users', userId);
         await updateDoc(userRef, { kycData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });
@@ -1477,6 +1524,7 @@ export async function adminUpdateKyc(userId: string, data: KycData) {
 }
 
 export async function adminUpdateAddress(userId: string, data: AddressData) {
+    await verifyAdmin();
     try {
         const userRef = doc(adminDb, 'users', userId);
         await updateDoc(userRef, { addressData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });

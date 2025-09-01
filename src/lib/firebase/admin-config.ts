@@ -1,46 +1,70 @@
-import * as admin from 'firebase-admin';
 
-// This function ensures that the Firebase Admin SDK is initialized only once.
-// It uses a singleton pattern to avoid re-initialization errors in serverless environments.
+import * as admin from 'firebase-admin';
+import { cookies } from 'next/headers';
+
+// --- Singleton Pattern for Firebase Admin Initialization ---
+// This ensures we only initialize the app once, preventing errors in serverless environments.
+
+// A global symbol is used to store the admin app instance to avoid re-initialization
+// across hot reloads in development.
+const ADMIN_APP_NAME = "firebase-admin-app";
+const globalWithAdmin = global as typeof global & {
+  [ADMIN_APP_NAME]?: admin.app.App;
+};
+
 function getAdminApp() {
-  if (admin.apps.length > 0) {
-    return admin.apps[0]!;
+  if (globalWithAdmin[ADMIN_APP_NAME]) {
+    return globalWithAdmin[ADMIN_APP_NAME];
   }
 
+  const serviceAccountJson = process.env.NEXT_PRIVATE_FIREBASE_ADMIN_JSON_B64;
+  if (!serviceAccountJson) {
+    throw new Error("Firebase admin credentials (NEXT_PRIVATE_FIREBASE_ADMIN_JSON_B64) are not set in environment variables.");
+  }
+  
   try {
-    const serviceAccountJson = process.env.NEXT_PRIVATE_FIREBASE_ADMIN_JSON_B64;
-    if (!serviceAccountJson) {
-      throw new Error("Firebase admin credentials (base64) are not set in environment variables.");
-    }
-    
     const serviceAccount = JSON.parse(Buffer.from(serviceAccountJson, 'base64').toString('utf-8'));
-
-    const app = admin.initializeApp({
+    
+    globalWithAdmin[ADMIN_APP_NAME] = admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
-    
-    return app;
+
+    return globalWithAdmin[ADMIN_APP_NAME];
 
   } catch (error: any) {
     console.error('Firebase admin initialization error:', error.message);
-    // Throw the error to make it clear that initialization failed.
-    // This will prevent other parts of the app from trying to use a non-existent admin app.
-    throw new Error('Failed to initialize Firebase Admin SDK.');
+    throw new Error('Failed to initialize Firebase Admin SDK. Please check your credentials.');
   }
 }
 
-let adminApp: admin.app.App;
-let adminAuth: admin.auth.Auth;
-let adminDb: admin.firestore.Firestore;
+const adminApp = getAdminApp();
+const adminAuth = admin.auth(adminApp);
+const adminDb = admin.firestore(adminApp);
 
-try {
-    adminApp = getAdminApp();
-    adminAuth = adminApp.auth();
-    adminDb = adminApp.firestore();
-} catch (e) {
-    console.error("Could not initialize Firebase Admin services. Some admin features may not work.", e);
-    // Assign dummy objects or handle the error gracefully
-    // to prevent the entire application from crashing on import.
+/**
+ * Verifies the session cookie from the request and checks for admin claims.
+ * Throws an error if the user is not an authenticated admin.
+ * @returns The decoded ID token if the user is an admin.
+ */
+export async function verifyAdmin() {
+    const sessionCookie = cookies().get('session')?.value;
+    if (!sessionCookie) {
+        throw new Error("Not authenticated: No session cookie found.");
+    }
+
+    try {
+        const decodedIdToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+        
+        if (decodedIdToken.admin !== true) {
+            throw new Error("Not authorized: User is not an admin.");
+        }
+        
+        return decodedIdToken;
+    } catch (error) {
+        // This will catch expired cookies, invalid cookies, etc.
+        console.error("Admin verification failed:", error);
+        throw new Error("Admin verification failed. Please log in again.");
+    }
 }
 
 

@@ -3,8 +3,7 @@
 
 import * as admin from 'firebase-admin';
 import type { UserProfile } from '@/types';
-import { cookies } from 'next/headers';
-import { adminAuth, adminDb } from '@/lib/firebase/admin-config';
+import { adminAuth, adminDb, verifyAdmin } from '@/lib/firebase/admin-config';
 
 const safeToDate = (timestamp: any): Date | undefined => {
     if (timestamp instanceof admin.firestore.Timestamp) {
@@ -19,28 +18,6 @@ const safeToDate = (timestamp: any): Date | undefined => {
     }
     return undefined;
 };
-
-
-async function verifyAdmin() {
-    const sessionCookie = cookies().get('session')?.value;
-    if (!sessionCookie) {
-        throw new Error("Not authenticated: No session cookie found.");
-    }
-
-    try {
-        const decodedIdToken = await adminAuth.verifySessionCookie(sessionCookie, true);
-        
-        if (decodedIdToken.admin !== true) {
-            throw new Error("Not authorized: User is not an admin.");
-        }
-        
-        return decodedIdToken;
-    } catch (error) {
-        console.error("Admin verification failed:", error);
-        throw new Error("Admin verification failed. Please log in again.");
-    }
-}
-
 
 export async function getUsers(): Promise<UserProfile[]> {
     try {
