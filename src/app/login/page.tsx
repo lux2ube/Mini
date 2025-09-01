@@ -118,13 +118,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      // Post-login logic is now handled in the page user is redirected to
-      const userProfileDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-      if (userProfileDoc.exists() && !userProfileDoc.data().phoneNumber) {
-        router.push(`/phone-verification?userId=${userCredential.user.uid}`);
-      } else {
-        await handleLoginSuccess(userCredential);
-      }
+      await handleLoginSuccess(userCredential);
     } catch (error: any) {
       toast({
         variant: "destructive",

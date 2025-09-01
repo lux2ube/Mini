@@ -110,7 +110,7 @@ export default function SecurityLogsPage() {
                                                     {getEventText(log.event)}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="font-mono text-xs">{log.userId}</TableCell>
+                                            <TableCell className="font-mono text-xs">{log.userId.substring(0, 10)}...</TableCell>
                                             <TableCell>
                                                 <div className="text-xs">{log.geo?.city}, {log.geo?.country || 'غير معروف'}</div>
                                                 <div className="text-xs text-muted-foreground font-mono">{log.ipAddress}</div>

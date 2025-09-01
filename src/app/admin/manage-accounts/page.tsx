@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getTradingAccounts, updateTradingAccountStatus } from '../actions';
-import type { TradingAccount } from '@/types';
+import type { TradingAccount, UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { useAdminData } from '@/hooks/useAdminData';
 
 function RejectAccountDialog({ accountId, onSuccess }: { accountId: string, onSuccess: () => void }) {
     const [reason, setReason] = useState('');
@@ -81,39 +82,28 @@ function RejectAccountDialog({ accountId, onSuccess }: { accountId: string, onSu
 
 
 export default function ManageAccountsPage() {
-    const [accounts, setAccounts] = useState<TradingAccount[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { accounts, isLoading, refetch } = useAdminData();
+    const [sortedAccounts, setSortedAccounts] = useState<TradingAccount[]>([]);
     const { toast } = useToast();
 
-    const fetchAccounts = async () => {
-        setIsLoading(true);
-        try {
-            const fetchedAccounts = await getTradingAccounts();
-            // Sort by most recent first
-            fetchedAccounts.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-            setAccounts(fetchedAccounts);
-        } catch (error) {
-            console.error("Failed to fetch accounts:", error);
-            toast({ variant: 'destructive', title: 'خطأ', description: 'تعذر جلب حسابات التداول.' });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     useEffect(() => {
-        fetchAccounts();
-    }, []);
+        if (accounts) {
+            const sorted = [...accounts].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+            setSortedAccounts(sorted);
+        }
+    }, [accounts]);
 
     const handleApprove = async (accountId: string) => {
-        const originalAccounts = [...accounts];
-        setAccounts(accounts.map(acc => acc.id === accountId ? { ...acc, status: 'Approved' } : acc));
+        const originalAccounts = [...sortedAccounts];
+        setSortedAccounts(sortedAccounts.map(acc => acc.id === accountId ? { ...acc, status: 'Approved' } : acc));
 
         const result = await updateTradingAccountStatus(accountId, 'Approved');
         if (!result.success) {
             toast({ variant: 'destructive', title: 'خطأ', description: result.message });
-            setAccounts(originalAccounts); // Revert on failure
+            setSortedAccounts(originalAccounts); // Revert on failure
         } else {
             toast({ title: 'نجاح', description: result.message });
+            refetch(); // Refetch data on success
         }
     };
 
@@ -150,7 +140,7 @@ export default function ManageAccountsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>معرف المستخدم</TableHead>
+                                        <TableHead>معرف العميل</TableHead>
                                         <TableHead>الوسيط</TableHead>
                                         <TableHead>رقم الحساب</TableHead>
                                         <TableHead>الحالة</TableHead>
@@ -159,9 +149,9 @@ export default function ManageAccountsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {accounts.map(account => (
+                                    {sortedAccounts.map(account => (
                                         <TableRow key={account.id}>
-                                            <TableCell className="text-xs text-muted-foreground truncate" style={{ maxWidth: '100px' }}>{account.userId}</TableCell>
+                                            <TableCell className="font-mono text-xs text-muted-foreground">{account.userId}</TableCell>
                                             <TableCell>{account.broker}</TableCell>
                                             <TableCell>{account.accountNumber}</TableCell>
                                             <TableCell><Badge variant={getStatusVariant(account.status)}>{getStatusText(account.status)}</Badge></TableCell>
@@ -176,7 +166,7 @@ export default function ManageAccountsPage() {
                                                             <XCircle className="h-4 w-4" />
                                                         </Button>
                                                     </AlertDialogTrigger>
-                                                    <RejectAccountDialog accountId={account.id} onSuccess={fetchAccounts} />
+                                                    <RejectAccountDialog accountId={account.id} onSuccess={refetch} />
                                                 </AlertDialog>
                                             </TableCell>
                                         </TableRow>

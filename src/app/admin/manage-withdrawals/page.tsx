@@ -4,8 +4,8 @@
 
 import { useState, useEffect } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { approveWithdrawal, getWithdrawals, rejectWithdrawal } from '../actions';
-import type { Withdrawal } from '@/types';
+import { approveWithdrawal, getWithdrawals, rejectWithdrawal, getUserDetails } from '../actions';
+import type { Withdrawal, UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -165,8 +165,10 @@ function WithdrawalDetail({ label, value, isChanged = false }: { label: string, 
     )
 }
 
+type EnrichedWithdrawal = Withdrawal & { userProfile?: UserProfile };
+
 export default function ManageWithdrawalsPage() {
-    const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
+    const [withdrawals, setWithdrawals] = useState<EnrichedWithdrawal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { toast } = useToast();
 
@@ -174,7 +176,28 @@ export default function ManageWithdrawalsPage() {
         setIsLoading(true);
         try {
             const data = await getWithdrawals();
-            setWithdrawals(data);
+            
+            const userIds = [...new Set(data.map(w => w.userId))];
+            const userProfiles: Record<string, UserProfile> = {};
+
+            // Fetch user profiles in chunks to avoid hitting Firestore limits
+            for (let i = 0; i < userIds.length; i += 10) {
+                const chunk = userIds.slice(i, i + 10);
+                const userDetailsPromises = chunk.map(uid => getUserDetails(uid).then(res => ({...res, uid})));
+                const userDetailsResults = await Promise.all(userDetailsPromises);
+                userDetailsResults.forEach(res => {
+                    if (!('error' in res) && res.userProfile) {
+                        userProfiles[res.uid] = res.userProfile;
+                    }
+                });
+            }
+            
+            const enrichedData = data.map(w => ({
+                ...w,
+                userProfile: userProfiles[w.userId]
+            }));
+
+            setWithdrawals(enrichedData);
         } catch (error) {
             console.error("Failed to fetch withdrawals:", error);
             toast({ variant: 'destructive', title: 'خطأ', description: 'تعذر جلب طلبات السحب.' });
@@ -221,7 +244,7 @@ export default function ManageWithdrawalsPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>التاريخ</TableHead>
-                                        <TableHead>معرف المستخدم</TableHead>
+                                        <TableHead>المستخدم</TableHead>
                                         <TableHead>المبلغ</TableHead>
                                         <TableHead>الطريقة</TableHead>
                                         <TableHead>التفاصيل</TableHead>
@@ -236,7 +259,10 @@ export default function ManageWithdrawalsPage() {
                                         return (
                                             <TableRow key={w.id}>
                                                 <TableCell>{format(new Date(w.requestedAt), 'PP')}</TableCell>
-                                                <TableCell className="text-xs text-muted-foreground truncate" style={{ maxWidth: '100px' }}>{w.userId}</TableCell>
+                                                <TableCell>
+                                                    <div className="font-medium text-sm">{w.userProfile?.name}</div>
+                                                    <div className="font-mono text-xs text-muted-foreground">{w.userProfile?.clientId}</div>
+                                                </TableCell>
                                                 <TableCell className="font-medium">${w.amount.toFixed(2)}</TableCell>
                                                 <TableCell>
                                                     <Badge variant="outline">{w.paymentMethod}</Badge>
