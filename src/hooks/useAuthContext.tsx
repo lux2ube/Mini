@@ -1,11 +1,12 @@
+
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase/config';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
-import { useRouter } from 'next/navigation';
+import { handleRegisterUser } from '@/app/actions'; // We'll use the core logic here for self-healing.
 
 export interface AppUser extends FirebaseAuthUser {
   profile?: UserProfile | null;
@@ -38,9 +39,9 @@ async function handleSession(token: string | null) {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
 
-  const fetchFullUserDataAndRedirect = useCallback(async (firebaseUser: FirebaseAuthUser) => {
+  const fetchFullUserData = useCallback(async (firebaseUser: FirebaseAuthUser) => {
+    setIsLoading(true);
     try {
         const token = await firebaseUser.getIdToken();
         await handleSession(token);
@@ -55,37 +56,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             ? { uid: firebaseUser.uid, ...userDocSnap.data() } as UserProfile
             : null;
         
-        const appUser = {
+        const appUser: AppUser = {
             ...firebaseUser,
             profile,
             isAdmin,
         };
 
         setUser(appUser);
-        
-        // Redirect after setting user state
-        if (isAdmin) {
-            router.push('/admin/dashboard');
-        } else if (!profile?.phoneNumber) {
-            router.push(`/phone-verification?userId=${firebaseUser.uid}`);
-        } else {
-            router.push('/dashboard');
-        }
-
     } catch (error) {
         console.error("Error fetching user data:", error);
-        setUser({ ...firebaseUser, profile: null, isAdmin: false });
+        setUser({ ...firebaseUser, profile: null, isAdmin: false }); // Set user but with null profile
         await handleSession(null); // Clear session on error
     } finally {
         setIsLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setIsLoading(true);
       if (firebaseUser) {
-          fetchFullUserDataAndRedirect(firebaseUser);
+          fetchFullUserData(firebaseUser);
       } else {
           setUser(null);
           setIsLoading(false);
@@ -94,16 +84,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [fetchFullUserDataAndRedirect]);
+  }, [fetchFullUserData]);
   
   const refetchUserData = useCallback(() => {
       if(auth.currentUser) {
-          getDoc(doc(db, 'users', auth.currentUser.uid)).then(userDocSnap => {
-               const profile = userDocSnap.exists() ? { uid: auth.currentUser!.uid, ...userDocSnap.data() } as UserProfile : null;
-               setUser(prevUser => prevUser ? {...prevUser, profile} : null);
-           });
+          fetchFullUserData(auth.currentUser);
       }
-  }, []);
+  }, [fetchFullUserData]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, refetchUserData }}>
