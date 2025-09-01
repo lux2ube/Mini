@@ -1,4 +1,3 @@
-
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
@@ -41,14 +40,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  const fetchUserData = useCallback(async (firebaseUser: FirebaseAuthUser | null) => {
-    if (!firebaseUser) {
-        setUser(null);
-        setIsLoading(false);
-        await handleSession(null);
-        return;
-    }
-
+  const fetchFullUserDataAndRedirect = useCallback(async (firebaseUser: FirebaseAuthUser) => {
     try {
         const token = await firebaseUser.getIdToken();
         await handleSession(token);
@@ -74,6 +66,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Redirect after setting user state
         if (isAdmin) {
             router.push('/admin/dashboard');
+        } else if (!profile?.phoneNumber) {
+            router.push(`/phone-verification?userId=${firebaseUser.uid}`);
         } else {
             router.push('/dashboard');
         }
@@ -81,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
         console.error("Error fetching user data:", error);
         setUser({ ...firebaseUser, profile: null, isAdmin: false });
-        await handleSession(null);
+        await handleSession(null); // Clear session on error
     } finally {
         setIsLoading(false);
     }
@@ -91,39 +85,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setIsLoading(true);
       if (firebaseUser) {
-          fetchUserData(firebaseUser);
+          fetchFullUserDataAndRedirect(firebaseUser);
       } else {
-          // If no user, just set loading to false and clear session
           setUser(null);
           setIsLoading(false);
           handleSession(null);
       }
     });
 
-    const handleRefetch = () => {
-      if(auth.currentUser) {
-          // A lighter refetch, no redirect needed
-           getDoc(doc(db, 'users', auth.currentUser.uid)).then(userDocSnap => {
-               const profile = userDocSnap.exists() ? { uid: auth.currentUser!.uid, ...userDocSnap.data() } as UserProfile : null;
-               setUser(prevUser => prevUser ? {...prevUser, profile} : null);
-           });
-      }
-    };
-    window.addEventListener('refetchUser', handleRefetch);
-
-    return () => {
-        unsubscribe();
-        window.removeEventListener('refetchUser', handleRefetch);
-    };
-  }, [fetchUserData]);
+    return () => unsubscribe();
+  }, [fetchFullUserDataAndRedirect]);
   
   const refetchUserData = useCallback(() => {
       if(auth.currentUser) {
-          setIsLoading(true);
           getDoc(doc(db, 'users', auth.currentUser.uid)).then(userDocSnap => {
                const profile = userDocSnap.exists() ? { uid: auth.currentUser!.uid, ...userDocSnap.data() } as UserProfile : null;
                setUser(prevUser => prevUser ? {...prevUser, profile} : null);
-               setIsLoading(false);
            });
       }
   }, []);
