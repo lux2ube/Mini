@@ -1,10 +1,10 @@
 
 'use server';
 
-import { db } from '@/lib/firebase/config';
-import { adminDb } from '@/lib/firebase/admin-config';
+import * as admin from 'firebase-admin';
 import { collection, getDocs, writeBatch, query, where, limit, getDoc, doc, Timestamp, startOfMonth } from 'firebase/firestore';
 import type { UserProfile, UserStatus, ClientLevel } from '@/types';
+import { db } from '@/lib/firebase/config'; // Keep client SDK for specific tasks if needed
 
 const safeToDate = (timestamp: any): Date | undefined => {
     if (!timestamp) return undefined;
@@ -21,9 +21,32 @@ const safeToDate = (timestamp: any): Date | undefined => {
     return undefined;
 };
 
+function initializeAdminApp() {
+    if (admin.apps.length > 0) {
+        return admin.apps[0]!;
+    }
+    
+    const serviceAccountJson = process.env.NEXT_PRIVATE_FIREBASE_ADMIN_JSON_B64;
+    if (!serviceAccountJson) {
+        throw new Error("CRITICAL: Firebase admin credentials (base64) are not set in environment variables.");
+    }
+    
+    try {
+        const serviceAccount = JSON.parse(Buffer.from(serviceAccountJson, 'base64').toString('utf-8'));
+        return admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        });
+    } catch(e: any) {
+        throw new Error(`Failed to parse or initialize Firebase Admin SDK: ${e.message}`);
+    }
+}
+
 export async function getUsers(): Promise<UserProfile[]> {
   try {
-    console.log("Attempting to fetch users with adminDb...");
+    const adminApp = initializeAdminApp();
+    const adminDb = adminApp.firestore();
+    
+    console.log("Attempting to fetch users with self-initialized adminDb...");
     const usersSnapshot = await adminDb.collection('users').get();
     
     if (usersSnapshot.empty) {
@@ -42,7 +65,7 @@ export async function getUsers(): Promise<UserProfile[]> {
         } as UserProfile);
     });
     
-    console.log(`Successfully fetched ${users.length} users.`);
+    console.log(`Successfully fetched ${users.length} users using self-initialized adminDb.`);
     return users;
 
   } catch (error) {
@@ -55,6 +78,8 @@ export async function getUsers(): Promise<UserProfile[]> {
 
 export async function backfillUserStatuses(): Promise<{ success: boolean; message: string; }> {
     try {
+        const adminApp = initializeAdminApp();
+        const adminDb = adminApp.firestore();
         const usersRef = adminDb.collection('users');
         const usersSnapshot = await usersRef.get();
         const batch = adminDb.batch();
@@ -70,13 +95,13 @@ export async function backfillUserStatuses(): Promise<{ success: boolean; messag
 
             let newStatus: UserStatus = 'NEW';
 
-            const cashbackQuery = query(collection(adminDb, 'cashbackTransactions'), where('userId', '==', userId), limit(1));
+            const cashbackQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId), limit(1));
             const cashbackSnap = await getDocs(cashbackQuery);
 
             if (!cashbackSnap.empty) {
                 newStatus = 'Trader';
             } else {
-                const accountsQuery = query(collection(adminDb, 'tradingAccounts'), where('userId', '==', userId), where('status', '==', 'Approved'), limit(1));
+                const accountsQuery = query(collection(db, 'tradingAccounts'), where('userId', '==', userId), where('status', '==', 'Approved'), limit(1));
                 const accountsSnap = await getDocs(accountsQuery);
                 if (!accountsSnap.empty) {
                     newStatus = 'Active';
@@ -102,6 +127,8 @@ export async function backfillUserStatuses(): Promise<{ success: boolean; messag
 
 export async function backfillUserLevels(): Promise<{ success: boolean; message: string; }> {
     try {
+        const adminApp = initializeAdminApp();
+        const adminDb = adminApp.firestore();
         const levels = await getClientLevels();
         if (levels.length === 0) {
             return { success: false, message: "No client levels configured. Please seed them first." };
@@ -149,7 +176,8 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
 }
 
 export async function getClientLevels(): Promise<ClientLevel[]> {
-    const levelsCollection = collection(adminDb, 'clientLevels');
+    // This function can use the client 'db' as it reads from a public/semi-public collection
+    const levelsCollection = collection(db, 'clientLevels');
     const snapshot = await getDocs(levelsCollection);
     if (snapshot.empty) {
         return []; 
