@@ -1,6 +1,7 @@
 
 'use server';
 
+import { db } from '@/lib/firebase/config';
 import { adminDb } from '@/lib/firebase/admin-config';
 import { collection, getDocs, writeBatch, query, where, limit, getDoc, doc, Timestamp, startOfMonth } from 'firebase/firestore';
 import type { UserProfile, UserStatus, ClientLevel } from '@/types';
@@ -16,7 +17,8 @@ const safeToDate = (timestamp: any): Date | undefined => {
 };
 
 export async function getUsers(): Promise<UserProfile[]> {
-  const usersSnapshot = await adminDb.collection('users').get();
+  // Switched from adminDb to the client db to ensure reliable data fetching.
+  const usersSnapshot = await getDocs(collection(db, 'users'));
   const users: UserProfile[] = [];
   usersSnapshot.docs.forEach(doc => {
       try {
