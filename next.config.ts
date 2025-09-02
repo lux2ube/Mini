@@ -31,6 +31,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    // This is to suppress the Handlebars "require.extensions" warning.
+    // It's a known issue with older libraries in Webpack 5+ and doesn't affect the build.
+    config.ignoreWarnings = (config.ignoreWarnings || []).concat([
+      /require.extensions/,
+    ]);
+    return config;
+  },
 };
 
 export default nextConfig;
