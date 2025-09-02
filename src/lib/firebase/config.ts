@@ -4,13 +4,13 @@ import { getAuth, GoogleAuthProvider, OAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig: FirebaseOptions = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyDW1ZPSML_OZTmKN35YFANaP4NdQHOPYNs",
   authDomain: "cashback-56a16.firebaseapp.com",
   projectId: "cashback-56a16",
   storageBucket: "cashback-56a16.appspot.com",
-  messagingSenderId: "395561662919",
-  appId: "1:395561662919:web:968f700b0949d0b6748286",
-  measurementId: "G-L0151593G1"
+  messagingSenderId: "1090837702640",
+  appId: "1:1090837702640:web:be1142b8b28a374c05df35",
+  measurementId: "G-KKY66CQJ0J"
 };
 
 // This function safely initializes the Firebase app, preventing re-initialization
