@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { getPendingVerifications, updateVerificationStatus } from "../actions";
-import { Loader2, Check, X, User, Home, FileText } from "lucide-react";
+import { Loader2, Check, X, User, Home, FileText, Phone } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
 import type { PendingVerification, KycData, AddressData } from "@/types";
@@ -26,7 +26,7 @@ const rejectReasonSchema = z.object({
 });
 type RejectReasonForm = z.infer<typeof rejectReasonSchema>;
 
-function RejectDialog({ type, userId, onSuccess }: { type: 'kyc' | 'address', userId: string, onSuccess: () => void }) {
+function RejectDialog({ type, userId, onSuccess }: { type: 'kyc' | 'address' | 'phone', userId: string, onSuccess: () => void }) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
@@ -85,7 +85,7 @@ function RejectDialog({ type, userId, onSuccess }: { type: 'kyc' | 'address', us
     )
 }
 
-function VerificationDataCell({ data }: { data: KycData | AddressData }) {
+function VerificationDataCell({ data }: { data: KycData | AddressData | { phoneNumber: string } }) {
     return (
         <div className="text-xs space-y-1">
             {Object.entries(data).map(([key, value]) => {
@@ -119,8 +119,8 @@ export default function ManageVerificationsPage() {
         fetchRequests();
     }, []);
 
-    const handleApprove = async (userId: string, type: 'KYC' | 'Address') => {
-        const result = await updateVerificationStatus(userId, type.toLowerCase() as 'kyc' | 'address', 'Verified');
+    const handleApprove = async (userId: string, type: PendingVerification['type']) => {
+        const result = await updateVerificationStatus(userId, type.toLowerCase() as 'kyc' | 'address' | 'phone', 'Verified');
         if (result.success) {
             toast({ title: "نجاح", description: `تمت الموافقة على طلب ${type}.` });
             fetchRequests(); // Refresh the list
@@ -129,11 +129,13 @@ export default function ManageVerificationsPage() {
         }
     };
 
-    const getTypeInfo = (type: 'KYC' | 'Address') => {
-        if (type === 'KYC') {
-            return { icon: FileText, text: 'تحقق الهوية' };
+    const getTypeInfo = (type: PendingVerification['type']) => {
+        switch (type) {
+            case 'KYC': return { icon: FileText, text: 'تحقق الهوية' };
+            case 'Address': return { icon: Home, text: 'تحقق العنوان' };
+            case 'Phone': return { icon: Phone, text: 'تحقق الهاتف' };
+            default: return { icon: User, text: 'تحقق' };
         }
-        return { icon: Home, text: 'تحقق العنوان' };
     };
 
     if (isLoading) {
@@ -153,51 +155,53 @@ export default function ManageVerificationsPage() {
 
             <Card>
                 <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>المستخدم</TableHead>
-                                <TableHead>النوع</TableHead>
-                                <TableHead>البيانات المقدمة</TableHead>
-                                <TableHead>تاريخ الطلب</TableHead>
-                                <TableHead className="text-left">الإجراءات</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {requests.length > 0 ? requests.map((req, index) => {
-                                const { icon: Icon, text } = getTypeInfo(req.type);
-                                return (
-                                    <TableRow key={`${req.userId}-${req.type}-${index}`}>
-                                        <TableCell>
-                                            <Button variant="link" className="p-0 h-auto" onClick={() => router.push(`/admin/users/${req.userId}`)}>
-                                                {req.userName}
-                                            </Button>
-                                            <p className="text-xs text-muted-foreground">{req.userEmail}</p>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="secondary" className="gap-2">
-                                                <Icon className="h-4 w-4" /> {text}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell><VerificationDataCell data={req.data} /></TableCell>
-                                        <TableCell>{format(req.requestedAt, 'PP')}</TableCell>
-                                        <TableCell className="space-x-2 text-left">
-                                            <Button size="sm" variant="default" onClick={() => handleApprove(req.userId, req.type)}>
-                                                <Check className="ml-2 h-4 w-4"/>موافقة
-                                            </Button>
-                                            <RejectDialog type={req.type.toLowerCase() as 'kyc' | 'address'} userId={req.userId} onSuccess={fetchRequests} />
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>المستخدم</TableHead>
+                                    <TableHead>النوع</TableHead>
+                                    <TableHead>البيانات المقدمة</TableHead>
+                                    <TableHead>تاريخ الطلب</TableHead>
+                                    <TableHead className="text-left">الإجراءات</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {requests.length > 0 ? requests.map((req, index) => {
+                                    const { icon: Icon, text } = getTypeInfo(req.type);
+                                    return (
+                                        <TableRow key={`${req.userId}-${req.type}-${index}`}>
+                                            <TableCell>
+                                                <Button variant="link" className="p-0 h-auto" onClick={() => router.push(`/admin/users/${req.userId}`)}>
+                                                    {req.userName}
+                                                </Button>
+                                                <p className="text-xs text-muted-foreground">{req.userEmail}</p>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="secondary" className="gap-2">
+                                                    <Icon className="h-4 w-4" /> {text}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell><VerificationDataCell data={req.data} /></TableCell>
+                                            <TableCell>{format(req.requestedAt, 'PP')}</TableCell>
+                                            <TableCell className="space-x-2 text-left">
+                                                <Button size="sm" variant="default" onClick={() => handleApprove(req.userId, req.type)}>
+                                                    <Check className="ml-2 h-4 w-4"/>موافقة
+                                                </Button>
+                                                <RejectDialog type={req.type.toLowerCase() as 'kyc' | 'address' | 'phone'} userId={req.userId} onSuccess={fetchRequests} />
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                }) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="text-center h-24">
+                                            لا توجد طلبات تحقق معلقة.
                                         </TableCell>
                                     </TableRow>
-                                );
-                            }) : (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">
-                                        لا توجد طلبات تحقق معلقة.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>
