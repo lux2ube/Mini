@@ -2,10 +2,6 @@
 import * as admin from 'firebase-admin';
 import { getApps } from 'firebase-admin/app';
 import { cookies } from 'next/headers';
-import serviceAccount from '../../../serviceAccountKey.json';
-
-// Type assertion for the service account key
-const serviceAccountKey = serviceAccount as admin.ServiceAccount;
 
 /**
  * A lazy-loaded, singleton instance of the Firebase Admin SDK.
@@ -16,12 +12,21 @@ function getAdminApp(): admin.app.App {
     }
 
     try {
-      return admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountKey),
-      });
+        // We are decoding the base64-encoded string from the environment variable
+        // to avoid having to store the file in the project.
+        const serviceAccountJson = Buffer.from(
+            process.env.FIREBASE_ADMIN_SDK_JSON_B64!,
+            'base64'
+        ).toString('utf-8');
+
+        const serviceAccount = JSON.parse(serviceAccountJson);
+
+        return admin.initializeApp({
+            credential: admin.credential.cert(serviceAccount),
+        });
     } catch (error: any) {
-      console.error('Firebase admin initialization error:', error.message);
-      throw new Error('Failed to initialize Firebase Admin SDK. Please check your credentials.');
+        console.error('Firebase admin initialization error:', error.message);
+        throw new Error('Failed to initialize Firebase Admin SDK. Please check your credentials.');
     }
 }
 
