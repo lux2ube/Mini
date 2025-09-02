@@ -1,9 +1,8 @@
+
 import * as admin from 'firebase-admin';
 import { cookies } from 'next/headers';
 
-// --- Singleton Pattern for Firebase Admin Initialization ---
 // This ensures we only initialize the app once, preventing errors in serverless environments.
-
 if (!admin.apps.length) {
     const serviceAccountJson = process.env.NEXT_PRIVATE_FIREBASE_ADMIN_JSON_B64;
     if (!serviceAccountJson) {

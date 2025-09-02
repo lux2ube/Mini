@@ -29,6 +29,7 @@ export async function logUserActivity(
     clientInfo: { deviceInfo: DeviceInfo, geoInfo: GeoInfo },
     details?: Record<string, any>,
 ) {
+    await verifyAdmin();
     try {
         const logEntry: Omit<ActivityLog, 'id'> = {
             userId,
@@ -481,7 +482,7 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
     });
 }
 
-export async function adminUpdateUser(userId: string, data: Partial<Pick<UserProfile, 'name' | 'country' | 'phoneNumber'>>) {
+export async function updateUser(userId: string, data: Partial<Pick<UserProfile, 'name' | 'country' | 'phoneNumber'>>) {
     await verifyAdmin();
     try {
         const userRef = doc(adminDb, 'users', userId);
@@ -1526,4 +1527,3 @@ export async function adminUpdateAddress(userId: string, data: AddressData) {
     }
 }
     
-

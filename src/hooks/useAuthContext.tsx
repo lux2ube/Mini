@@ -39,14 +39,13 @@ async function handleSession(token: string | null) {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
 
   // Ensure Firebase is initialized only on the client
   useEffect(() => {
     initializeClientApp();
   }, []);
 
-  const fetchFullUserDataAndRedirect = useCallback(async (firebaseUser: FirebaseAuthUser) => {
+  const fetchFullUserData = useCallback(async (firebaseUser: FirebaseAuthUser) => {
     setIsLoading(true);
     try {
         const token = await firebaseUser.getIdToken();
@@ -69,35 +68,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         };
 
         setUser(appUser);
-        
-        // Redirect after setting user state
-        if (isAdmin) {
-            router.push('/admin/dashboard');
-        } else {
-            // Check if profile exists and phone number is missing
-            if (profile && !profile.phoneNumber) {
-                router.push(`/phone-verification?userId=${firebaseUser.uid}`);
-            } else {
-                router.push('/dashboard');
-            }
-        }
+        return appUser;
 
     } catch (error) {
         console.error("Error fetching user data:", error);
-        setUser({ ...firebaseUser, profile: null, isAdmin: false }); // Set user but with null profile
-        await handleSession(null); // Clear session on error
+        setUser({ ...firebaseUser, profile: null, isAdmin: false });
+        await handleSession(null);
+        return null;
     } finally {
         setIsLoading(false);
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-          // User is logged in, but we don't redirect here.
-          // We let the login page handle the initial redirect.
-          // This listener is mainly for keeping the session alive across reloads.
-          fetchFullUserDataAndRedirect(firebaseUser).catch(console.error);
+          fetchFullUserData(firebaseUser).catch(console.error);
       } else {
           setUser(null);
           setIsLoading(false);
@@ -106,26 +92,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, [fetchFullUserDataAndRedirect]);
+  }, [fetchFullUserData]);
   
   const refetchUserData = useCallback(() => {
       if(auth.currentUser) {
-          // This refetch should not redirect, just update data.
-          const fetchOnly = async (fbUser: FirebaseAuthUser) => {
-              const token = await fbUser.getIdToken();
-              await handleSession(token);
-              const idTokenResult = await fbUser.getIdTokenResult();
-              const isAdmin = idTokenResult.claims.admin === true;
-              const userDocRef = doc(db, 'users', fbUser.uid);
-              const userDocSnap = await getDoc(userDocRef);
-              const profile = userDocSnap.exists() 
-                  ? { uid: fbUser.uid, ...userDocSnap.data() } as UserProfile
-                  : null;
-              setUser({ ...fbUser, profile, isAdmin });
-          }
-          fetchOnly(auth.currentUser).catch(console.error);
+          fetchFullUserData(auth.currentUser).catch(console.error);
       }
-  }, []);
+  }, [fetchFullUserData]);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, refetchUserData }}>

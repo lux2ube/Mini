@@ -44,29 +44,34 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   const handleLoginSuccess = async (userCredential: UserCredential) => {
-    // This function will be called after any successful login
     const user = userCredential.user;
-    
-    // The AuthProvider will handle session creation and redirection.
-    // We just need to wait a moment for the context to update.
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const idTokenResult = await user.getIdTokenResult();
-    const isAdmin = idTokenResult.claims.admin === true;
+    try {
+        const idTokenResult = await user.getIdTokenResult();
+        const isAdmin = idTokenResult.claims.admin === true;
 
-    if (isAdmin) {
-      router.push('/admin/dashboard');
-      return;
-    }
+        if (isAdmin) {
+            router.push('/admin/dashboard');
+            return;
+        }
 
-    const userDocRef = doc(db, 'users', user.uid);
-    const userDocSnap = await getDoc(userDocRef);
-    const profileData = userDocSnap.exists() ? userDocSnap.data() : null;
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+        const profileData = userDocSnap.exists() ? userDocSnap.data() : null;
 
-    if (profileData && !profileData.phoneNumber) {
-        router.push(`/phone-verification?userId=${user.uid}`);
-    } else {
-        router.push('/dashboard');
+        if (profileData && !profileData.phoneNumber) {
+            router.push(`/phone-verification?userId=${user.uid}`);
+        } else {
+            router.push('/dashboard');
+        }
+    } catch (error) {
+        console.error("Error during post-login flow:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not retrieve user role. Please try again.",
+        });
+        // Log out the user if role check fails
+        await auth.signOut();
     }
   };
 
