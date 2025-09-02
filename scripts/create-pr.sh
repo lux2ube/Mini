@@ -55,12 +55,22 @@ if [ -z "$PR_TITLE" ]; then
   PR_TITLE="$COMMIT_MESSAGE"
 fi
 
-# 2. Create a unique branch name
+# 2. Sync with the remote main branch
+print_info "Switching to main branch to sync with remote..."
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+git stash push -m "stashing-for-pr-script"
+git checkout main
+print_info "Pulling latest changes from origin/main..."
+git pull origin main --rebase
+git checkout "$CURRENT_BRANCH"
+git stash pop || print_info "No changes to unstash."
+
+# 3. Create a unique branch name
 BRANCH_NAME="feature/$(git config user.name | tr ' ' '-')-$(date +%s)"
 print_info "Creating new branch: $BRANCH_NAME"
 git checkout -b "$BRANCH_NAME"
 
-# 3. Add, commit, and push changes
+# 4. Add, commit, and push changes
 print_info "Committing changes..."
 git add .
 git commit -m "$COMMIT_MESSAGE"
@@ -68,7 +78,7 @@ git commit -m "$COMMIT_MESSAGE"
 print_info "Pushing branch to origin..."
 git push --set-upstream origin "$BRANCH_NAME"
 
-# 4. Create the Pull Request
+# 5. Create the Pull Request
 print_info "Creating Pull Request..."
 # Use a heredoc to pass the body to the PR create command
 PR_URL=$(gh pr create --title "$PR_TITLE" --body "Automated PR created by script." --base main)
@@ -77,7 +87,7 @@ if [ $? -eq 0 ]; then
   print_success "Pull Request created successfully!"
   print_info "PR URL: $PR_URL"
   
-  # 5. Enable auto-merge on the new PR
+  # 6. Enable auto-merge on the new PR
   print_info "Enabling auto-merge for the PR..."
   gh pr merge "$PR_URL" --auto --squash
   
@@ -91,7 +101,7 @@ else
   exit 1
 fi
 
-# 6. Switch back to the main branch and clean up
+# 7. Switch back to the main branch and clean up
 print_info "Returning to main branch."
 git checkout main
 
