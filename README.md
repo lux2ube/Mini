@@ -10,9 +10,14 @@ To submit your changes, you must use the provided script which automates the pro
 
 ### Submitting Your Changes
 
-1.  **Save your file changes** in your editor.
-2.  **Open the terminal**.
-3.  **Run the script:**
+1.  **First-Time Setup (Run this once):** Make the script executable by opening your terminal and running this command:
+    ```bash
+    chmod +x ./scripts/create-pr.sh
+    ```
+
+2.  **Save your file changes** in your editor.
+
+3.  **Open the terminal** and run the script:
     ```bash
     ./scripts/create-pr.sh
     ```
