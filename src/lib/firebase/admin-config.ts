@@ -1,18 +1,25 @@
 
 import * as admin from 'firebase-admin';
+import { getApps } from 'firebase-admin/app';
 import { cookies } from 'next/headers';
 
-// This ensures we only initialize the app once, preventing errors in serverless environments.
-if (!admin.apps.length) {
-    const serviceAccountJson = process.env.NEXT_PRIVATE_FIREBASE_ADMIN_JSON_B64;
+/**
+ * A lazy-loaded, singleton instance of the Firebase Admin SDK.
+ */
+function getAdminApp(): admin.app.App {
+    if (getApps().length > 0) {
+        return admin.app();
+    }
+
+    const serviceAccountJson = process.env.FIREBASE_ADMIN_SDK_JSON_B64;
     if (!serviceAccountJson) {
-      throw new Error("Firebase admin credentials (NEXT_PRIVATE_FIREBASE_ADMIN_JSON_B64) are not set in environment variables.");
+      throw new Error("Firebase admin credentials (FIREBASE_ADMIN_SDK_JSON_B64) are not set in environment variables.");
     }
     
     try {
       const serviceAccount = JSON.parse(Buffer.from(serviceAccountJson, 'base64').toString('utf-8'));
       
-      admin.initializeApp({
+      return admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
 
@@ -21,9 +28,6 @@ if (!admin.apps.length) {
       throw new Error('Failed to initialize Firebase Admin SDK. Please check your credentials.');
     }
 }
-
-const adminAuth = admin.auth();
-const adminDb = admin.firestore();
 
 /**
  * Verifies the session cookie from the request and checks for admin claims.
@@ -37,7 +41,7 @@ export async function verifyAdmin() {
     }
 
     try {
-        const decodedIdToken = await adminAuth.verifySessionCookie(sessionCookie, true);
+        const decodedIdToken = await getAdminApp().auth().verifySessionCookie(sessionCookie, true);
         
         if (decodedIdToken.admin !== true) {
             throw new Error("Not authorized: User is not an admin.");
@@ -51,4 +55,6 @@ export async function verifyAdmin() {
     }
 }
 
-export { adminAuth, adminDb };
+// For direct use in other files that need the DB or Auth instance.
+export const adminDb = getAdminApp().firestore();
+export const adminAuth = getAdminApp().auth();
