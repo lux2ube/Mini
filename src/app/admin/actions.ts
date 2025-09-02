@@ -565,15 +565,6 @@ export async function requestWithdrawal(payload: Omit<Withdrawal, 'id' | 'reques
             ...payload,
             requestedAt: serverTimestamp()
         });
-
-        // Log the activity without client info
-        await logUserActivity(payload.userId, 'withdrawal_request', { 
-            deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
-            geoInfo: { ip: 'Not Collected' }
-        }, {
-            amount: payload.amount,
-            method: payload.paymentMethod
-        });
         
         return { success: true, message: 'Withdrawal request submitted successfully.' };
     }).catch(error => {
@@ -1324,7 +1315,7 @@ export async function getActiveFeedbackFormForUser(userId: string): Promise<Feed
         } as FeedbackForm;
     });
     
-    activeForms.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+    activeForms.sort((a,b) => b.createdAt.getTime() - a.getTime());
 
     const userResponsesQuery = query(collection(db, 'feedbackResponses'), where('userId', '==', userId));
     const userResponsesSnap = await getDocs(userResponsesQuery);

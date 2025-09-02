@@ -6,12 +6,11 @@ import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 import { auth, db } from "@/lib/firebase/config";
 import { createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
-import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion, addDoc } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
-import { logUserActivity } from "./admin/actions";
 import { getClientSessionInfo } from "@/lib/device-info";
 import { parsePhoneNumber } from "libphonenumber-js";
-import type { KycData, AddressData } from "@/types";
+import type { KycData, AddressData, ActivityLog, DeviceInfo, GeoInfo } from "@/types";
 
 const projectData = {
     projectDescription: "A cashback calculation system in Go that processes customer transactions. It determines cashback rewards based on a set of configurable rules, including handling for blacklisted Merchant Category Codes (MCCs). The system is exposed via a RESTful API.",
@@ -19,6 +18,35 @@ const projectData = {
     technologyDetails: "The backend is written entirely in Go. It uses the `gorilla/mux` library for HTTP routing and request handling. The project has no external database dependencies mentioned in the repository, suggesting it might be stateless or store data in memory/files.",
     mainGoals: "The main goal is to provide a reliable and efficient service for calculating cashback on transactions. It aims to be flexible through a rule-based system and provide a clear API for integration into larger e-commerce or financial platforms.",
 };
+
+// This function is now local to this file, preventing the admin actions import chain issue.
+async function logUserActivity(
+    userId: string, 
+    event: ActivityLog['event'], 
+    clientInfo: { deviceInfo: DeviceInfo, geoInfo: GeoInfo },
+    details?: Record<string, any>,
+) {
+    try {
+        const logEntry: Omit<ActivityLog, 'id'> = {
+            userId,
+            event,
+            timestamp: new Date(),
+            ipAddress: clientInfo.geoInfo.ip || 'unknown',
+            userAgent: clientInfo.deviceInfo.browser,
+            device: clientInfo.deviceInfo,
+            geo: {
+                country: clientInfo.geoInfo.country,
+                city: clientInfo.geoInfo.city,
+            },
+            details,
+        };
+        // Use the regular client 'db' instance for this logging from a user action
+        await addDoc(collection(db, 'activityLogs'), logEntry);
+    } catch (error) {
+        console.error(`Failed to log activity for event ${event}:`, error);
+    }
+}
+
 
 export async function handleGenerateSummary(): Promise<{ summary: string | null; error: string | null }> {
     try {
@@ -149,6 +177,7 @@ export async function handleForgotPassword(email: string) {
 
 
 export async function updateUserPhoneNumber(userId: string, phoneNumber: string) {
+    'use server'; // Ensures this heavy library is only loaded on the server
     const userRef = doc(db, 'users', userId);
 
     try {
