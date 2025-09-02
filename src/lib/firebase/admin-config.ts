@@ -12,10 +12,14 @@ function getAdminApp(): admin.app.App {
     }
 
     try {
-        // We are decoding the base64-encoded string from the environment variable
-        // to avoid having to store the file in the project.
+        // Decode the base64-encoded service account key from the environment variable.
+        // This is a secure way to handle credentials without committing the key file to source control.
+        if (!process.env.FIREBASE_SERVICE_ACCOUNT_KEY_B64) {
+            throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY_B64 environment variable is not set.");
+        }
+        
         const serviceAccountJson = Buffer.from(
-            process.env.FIREBASE_ADMIN_SDK_JSON_B64!,
+            process.env.FIREBASE_SERVICE_ACCOUNT_KEY_B64,
             'base64'
         ).toString('utf-8');
 
