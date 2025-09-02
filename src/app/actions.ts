@@ -10,7 +10,7 @@ import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collecti
 import { generateReferralCode } from "@/lib/referral";
 import { getClientSessionInfo } from "@/lib/device-info";
 import { parsePhoneNumber } from "libphonenumber-js";
-import type { KycData, AddressData, ActivityLog, DeviceInfo, GeoInfo } from "@/types";
+import type { KycData, AddressData, ActivityLog, DeviceInfo, GeoInfo, UserProfile } from "@/types";
 
 const projectData = {
     projectDescription: "A cashback calculation system in Go that processes customer transactions. It determines cashback rewards based on a set of configurable rules, including handling for blacklisted Merchant Category Codes (MCCs). The system is exposed via a RESTful API.",
@@ -252,5 +252,20 @@ export async function submitAddressData(userId: string, data: Omit<AddressData, 
     } catch (error: any) {
         console.error("Error submitting address data:", error);
         return { success: false, error: "Failed to submit address information." };
+    }
+}
+
+export async function updateUserProfile(userId: string, data: Partial<Pick<UserProfile, 'name'>>) {
+    if (!userId) {
+        return { success: false, message: 'User not authenticated.' };
+    }
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, data);
+        return { success: true, message: 'تم تحديث الملف الشخصي بنجاح.' };
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير معروف.';
+        return { success: false, message: `فشل تحديث الملف الشخصي: ${errorMessage}` };
     }
 }

@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { updateUser, getClientLevels, updateUserPhoneNumber } from "@/app/admin/actions";
+import { updateUserProfile, getClientLevels, updateUserPhoneNumber } from "@/app/actions";
 import { useRouter } from "next/navigation";
 import type { ClientLevel } from "@/types";
 import PhoneInput, { isPossiblePhoneNumber } from 'react-phone-number-input';
@@ -130,8 +130,7 @@ export default function ProfilePage() {
     const handleProfileSubmit = async (values: ProfileFormValues) => {
         if (!user) return;
         setIsProfileSubmitting(true);
-        // We removed the verifyAdmin check from this function
-        const result = await updateUser(user.uid, { name: values.name });
+        const result = await updateUserProfile(user.uid, { name: values.name });
         if (result.success) {
             toast({ type: "success", title: "نجاح", description: result.message });
             refetchUserData();
@@ -263,4 +262,3 @@ export default function ProfilePage() {
         </div>
     )
 }
-
