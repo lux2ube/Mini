@@ -191,17 +191,21 @@ function VerificationItemContent({ icon: Icon, title, status }: { icon: React.El
     }
     return (
         <Card className="hover:bg-muted/50 transition-colors w-full">
-            <CardContent className="p-4 flex items-center gap-4">
-                <div className="p-2 bg-primary/10 rounded-md">
-                    <Icon className="h-6 w-6 text-primary" />
+            <CardContent className="p-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <div className="flex items-center gap-4 flex-grow">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                        <Icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-grow">
+                        <h3 className="font-semibold">{title}</h3>
+                    </div>
                 </div>
-                <div className="flex-grow">
-                    <h3 className="font-semibold">{title}</h3>
+                <div className="flex items-center gap-2 ml-auto shrink-0">
+                    <Badge variant={status === 'Verified' ? 'default' : status === 'Add' ? 'outline' : status === 'Pending' ? 'secondary' : 'destructive'}>
+                        {getStatusText()}
+                    </Badge>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </div>
-                <Badge variant={status === 'Verified' ? 'default' : status === 'Add' ? 'outline' : status === 'Pending' ? 'secondary' : 'destructive'}>
-                    {getStatusText()}
-                </Badge>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </CardContent>
         </Card>
     );
