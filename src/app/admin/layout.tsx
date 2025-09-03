@@ -106,7 +106,7 @@ function SidebarHeader() {
 }
 
 function UserInfoFooter() {
-    const { firebaseUser, userProfile } = useAuthContext();
+    const { user } = useAuthContext();
     const router = useRouter();
     const { toast } = useToast();
     
@@ -123,8 +123,8 @@ function UserInfoFooter() {
     return (
         <div className="mt-auto p-4 border-t space-y-2">
             <div className="text-sm">
-                <p className="font-semibold">{userProfile?.name || 'مشرف'}</p>
-                <p className="text-muted-foreground">{firebaseUser?.email}</p>
+                <p className="font-semibold">{user?.profile?.name || 'مشرف'}</p>
+                <p className="text-muted-foreground">{user?.email}</p>
             </div>
              <Button
                 variant="ghost"

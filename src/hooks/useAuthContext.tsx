@@ -4,7 +4,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
 import { onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
 import { auth, db, initializeClientApp } from '@/lib/firebase/config';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import type { UserProfile } from '@/types';
 import { useRouter } from 'next/navigation';
 
@@ -40,7 +40,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Ensure Firebase is initialized only on the client
   useEffect(() => {
     initializeClientApp();
   }, []);

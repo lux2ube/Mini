@@ -55,7 +55,7 @@ type FormData = z.infer<typeof formSchema>;
 function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuccess: () => void; onCancel: () => void; }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
-    const { firebaseUser, userProfile } = useAuthContext();
+    const { user } = useAuthContext();
 
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
@@ -73,15 +73,15 @@ function PostForm({ post, onSuccess, onCancel }: { post?: BlogPost | null; onSuc
     });
 
     const onSubmit = async (data: FormData) => {
-        if (!firebaseUser || !userProfile) return;
+        if (!user || !user.profile) return;
         setIsSubmitting(true);
         const slug = slugify(data.title, { lower: true, strict: true });
         const payload = {
             ...data,
             slug,
             tags: data.tags ? data.tags.split(',').map(tag => tag.trim()) : [],
-            authorName: userProfile.name,
-            authorId: firebaseUser.uid,
+            authorName: user.profile.name,
+            authorId: user.uid,
         };
 
         const result = post
