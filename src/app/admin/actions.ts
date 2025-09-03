@@ -1,6 +1,5 @@
 
 
-
 'use server';
 
 import { db } from '@/lib/firebase/config';
@@ -1298,70 +1297,55 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
     const usersRef = collection(adminDb, 'users');
     const results: PendingVerification[] = [];
 
-    // Query for each type of pending verification
-    const kycQuery = query(usersRef, where('hasPendingKYC', '==', true));
-    const addressQuery = query(usersRef, where('hasPendingAddress', '==', true));
-    const phoneQuery = query(usersRef, where('hasPendingPhone', '==', true));
+    // Use a compound query to fetch users with any pending verification flag
+    const q = query(usersRef, or(
+        where('hasPendingKYC', '==', true),
+        where('hasPendingAddress', '==', true),
+        where('hasPendingPhone', '==', true)
+    ));
 
-    const [kycSnapshot, addressSnapshot, phoneSnapshot] = await Promise.all([
-        getDocs(kycQuery),
-        getDocs(addressQuery),
-        getDocs(phoneQuery),
-    ]);
-    
-    const pendingMap = new Map<string, PendingVerification>();
+    const snapshot = await getDocs(q);
 
-    kycSnapshot.docs.forEach(doc => {
+    snapshot.docs.forEach(doc => {
         const user = { uid: doc.id, ...doc.data() } as UserProfile;
-        const key = `${user.uid}-KYC`;
-        if (!pendingMap.has(key) && user.kycData?.status === 'Pending') {
-            const verification: PendingVerification = {
+        
+        // Check for pending KYC
+        if (user.hasPendingKYC && user.kycData?.status === 'Pending') {
+            results.push({
                 userId: user.uid,
                 userName: user.name,
                 userEmail: user.email,
                 type: 'KYC',
-                data: user.kycData!,
+                data: user.kycData,
                 requestedAt: safeToDate(user.kycData.submittedAt) || new Date()
-            };
-            pendingMap.set(key, verification);
-            results.push(verification);
+            });
         }
-    });
-
-    addressSnapshot.docs.forEach(doc => {
-        const user = { uid: doc.id, ...doc.data() } as UserProfile;
-        const key = `${user.uid}-Address`;
-        if (!pendingMap.has(key) && user.addressData?.status === 'Pending') {
-            const verification: PendingVerification = {
+        
+        // Check for pending Address
+        if (user.hasPendingAddress && user.addressData?.status === 'Pending') {
+             results.push({
                 userId: user.uid,
                 userName: user.name,
                 userEmail: user.email,
                 type: 'Address',
-                data: user.addressData!,
+                data: user.addressData,
                 requestedAt: safeToDate(user.addressData.submittedAt) || new Date()
-            };
-            pendingMap.set(key, verification);
-            results.push(verification);
+            });
         }
-    });
-
-    phoneSnapshot.docs.forEach(doc => {
-        const user = { uid: doc.id, ...doc.data() } as UserProfile;
-        const key = `${user.uid}-Phone`;
-        if (!pendingMap.has(key) && !user.phoneNumberVerified) {
-            const verification: PendingVerification = {
+        
+        // Check for pending Phone
+        if (user.hasPendingPhone && !user.phoneNumberVerified) {
+            results.push({
                 userId: user.uid,
                 userName: user.name,
                 userEmail: user.email,
                 type: 'Phone',
                 data: { phoneNumber: user.phoneNumber! },
-                requestedAt: safeToDate(user.createdAt) || new Date() // Use createdAt as a fallback date
-            };
-            pendingMap.set(key, verification);
-            results.push(verification);
+                requestedAt: safeToDate(user.createdAt) || new Date() // Fallback date
+            });
         }
     });
-    
+
     return results.sort((a, b) => b.requestedAt.getTime() - a.requestedAt.getTime());
 }
 
