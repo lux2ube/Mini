@@ -12,7 +12,7 @@ import { db } from "@/lib/firebase/config";
 import { collection, query, where, getCountFromServer, getDocs, Timestamp, orderBy, limit } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import type { BannerSettings, TradingAccount, CashbackTransaction, FeedbackForm } from "@/types";
-import { getBannerSettings, getUserBalance, getActiveFeedbackFormForUser } from "../admin/actions";
+import { getBannerSettings, getUserBalance, getActiveFeedbackFormForUser } from "../actions";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

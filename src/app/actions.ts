@@ -12,13 +12,23 @@ import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collecti
 import { generateReferralCode } from "@/lib/referral";
 import { getClientSessionInfo } from "@/lib/device-info";
 import { parsePhoneNumber } from "libphonenumber-js";
-import type { KycData, AddressData, ActivityLog, DeviceInfo, GeoInfo, UserProfile } from "@/types";
+import type { KycData, AddressData, ActivityLog, DeviceInfo, GeoInfo, UserProfile, Withdrawal, Order, FeedbackForm } from "@/types";
 
 const projectData = {
     projectDescription: "A cashback calculation system in Go that processes customer transactions. It determines cashback rewards based on a set of configurable rules, including handling for blacklisted Merchant Category Codes (MCCs). The system is exposed via a RESTful API.",
     architectureDetails: "The project is a single microservice built in Go. It exposes a REST API for calculating cashback. The core logic is encapsulated within a rules engine that evaluates transactions against a list of rules to determine the final cashback amount. It has handlers for different API endpoints, and a main function to set up the server.",
     technologyDetails: "The backend is written entirely in Go. It uses the `gorilla/mux` library for HTTP routing and request handling. The project has no external database dependencies mentioned in the repository, suggesting it might be stateless or store data in memory/files.",
     mainGoals: "The main goal is to provide a reliable and efficient service for calculating cashback on transactions. It aims to be flexible through a rule-based system and provide a clear API for integration into larger e-commerce or financial platforms.",
+};
+
+const safeToDate = (timestamp: any): Date | undefined => {
+    if (timestamp instanceof Timestamp) {
+        return timestamp.toDate();
+    }
+    if (timestamp && typeof timestamp.toDate === 'function') {
+        return timestamp.toDate();
+    }
+    return undefined;
 };
 
 // This function is now local to this file, preventing the admin actions import chain issue.
@@ -270,4 +280,78 @@ export async function updateUserProfile(userId: string, data: Partial<Pick<UserP
         const errorMessage = error instanceof Error ? error.message : 'حدث خطأ غير معروف.';
         return { success: false, message: `فشل تحديث الملف الشخصي: ${errorMessage}` };
     }
+}
+
+// User-facing data fetching functions moved from admin/actions.ts
+
+export async function getUserBalance(userId: string) {
+    const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
+    const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', userId));
+    const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
+
+    const [transactionsSnap, withdrawalsSnap, ordersSnap] = await Promise.all([
+        getDocs(transactionsQuery),
+        getDocs(withdrawalsQuery),
+        getDocs(ordersQuery)
+    ]);
+
+    const totalEarned = transactionsSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
+    
+    let pendingWithdrawals = 0;
+    let completedWithdrawals = 0;
+    withdrawalsSnap.docs.forEach(doc => {
+        const withdrawal = doc.data() as Withdrawal;
+        if (withdrawal.status === 'Processing') {
+            pendingWithdrawals += withdrawal.amount;
+        } else if (withdrawal.status === 'Completed') {
+            completedWithdrawals += withdrawal.amount;
+        }
+    });
+
+    const totalSpentOnOrders = ordersSnap.docs
+        .filter(doc => doc.data().status !== 'Cancelled')
+        .reduce((sum, doc) => sum + doc.data().price, 0);
+    
+    const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals - totalSpentOnOrders;
+
+    return {
+        availableBalance: Number(availableBalance.toFixed(2)),
+        totalEarned: Number(totalEarned.toFixed(2)),
+        pendingWithdrawals: Number(pendingWithdrawals.toFixed(2)),
+        completedWithdrawals: Number(completedWithdrawals.toFixed(2)),
+        totalSpentOnOrders: Number(totalSpentOnOrders.toFixed(2)),
+    };
+}
+
+
+// Get the first active feedback form for a user that they haven't responded to yet.
+export async function getActiveFeedbackFormForUser(userId: string): Promise<FeedbackForm | null> {
+    const activeFormsQuery = query(collection(db, 'feedbackForms'), where('status', '==', 'active'));
+    const activeFormsSnap = await getDocs(activeFormsQuery);
+    if (activeFormsSnap.empty) {
+        return null;
+    }
+
+    const activeForms = activeFormsSnap.docs.map(doc => {
+        const data = doc.data();
+        return {
+            id: doc.id,
+            ...data,
+            createdAt: safeToDate(data.createdAt) || new Date(),
+        } as FeedbackForm;
+    });
+    
+    activeForms.sort((a,b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const userResponsesQuery = query(collection(db, 'feedbackResponses'), where('userId', '==', userId));
+    const userResponsesSnap = await getDocs(userResponsesQuery);
+    const respondedFormIds = new Set(userResponsesSnap.docs.map(doc => doc.data().formId));
+
+    for (const form of activeForms) {
+        if (!respondedFormIds.has(form.id)) {
+            return form;
+        }
+    }
+
+    return null;
 }

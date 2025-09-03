@@ -41,7 +41,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { getUserBalance, getPaymentMethods, requestWithdrawal } from "@/app/admin/actions";
+import { getPaymentMethods, requestWithdrawal } from "@/app/admin/actions";
+import { getUserBalance } from "@/app/actions";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";

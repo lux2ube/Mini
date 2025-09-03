@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase/config';
@@ -82,47 +83,6 @@ async function createNotification(
         isRead: false,
         createdAt: serverTimestamp(),
     });
-}
-
-
-// Balance Calculation
-export async function getUserBalance(userId: string) {
-    const transactionsQuery = query(collection(db, 'cashbackTransactions'), where('userId', '==', userId));
-    const withdrawalsQuery = query(collection(db, 'withdrawals'), where('userId', '==', userId));
-    const ordersQuery = query(collection(db, 'orders'), where('userId', '==', userId));
-
-    const [transactionsSnap, withdrawalsSnap, ordersSnap] = await Promise.all([
-        getDocs(transactionsQuery),
-        getDocs(withdrawalsQuery),
-        getDocs(ordersQuery)
-    ]);
-
-    const totalEarned = transactionsSnap.docs.reduce((sum, doc) => sum + doc.data().cashbackAmount, 0);
-    
-    let pendingWithdrawals = 0;
-    let completedWithdrawals = 0;
-    withdrawalsSnap.docs.forEach(doc => {
-        const withdrawal = doc.data() as Withdrawal;
-        if (withdrawal.status === 'Processing') {
-            pendingWithdrawals += withdrawal.amount;
-        } else if (withdrawal.status === 'Completed') {
-            completedWithdrawals += withdrawal.amount;
-        }
-    });
-
-    const totalSpentOnOrders = ordersSnap.docs
-        .filter(doc => doc.data().status !== 'Cancelled')
-        .reduce((sum, doc) => sum + doc.data().price, 0);
-    
-    const availableBalance = totalEarned - completedWithdrawals - pendingWithdrawals - totalSpentOnOrders;
-
-    return {
-        availableBalance: Number(availableBalance.toFixed(2)),
-        totalEarned: Number(totalEarned.toFixed(2)),
-        pendingWithdrawals: Number(pendingWithdrawals.toFixed(2)),
-        completedWithdrawals: Number(completedWithdrawals.toFixed(2)),
-        totalSpentOnOrders: Number(totalSpentOnOrders.toFixed(2)),
-    };
 }
 
 
@@ -555,9 +515,10 @@ export async function getWithdrawals(): Promise<Withdrawal[]> {
 
 export async function requestWithdrawal(payload: Omit<Withdrawal, 'id' | 'requestedAt'>) {
     return runTransaction(db, async (transaction) => {
-        // Validate user balance
-        const { availableBalance } = await getUserBalance(payload.userId);
-        if (payload.amount > availableBalance) {
+        const { getUserBalance } = await import('@/app/actions'); // Dynamically import to avoid circular dependency
+        const balanceData = await getUserBalance(payload.userId);
+        
+        if (payload.amount > balanceData.availableBalance) {
             throw new Error("Insufficient available balance for this withdrawal.");
         }
         
@@ -868,6 +829,7 @@ export async function placeOrder(
     clientInfo: { deviceInfo: DeviceInfo, geoInfo: GeoInfo }
 ) {
     let product: Product | null = null;
+    const { getUserBalance } = await import('@/app/actions');
 
     return runTransaction(db, async (transaction) => {
         const productRef = doc(db, 'products', productId);
@@ -876,10 +838,10 @@ export async function placeOrder(
         if (!productSnap.exists()) throw new Error("Product not found.");
         product = productSnap.data() as Product;
 
-        const { availableBalance } = await getUserBalance(userId);
+        const balanceData = await getUserBalance(userId);
 
         if (product.stock <= 0) throw new Error("This product is currently out of stock.");
-        if (availableBalance < product.price) throw new Error("You do not have enough available balance to purchase this item.");
+        if (balanceData.availableBalance < product.price) throw new Error("You do not have enough available balance to purchase this item.");
 
         transaction.update(productRef, { stock: increment(-1) });
 
@@ -1068,6 +1030,8 @@ export async function getUserDetails(userId: string) {
         const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", userId));
         const ordersQuery = query(collection(db, "orders"), where("userId", "==", userId));
         
+        const { getUserBalance } = await import('@/app/actions');
+
         const [
             balanceData,
             accountsSnapshot,
@@ -1298,38 +1262,6 @@ export async function getFeedbackResponses(formId: string): Promise<EnrichedFeed
     }));
 }
 
-
-// Get the first active feedback form for a user that they haven't responded to yet.
-export async function getActiveFeedbackFormForUser(userId: string): Promise<FeedbackForm | null> {
-    const activeFormsQuery = query(collection(db, 'feedbackForms'), where('status', '==', 'active'));
-    const activeFormsSnap = await getDocs(activeFormsQuery);
-    if (activeFormsSnap.empty) {
-        return null;
-    }
-
-    const activeForms = activeFormsSnap.docs.map(doc => {
-        const data = doc.data();
-        return {
-            id: doc.id,
-            ...data,
-            createdAt: safeToDate(data.createdAt) || new Date(),
-        } as FeedbackForm;
-    });
-    
-    activeForms.sort((a,b) => b.createdAt.getTime() - a.getTime());
-
-    const userResponsesQuery = query(collection(db, 'feedbackResponses'), where('userId', '==', userId));
-    const userResponsesSnap = await getDocs(userResponsesQuery);
-    const respondedFormIds = new Set(userResponsesSnap.docs.map(doc => doc.data().formId));
-
-    for (const form of activeForms) {
-        if (!respondedFormIds.has(form.id)) {
-            return form;
-        }
-    }
-
-    return null;
-}
 
 export async function submitFeedbackResponse(
     userId: string,
