@@ -210,7 +210,7 @@ function VerificationItemContent({ icon: Icon, title, status }: { icon: React.El
 export default function VerificationPage() {
     const { user, isLoading, refetchUserData } = useAuthContext();
     const { toast } = useToast();
-
+    
     const handleSendVerificationEmail = async () => {
         const result = await sendVerificationEmail();
         if (result.success) {
