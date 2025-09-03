@@ -3,7 +3,7 @@
 
 import * as admin from 'firebase-admin';
 import type { UserProfile } from '@/types';
-import { adminAuth, adminDb, verifyAdmin } from '@/lib/firebase/admin-config';
+import { adminDb, verifyAdmin } from '@/lib/firebase/admin-config';
 
 const safeToDate = (timestamp: any): Date | undefined => {
     if (timestamp instanceof admin.firestore.Timestamp) {
