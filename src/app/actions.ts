@@ -8,11 +8,11 @@ import { calculateCashback } from "@/ai/flows/calculate-cashback";
 import type { CalculateCashbackInput, CalculateCashbackOutput } from "@/ai/flows/calculate-cashback";
 import { auth, db } from "@/lib/firebase/config";
 import { createUserWithEmailAndPassword, signOut, deleteUser, sendPasswordResetEmail, sendEmailVerification } from "firebase/auth";
-import { doc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion, addDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp, runTransaction, query, where, getDocs, collection, updateDoc, arrayUnion, addDoc } from "firebase/firestore";
 import { generateReferralCode } from "@/lib/referral";
 import { getClientSessionInfo } from "@/lib/device-info";
 import { parsePhoneNumber } from "libphonenumber-js";
-import type { KycData, AddressData, ActivityLog, DeviceInfo, GeoInfo, UserProfile, Withdrawal, Order, FeedbackForm } from "@/types";
+import type { KycData, AddressData, ActivityLog, DeviceInfo, GeoInfo, UserProfile, Withdrawal, Order, FeedbackForm, BannerSettings } from "@/types";
 
 const projectData = {
     projectDescription: "A cashback calculation system in Go that processes customer transactions. It determines cashback rewards based on a set of configurable rules, including handling for blacklisted Merchant Category Codes (MCCs). The system is exposed via a RESTful API.",
@@ -354,4 +354,25 @@ export async function getActiveFeedbackFormForUser(userId: string): Promise<Feed
     }
 
     return null;
+}
+
+// Get Banner Settings - Moved from admin/actions
+export async function getBannerSettings(): Promise<BannerSettings> {
+    const docRef = doc(db, 'settings', 'banner');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as BannerSettings;
+    }
+    // Return default settings if not found
+    return { 
+        isEnabled: false,
+        type: 'text',
+        title: "",
+        text: "",
+        ctaText: "",
+        ctaLink: "",
+        scriptCode: "",
+        targetTiers: [],
+        targetCountries: [],
+     };
 }

@@ -1,5 +1,6 @@
 
 
+
 'use server';
 
 import { db } from '@/lib/firebase/config';
@@ -87,26 +88,6 @@ async function createNotification(
 
 
 // Banner Management
-export async function getBannerSettings(): Promise<BannerSettings> {
-    const docRef = doc(db, 'settings', 'banner');
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-        return docSnap.data() as BannerSettings;
-    }
-    // Return default settings if not found
-    return { 
-        isEnabled: false,
-        type: 'text',
-        title: "",
-        text: "",
-        ctaText: "",
-        ctaLink: "",
-        scriptCode: "",
-        targetTiers: [],
-        targetCountries: [],
-     };
-}
-
 export async function updateBannerSettings(settings: BannerSettings) {
     await verifyAdmin();
     try {

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -60,8 +61,8 @@ function PromoBanner() {
         const checkTargeting = async () => {
             const { targetTiers, targetCountries } = settings;
             
-            // Tier check - This part is deprecated but kept for safety with old data
-            const tierMatch = !targetTiers || targetTiers.length === 0 || targetTiers.includes(user.profile!.tier as any);
+            // Tier check is based on level ID (number), not name (string)
+            const tierMatch = !targetTiers || targetTiers.length === 0 || targetTiers.includes(user.profile!.level as any);
 
             // Country check
             let countryMatch = !targetCountries || targetCountries.length === 0;

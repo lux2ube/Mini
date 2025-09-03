@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -67,6 +68,10 @@ export default function ManageBannerPage() {
         async function fetchSettings() {
             setIsLoading(true);
             try {
+                // Since this is an admin page, we should import from admin/actions
+                // However, since getBannerSettings is now public, it doesn't matter as much.
+                // For consistency let's assume it could have admin-only logic inside in the future.
+                const { getBannerSettings } = await import("@/app/actions");
                 const settings = await getBannerSettings();
                 form.reset({
                     ...settings,
