@@ -32,10 +32,10 @@ const nextConfig: NextConfig = {
     ],
   },
   webpack: (config, { isServer }) => {
-    // This is to suppress the Handlebars "require.extensions" warning.
-    // It's a known issue with older libraries in Webpack 5+ and doesn't affect the build.
+    // This is to suppress known warnings from libraries that don't affect the build.
     config.ignoreWarnings = (config.ignoreWarnings || []).concat([
-      /require.extensions/,
+      /require.extensions/, // For Handlebars
+      /Critical dependency: the request of a dependency is an expression/ // For OpenTelemetry
     ]);
     return config;
   },

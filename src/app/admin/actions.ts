@@ -4,6 +4,8 @@
 
 import { db } from '@/lib/firebase/config';
 import { adminDb, verifyAdmin } from '@/lib/firebase/admin-config';
+import * as admin from 'firebase-admin';
+import { collection as clientCollection, doc as clientDoc, updateDoc as clientUpdateDoc } from 'firebase/firestore';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit, or, deleteField } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData, PendingVerification } from '@/types';
@@ -13,6 +15,9 @@ import { getUsers } from './users/actions';
 
 
 const safeToDate = (timestamp: any): Date | undefined => {
+    if (timestamp instanceof admin.firestore.Timestamp) {
+        return timestamp.toDate();
+    }
     if (timestamp instanceof Timestamp) {
         return timestamp.toDate();
     }
@@ -73,8 +78,8 @@ async function createNotification(
     type: Notification['type'], 
     link?: string
 ) {
-    const notificationsCollection = collection(db, 'notifications');
-    const newNotifRef = doc(notificationsCollection);
+    const notificationsCollection = clientCollection(db, 'notifications');
+    const newNotifRef = clientDoc(notificationsCollection);
     transaction.set(newNotifRef, {
         userId,
         message,
@@ -90,7 +95,7 @@ async function createNotification(
 export async function updateBannerSettings(settings: BannerSettings) {
     await verifyAdmin();
     try {
-        const docRef = doc(db, 'settings', 'banner');
+        const docRef = clientDoc(db, 'settings', 'banner');
         await setDoc(docRef, settings, { merge: true });
         return { success: true, message: 'تم تحديث إعدادات البانر بنجاح.' };
     } catch (error) {
@@ -152,8 +157,8 @@ export async function addBrokersBatch(brokers: Omit<Broker, 'id' | 'order'>[]) {
 export async function updateBroker(brokerId: string, data: Partial<Omit<Broker, 'id'>>) {
     await verifyAdmin();
     try {
-        const brokerRef = doc(db, 'brokers', brokerId);
-        await updateDoc(brokerRef, data);
+        const brokerRef = clientDoc(db, 'brokers', brokerId);
+        await clientUpdateDoc(brokerRef, data);
         return { success: true, message: 'تم تحديث الوسيط بنجاح.' };
     } catch (error) {
         console.error("Error updating broker:", error);
@@ -425,8 +430,8 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
 export async function updateUser(userId: string, data: Partial<Pick<UserProfile, 'name' | 'country' | 'phoneNumber'>>) {
     await verifyAdmin();
     try {
-        const userRef = doc(adminDb, 'users', userId);
-        await updateDoc(userRef, data);
+        const userRef = clientDoc(adminDb, 'users', userId);
+        await clientUpdateDoc(userRef, data);
         return { success: true, message: 'تم تحديث الملف الشخصي بنجاح.' };
     } catch (error) {
         console.error("Error updating user profile:", error);
@@ -585,7 +590,7 @@ export async function getNotificationsForUser(userId: string): Promise<Notificat
         } as Notification;
     });
 
-    // Perform sorting in-memory to avoid composite index requirement
+    // Perform sorting in-memory to avoid composite index
     notifications.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
     
     return notifications;
@@ -893,7 +898,7 @@ export async function deletePaymentMethod(id: string) {
 }
 
 // Blog Post Management
-function convertTimestamps(docData: any) {
+function convertTimestamps(docData: admin.firestore.QueryDocumentSnapshot): BlogPost {
     const data = docData.data();
     return {
         id: docData.id,
@@ -907,17 +912,14 @@ function convertTimestamps(docData: any) {
 // Get all posts (for admin view)
 export async function getAllBlogPosts(): Promise<BlogPost[]> {
     await verifyAdmin();
-    const snapshot = await getDocs(query(collection(db, 'blogPosts'), orderBy('createdAt', 'desc')));
+    const snapshot = await adminDb.collection('blogPosts').orderBy('createdAt', 'desc').get();
     return snapshot.docs.map(convertTimestamps);
 }
 
 // Get all published posts (for public view)
 export async function getPublishedBlogPosts(): Promise<BlogPost[]> {
-    const q = query(
-        collection(db, 'blogPosts'), 
-        where('status', '==', 'published')
-    );
-    const snapshot = await getDocs(q);
+    const q = adminDb.collection('blogPosts').where('status', '==', 'published');
+    const snapshot = await q.get();
     const posts = snapshot.docs.map(convertTimestamps);
 
     // Sort in-memory to avoid composite index
@@ -928,12 +930,8 @@ export async function getPublishedBlogPosts(): Promise<BlogPost[]> {
 
 // Get a single post by its slug (for public view)
 export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
-    const q = query(
-        collection(db, 'blogPosts'), 
-        where('slug', '==', slug), 
-        where('status', '==', 'published')
-    );
-    const snapshot = await getDocs(q);
+    const q = adminDb.collection('blogPosts').where('slug', '==', slug).where('status', '==', 'published');
+    const snapshot = await q.get();
     if (snapshot.empty) {
         return null;
     }
@@ -1294,17 +1292,19 @@ export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]
 // Verification Actions
 export async function getPendingVerifications(): Promise<PendingVerification[]> {
     await verifyAdmin();
-    const usersRef = collection(adminDb, 'users');
+    const usersRef = adminDb.collection('users');
     const results: PendingVerification[] = [];
 
     // Use a compound query to fetch users with any pending verification flag
-    const q = query(usersRef, or(
-        where('hasPendingKYC', '==', true),
-        where('hasPendingAddress', '==', true),
-        where('hasPendingPhone', '==', true)
-    ));
+    const q = usersRef.where(
+        admin.firestore.Filter.or(
+            admin.firestore.Filter.where('hasPendingKYC', '==', true),
+            admin.firestore.Filter.where('hasPendingAddress', '==', true),
+            admin.firestore.Filter.where('hasPendingPhone', '==', true)
+        )
+    );
 
-    const snapshot = await getDocs(q);
+    const snapshot = await q.get();
 
     snapshot.docs.forEach(doc => {
         const user = { uid: doc.id, ...doc.data() } as UserProfile;
@@ -1357,7 +1357,7 @@ export async function updateVerificationStatus(
 ) {
     await verifyAdmin();
     try {
-        const userRef = doc(adminDb, 'users', userId);
+        const userRef = adminDb.doc(`users/${userId}`);
         let updateData: Record<string, any> = {};
         let notificationMessage = '';
         let notificationType: Notification['type'] = 'general';
@@ -1388,7 +1388,8 @@ export async function updateVerificationStatus(
         }
 
         await runTransaction(db, async (transaction) => {
-            transaction.update(userRef, updateData);
+            const clientUserRef = doc(db, 'users', userId); // Use client ref for transaction
+            transaction.update(clientUserRef, updateData);
             await createNotification(transaction, userId, notificationMessage, notificationType, '/dashboard/settings/verification');
         });
 
@@ -1403,8 +1404,8 @@ export async function updateVerificationStatus(
 export async function adminUpdateKyc(userId: string, data: KycData) {
     await verifyAdmin();
     try {
-        const userRef = doc(adminDb, 'users', userId);
-        await updateDoc(userRef, { kycData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });
+        const userRef = adminDb.doc(`users/${userId}`);
+        await userRef.update({ kycData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });
         return { success: true, message: "تم تحديث بيانات KYC للمستخدم." };
     } catch (error) {
         console.error("Error updating KYC by admin:", error);
@@ -1415,8 +1416,8 @@ export async function adminUpdateKyc(userId: string, data: KycData) {
 export async function adminUpdateAddress(userId: string, data: AddressData) {
     await verifyAdmin();
     try {
-        const userRef = doc(adminDb, 'users', userId);
-        await updateDoc(userRef, { addressData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });
+        const userRef = adminDb.doc(`users/${userId}`);
+        await userRef.update({ addressData: { ...data, submittedAt: data.submittedAt || serverTimestamp() } });
         return { success: true, message: "تم تحديث بيانات العنوان للمستخدم." };
     } catch (error) {
         console.error("Error updating address by admin:", error);

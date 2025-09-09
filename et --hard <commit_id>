@@ -1,0 +1,497 @@
+[33ma62bba2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m I want final multiple steps solution, try everything possible Error: An
+[33m8a73a09[m آه فهمت الآن. أنت تريد حل يكون مشابه لطريقة Firebase: بمعنى عند تسجيل مس
+[33mcf742be[m Said could not create user profile
+[33me4e7d08[m Why users table not build, and user auth but didn't create its document
+[33m7d30af7[m Users can't access their dashboard you have to solve it
+[33m12db9e9[m Auth session missing said
+[33m1385ff5[m Look to the toast
+[33md7ca76f[m Why , and after addingbphone can't login
+[33m882f6bc[m This error happens because you're trying to call a client-side Supabase
+[33m72b7db8[m Diagnose the problem because i want you to change all project codes syst
+[33ma22760f[m Try fixing this error: `Runtime Error: Error: An unexpected response was
+[33ma561ed6[m Tgus error persistent, work on it systematic
+[33m0a83271[m That error is coming from Next.js Server Actions. It usually means your
+[33me7c21a1[m That error usually happens in Next.js 13+ (App Router) with Server Actio
+[33md989074[m Try fixing this error: `Runtime Error: Error: An unexpected response was
+[33mc86a03a[m Look
+[33mc949e12[m # --------------------------- # Client (public) keys # -----------------
+[33m81b58ad[m Try fixing this error: `Build Error: Module not found: Can't resolve 'fi
+[33m614ba6c[m Ah — this is a Next.js App Router / Supabase client scoping issue. Let m
+[33md720147[m Ah — that error means Supabase Auth rejected the login request. Let’s ca
+[33m6575652[m Sign up auth done , but can't login and can't build his profile
+[33m5f5da96[m Ah — now the error is because your code is still trying to import Fireba
+[33mb79ad57[m Got it! Here’s the solution in English for your Next.js + Supabase “Modu
+[33m3615f45[m Ah! The error you’re seeing:
+[33m8c5d8b6[m Still calling my previous data , so it said this email already used , i
+[33mf96c859[m Diagnose
+[33m49c029f[m Why admin verification management page didn't show pending requests,
+[33m9ddc90c[m Why verification requirests are jot shown in the admin verification mana
+[33m29cf7e6[m I see this error with the app, reported by NextJS, please fix it. The er
+[33me27b1ea[m Client dashboard could not displayed financial and brokers records , why
+[33m681f7eb[m Why user dashboard didn't show user details
+[33m0b5f87b[m In user side  verification page show non response to phone layout, becau
+[33mb571de0[m Look
+[33mfbb3a8e[m I meant the verification  dialogue and page  of client side not admin si
+[33m18d6ab5[m Fix the KYC and location dialogue permeantly , it should be for phone ,
+[33m6a7ebe9[m Why You are not dealing with phone number verification requirests same a
+[33m353cc3e[m I have a Next.js 15.3.3 project deployed on Vercel with Firebase backend
+[33mfd35691[m I’m setting up my project using environment variables. I have:
+[33mae8fbb3[m Secret scanning found a Google Cloud Service Account Credentials secret
+[33ma69b5d7[m Said denied whwn we run the script
+[33mb3dc410[m first commit
+[33m0540d40[m Do it yourself
+[33mb96dda1[m // Import the functions you need from the SDKs you need import { initial
+[33m92bc209[m FirebaseError: Firebase: Error (auth/invalid-api-key).     at createErro
+[33mca333d4[m Calling service account key json from .env is so bad , so generate json
+[33mbb426ee[m Failed to push some refs
+[33me9673c2[m I have a Git repository on GitHub with branch protection rules enabled o
+[33ma34ca4b[m[33m ([m[1;31morigin/update-app[m[33m, [m[1;32mupdate-app[m[33m)[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m9f13d51[m I have a Next.js cashback forex system with one login page for both admi
+[33mb208540[m Make sure you don’t import Admin SDK in the browser
+[33maf7b57d[m Why Admin called during user adding his phone number //Error: Failed to
+[33mb0d5dc6[m اكتب نسخة باللغة العربية من سياسة الخصوصية وشروط الاستخدام لمنصة عامة عل
+[33m9d39213[m import * as admin from "firebase-admin";
+[33m4f9b25b[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m390864e[m Login do nothing i think route ls doesn't work
+[33m6f3e2ef[m Check point to Test login using terminal // email is : 77110k@gmail.com
+[33mef9cce9[m Clicking login button do nothing
+[33me0fc144[m My login page or firebase is just a bug , we want a plan to re build it
+[33m3d8fb69[m FirebaseError: Firebase: Error (auth/invalid-api-key).     at createErro
+[33mba4cad2[m Failed to login said email or password is incorrect
+[33mcaa6701[m Cyber security check z for admin login using admindb token and admin act
+[33m052bca2[m Look the toast error and diagnose
+[33mb8b5b8f[m No need for backfill status or levels because it was one tike function a
+[33m489858b[m I see this error with the app, reported by NextJS, please fix it. The er
+[33maf74334[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m575da0a[m Error: Unauthorized: No session cookie found.     at getAdminUsers (webp
+[33m7b7da92[m Whats wrong with this system build it using tye international standard s
+[33m22b77cd[m TypeError: (0 , _actions__WEBPACK_IMPORTED_MODULE_4__.getClientLevels) i
+[33m699c75b[m Is this100 percent secure and not only deponds on users collection varia
+[33mc0656ea[m Said تعذر جلب المستخدمين // diagnose
+[33m8153cea[m Get access to admin dashboard only depends on admin sdk and after loadin
+[33mb72d429[m Assign roles Roles are composed of sets of permissions and determine wha
+[33m81baccc[m Why u couldn't fitish data using admindb , diagnose
+[33m9163960[m Mother fucker , Call the admindb for security , if you can't then tell m
+[33ma79d25a[m We git access to admin pannel but data doesn't shown
+[33m2170a97[m Here is the result from base64 "ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIs
+[33me5232a3[m Be responsible, work systematically this is critical step , Now upgrade
+[33m3420edb[m Now build the admij access with admindb and token
+[33me38b25e[m Client Login successful but can't access client dashboard
+[33m720cbf9[m Client dashboard show nothing
+[33m632b372[m Build tye user and admin configuration to ensure everything well work we
+[33m1c88459[m It doesn't work that means you will never use admin sdk
+[33m255e634[m No solve admindb do anything
+[33ma4462da[m Asmin pannel ia empty where is users details
+[33m2186cc5[m I see this error with the app, reported by NextJS, please fix it. The er
+[33md5dd042[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m3e724dc[m Error: The default Firebase app does not exist. Make sure you call initi
+[33m5c82146[m The problem is related to how you call firebase project
+[33m2bc87f9[m ReferenceError: AlertDescription is not defined     at LoginPage (webpac
+[33mcc1da99[m What
+[33me3dc0f8[m Ah! You mean you want to convert the JSON private key into a single stri
+[33m7d1dff0[m فشل تسجيل الدخول لاي حساب يقول ان الايميل او كلمة المرور غير صحيحة
+[33m518e05e[m Add the json variables of service account key json inside .env and make
+[33me792c4a[m Run admin sdk and tell me who is the admin
+[33m3a1c4f3[m TypeError: user.getIdTokenResult is not a function     at AdminGuard.use
+[33m7d74919[m I see this error with the app, reported by NextJS, please fix it. The er
+[33meba4d29[m Perfect 👌 since you already added the Firebase Admin SDK JSON file (the
+[33m1245e4d[m Error: [ Server ] Only plain objects can be passed to Client Components
+[33m8e562e8[m Review all codes to find if any ui or backend code written with way that
+[33mb3795e5[m Generate the firebase rules , make sure for 100% strick security rules ,
+[33ma1a0843[m In admin users preview page phone number still didn't have seperate dial
+[33m29da83a[m 2 problems // Phone number verification still not pushed to the verifica
+[33m9b27e63[m I see this error with the app, reported by NextJS, please fix it. The er
+[33macc6abf[m RangeError: Invalid time value     at format (webpack-internal:///(app-p
+[33mfe53bdf[m KYC and location popup form still not responding for phone screen . And
+[33m53ef2ae[m فشل تحميل طلبات التحقق  in manage verifications page
+[33m5725e08[m The requests should be pushed directly to this admin page , and users pr
+[33m7215cd6[m فشل تحميل طلبات التحقق
+[33mf6d9798[m A seperate page to receive the verification requests from the user , but
+[33m57a5111[m ReferenceError: React is not defined     at VerificationCard (webpack-in
+[33m2398e34[m Build Admin page to receive verification requests of phone or KYC or loc
+[33m698e8eb[m The popup formas of KYC and location verification are not phone reaponsi
+[33mc1d5e2d[m Error: A component is changing an uncontrolled input to be controlled. T
+[33mcc8d1fb[m Problem Verification page didn't respect phone only layout like otger pa
+[33m7ab2aae[m Why The user  verification page didn't respect the phone screen  layout
+[33m49e45dd[m The verification page Email It show status unverified if user didn't c
+[33m8c4cd29[m Tge flag it self should be also to the left
+[33m45b6b9d[m About phone number you didn't add all the Arabic countries and flag shou
+[33mf45e54f[m Placeholders of registration form field should be smarter tell user what
+[33mced4132[m Make password field smarter to make user easily understand that he shoul
+[33m93227db[m Registration Form Make it arabic Don't Forget to add our  logo on top
+[33m057137b[m Error: [react-phone-number-input] Expected the initial `value` to be a E
+[33ma76f750[m Problem After successfully registration it refers us to login , but i sa
+[33m90f202a[m After successfully registration, auto login  to the registered account t
+[33m40bbe18[m Add this optional reminder step after successfully registration , but bo
+[33m0f2fe3a[m Why Refral Commission is not calculated with the total in the loyalty pr
+[33meb9520e[m Titles of sections example خصومات الحساب should be RTL And also labels
+[33m488d9df[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mc6ca4fe[m Restore the registration version without ip collection
+[33m2d69a53[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m664f7da[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m2642b15[m 1. **Objective**:    - Track user events: "register", "login", "withdraw
+[33mae4d49b[m Roll back to version da5274d delete anything asking for admin sdk
+[33mda5274d[m In the setting sidebar replace the log out function to the clint card co
+[33mdb0c076[m In the setting sidebar close icon should be to right corner
+[33mcf9fdf3[m In the setting bar the arrow beside and text is bad organized
+[33mff1107f[m Optimize sitting sidebar to be for phone now log out and other options a
+[33m5f523cb[m User  profile and sittingbar still call variable tier but we should call
+[33m0583d06[m Make the following changes:
+[33mfc00e52[m Make cyber refew for all the system
+[33mf97e0e6[m System is insecure all sensetive keys should ve inside .env only
+[33ma83d970[m Cashback transaction is added for the client, but refral commission perc
+[33mcacd267[m فشل اضافة معاملة الكاشباك // I thin u didn't adjust the refral commissio
+[33m557c0aa[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m4734085[m FirebaseError: The query requires an index. You can create it here: http
+[33macd7993[m In the page /refrals add commission history section to get acess using h
+[33m475f463[m Show the name of the levl not ghe ID
+[33m6ec677b[m All users level still the number 1 instead of ref to the corresponding c
+[33m2edb6e4[m Failed to set the users level Smartly
+[33mc70ca4c[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mad0c64f[m Error: Failed to load chunk server/chunks/ssr/[root-of-the-server]__dcc8
+[33m3ec0cbd[m Peobel All users his level already is 1 so we could not update them by t
+[33m9dbea59[m I see this error with the app, reported by NextJS, please fix it. The er
+[33ma6424cf[m Why don't you push the real calculated monthly earnings of all users   t
+[33m1326362[m In users collection variable level , you failed to create this variable
+[33m53e3e14[m Why it is said all users already have Levels
+[33mbaf0997[m take care ** I want to create new Data collection for the levels // IDs
+[33m1c0095a[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m6469111[m 🔹Add Client Level System (Total-Based Requirement + Product Discounts)
+[33m1d49ca1[m In client document (Firestore), add a new variable called status.
+[33m56d4b54[m Solve this smothly without interupting because project already deployed
+[33m2de10db[m I have a Next.js 15 project that fails to build on Vercel with these err
+[33mb8b0d58[m Why footer terms and conditions not linked to the page link
+[33m60fa424[m Delete tge time out function that we add recently
+[33me63b8dc[m Nothing sent
+[33mf6c065a[m Add forget password function in login page
+[33m442bf35[m Problem, after login dashboard apeear and disappear with in seconds and
+[33ma4cdb3f[m You are coding a cashback system with Firebase Authentication. Impleme
+[33mc6d23bb[m U fixed contact us , but about and blog still not responding
+[33m048647a[m The head bar make those pages in stable for phone screen , make the bar
+[33m6fd1371[m Build pages of terms and conditions
+[33mdcb78ed[m Tye pages about and contact us didn't have brand head like the main page
+[33m7ecce9c[m Error: ./src/components/shared/Prose.tsx:2:1 [1m[31mModule not found[
+[33m4a5832c[m Error: The `defaultValue` prop supplied to <select> must be a scalar val
+[33m4daa7da[m Use this form as a guide for the user broker preview UI perfect and call
+[33m1b09d22[m No sir use the current Arabic broker  form dialogue to guide you ti buil
+[33m3fd326a[m No sir this is the old version of the database *** use the current admin
+[33m8b1c612[m Re build the Broker preview page in the client side , to perfectly show
+[33mc883c02[m Make the following changes:
+[33me768011[m Previous data interrupting the new sit si saving failed
+[33md8d9573[m Add section 12 // broker feature//ميزات الحساب بونص ترحيبي و مكافئات نسخ
+[33mba5e8ee[m Without interupting our previous added brokers , Create a complete Arabi
+[33mb4483a0[m The ui is different from the database and the admin form just example so
+[33m2f5c966[m a small problems some var are different from admin to database to user ,
+[33mb703fc4[m In admin brokers pages  add import and export functions
+[33m06fb0a2[m The NextJS app server is having trouble starting. Please identify what c
+[33m3bf65a6[m TypeError: Failed to fetch     at fetchServerAction (https://9000-fireba
+[33m9600f08[m This error repeated in multiple [pages 11TypeError: Failed to fetch
+[33m084e856[m Failed to add Cashback transaction I think because of the loyalty logic
+[33m604a933[m معرف المستخدم (UID) still the same as the document id look IagdDC53jbhgA
+[33mef88080[m Great we just still facing small problem UID counter is not working and
+[33m7d0cd91[m TypeError: Failed to fetch     at fetchServerAction (https://9000-fireba
+[33mb763150[m Although refral code filled refral not detected cold you please ignorepo
+[33m089aa07[m Same problem you should call uth and client document successfully
+[33m8ad5a1a[m During register push email and passwordtp auth and    create ducoumnt fo
+[33m4b8f35c[m Temperorly stop the points and loyalty program because it interupt disti
+[33m879e843[m Look
+[33m548d337[m During registration use the rule all or none email and password should b
+[33mc509aad[m Generate documentation md explain how registered and login and collectin
+[33mcdf05fa[m Ok update
+[33mf5756e6[m Apply this to explain all system parts
+[33m4a177a8[m Use use it to generate
+[33m321698a[m I see this error with the app, reported by NextJS, please fix it. The er
+[33me7f3ce2[m Registration success is autologin us to previously logined account why
+[33m55c3619[m Problem Persist, elementes any feature add to the registration button an
+[33mdf087e7[m List all causes that may be the cause of this error , approch them and i
+[33m37a9ba1[m Diagonose register and login problems approach them
+[33mc5ddf50[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m1b47792[m Login failed, our security rules made mistake, restore app version befor
+[33m6229e94[m There is critical problem of firebase, non of our users can login, i don
+[33m2638a82[m Firestore rules
+[33mbe2afa1[m There is a problem with firebase authentication, all previous users coul
+[33mcf07eb1[m Error: Cannot access get on the server. You cannot dot into a temporary
+[33m26a86ea[m Admin loyality page still fucking ghe same we discuss 6 levels and i gav
+[33m79b671e[m About loyality system Here is a mind map help you set variable initial v
+[33mc819baf[m County is a critical details after first success sign in  system take co
+[33m940de84[m Admin shoul see and  overview feedback response
+[33m3a8bf79[m TypeError: b.createdAt.getTime is not a function     at <anonymous> (rsc
+[33ma3ca0b7[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m5c8f301[m I see this error with the app, reported by NextJS, please fix it. The er
+[33md6ac028[m Why users didn't see the pop up feed back form
+[33m25f8918[m Well organize feed back form please Error: A component is changing an un
+[33mf4e597f[m Error: A component is changing an uncontrolled input to be controlled. T
+[33m1e8e0e4[m Add the feature of feed back push form
+[33ma38d21a[m ReferenceError: Label is not defined     at ManageNotificationsPage (htt
+[33m780eced[m التالي
+[33m2f09c5b[m التالي
+[33m38cf21a[m التالي
+[33m2f38483[m رائع جدًا 👏 قمت بطرح مجموعة أفكار قوية لمنصة إدارة الكاش باك ولوحة التح
+[33mceee439[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m15ba734[m U r fucking playing , what a shame, when i click aprove account it chang
+[33mefcd9b3[m Non of our purpose is made , look re build loyalty pages for admin and u
+[33m3d63a2a[m U did nothing, loyality admin is wrong you have to build professional lo
+[33mc154630[m Fill in default point for each task in each level, and link it with our
+[33me815578[m Add the admin section where we manage all loyality levela requirements a
+[33mc457c12[m I see this error with the app, reported by NextJS, please fix it. The er
+[33ma49f136[m User Sidebar setting bellow user name Show user level and button of upg
+[33m2226fb8[m ReferenceError: DialogTrigger is not defined     at AddAccountDialog (ht
+[33mf98ab83[m Add also his store orders history , and withdraw history, give ability t
+[33m2c3a80e[m In admin// build user management with all needed functions that we need
+[33m60d6b00[m Same problem 😭 , OK , why don't you show where problem happened exactly
+[33m1b3404b[m Reading path problem, define it , diagnose it , mention all possible cau
+[33m825a06d[m What
+[33m1803df9[m Go to admin store orders and see what data display there and see what da
+[33mb60e70b[m Restore the version before we apply animation feature
+[33m53c9d00[m Diagnose again  and checkpoint agaiyand again and again test re test re
+[33m3389bae[m Diagnose the store confirming order in user side
+[33m39378bc[m What about titles and labels
+[33m12fc579[m Actually many items of user pages didn't RTL well , like labels or place
+[33mc64ff94[m Also Translate user pages to arabic  : wallet store refrrals
+[33meda3689[m What about dashboard and other related pages
+[33m4156b56[m Here is a professional prompt you can send:
+[33ma5062ef[m Add social media icons
+[33m933dbbf[m On setting sidebar , add support and it splits into whatsapp and telegra
+[33m95643b2[m Number of points and refrals should be on top
+[33m876c45e[m Code should be with copy buttons
+[33m9648ba4[m It is boring
+[33ma8d373c[m No button found
+[33m17f67da[m After preview product we want but button
+[33m4e0b075[m Where is the buy button
+[33m6ed2f6c[m Error: ./src/app/dashboard/store/[productId]/page.tsx:10:1 [1m[31mModu
+[33m81294c8[m Still to bad why don't you create special page
+[33mff1dc8c[m Product preview pave  is so so bad use 2025 design
+[33m82e2b0f[m We need to focus more on how go store page display make elements extra s
+[33m1471834[m Focus on the Store page , make it extract smooth full colors and effect
+[33mc488d9c[m Error: ./src/app/dashboard/page.tsx:28:1 [1m[31mModule not found[39m
+[33m2ab4faf[m What about withdraw and get Cashback buttons and last accounts list
+[33mf50ae61[m FirebaseError: The query requires an index. You can create it here: http
+[33mfc3f07a[m No need for the icons bellow the account rebates card , and in dashboard
+[33m160b7cf[m Build footer button icon bar with centeral navigation it is from left to
+[33m0a22e41[m Focus on the refral program page as the international standard.
+[33m281b9bd[m Icons bellow the account rebates should now well organized and icnore re
+[33m46a8ee2[m Add home icon for easy return to home screen feom all system pages
+[33m6a32642[m I said when cliecking profile icon on top rt it show setting elements as
+[33mf26ead6[m No add store icon on top beside notification, other icons add them , ins
+[33m1818a96[m No i mean card well design , not a really visa card
+[33m3956c1b[m Transaction page design is so bad designed instead of scroll rt and lt m
+[33m7ecffea[m U did nothing
+[33mf5303ff[m Look splet page titles into accounts and transaction, transaction show a
+[33m313b2dc[m What about in aproved accounts, i think we should re design pages , and
+[33m8c23e6b[m Now show aproved accounts as multiple visa cards we scroll left and righ
+[33m75c69ff[m This design is super bad and stupid so hard to understand, i want to sho
+[33mcb0e1d6[m Join transactions and accounts in same page to show details needed in pr
+[33mec2dc20[m View history i mean show deposit and withdraw records not transaction hi
+[33m63e0c5a[m Show  only last 2  deposit or withdraw history and add view history func
+[33m348e848[m Wallet page , is for tow titles deposit and withdraw each has history ic
+[33m89b0d53[m Ok if categories are few then let them take all width
+[33m00504f3[m The store categories should be only one line and use seroling rt and lef
+[33m8c40d3d[m The store dhboard should have top title bar store and orders so we join
+[33m6265ff7[m What about brokers and withdraw and store and orders , we want smart des
+[33m1ba4bbc[m Smart small  icon grids for easy access to system pages , ad them in das
+[33m1645e28[m شكرًا لك على التوضيح 🙏 أنت تستخدم عنوان URL داخلي (Cloud Workstation) ل
+[33m6e03600[m Service Ipinfo.io //  toke is : 124a4928df09aa
+[33m7022d0e[m You should collect device and location using this api , if you can't tel
+[33m7d998cc[m Use this api token to collect ip details IPinfo - Comprehensive IP addre
+[33m4cfba06[m Setting page  Profile Name and UID and icon and verified or not and its
+[33mc798702[m User dashboard, add the refral code of the client to copy . Add details
+[33me6ffea4[m لجمع معلومات المستخدم مثل:
+[33mca99b2b[m Collect IP country  and address during collecting security log
+[33m0d50ac0[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m9746ee6[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mf0c7f0f[m Why you are fucking playing with my time solve problem logically i don't
+[33md2400af[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m03b5e68[m Why we are wasting time in same problem, why don't you solve problem log
+[33m49839e6[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mf5b53b9[m Where can user paste hi wallet address to withdraw
+[33ma285378[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m7ae306f[m Crypto wallet address field with icin is not appear in user withdraw for
+[33mc4624c1[m Same pro
+[33m89f8a37[m Why user withdraw form show errors before we click submit
+[33m7770558[m Now user withdraw, select to withdraw using Crypto or using his aproved
+[33m8eef230[m What about wallet address and tranding account field,
+[33m4636588[m Ads icon to all input field of all pages
+[33m4c61010[m Show reason for user without crop , not only on notification
+[33mdff70ad[m In admin if reject trading account or withdraw request add filed to writ
+[33md2712b3[m I see this error with the app, reported by NextJS, please fix it. The er
+[33ma999655[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m7b95495[m Wheb i said error then do anything to solve it doesn't show same problem
+[33m52d0fa6[m Error: A component is changing an uncontrolled input to be controlled. T
+[33md464bf6[m No need for payment methods details keeping in dashboard, but once use a
+[33me24f4b5[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m1982e10[m Build profile page professionally
+[33m8fc8697[m What is your fucking issues, i need UID and refral system and register f
+[33m068ddc2[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m6e7baa6[m Look , we have to solve both refral system and this error at the same ti
+[33m2469984[m Refral system is not working now , which is a big problem
+[33md89aef0[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m78fdcfd[m User dashboard didn't synced user Name and said New user and UID is said
+[33m492dc90[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m5491c1e[m And show it for user , and also generate UID for all our previous user
+[33m8a75350[m Why don't u Auto generate UID XXXXXX
+[33m0ce1d8c[m No UID why ?
+[33m65753ca[m All users undefined why , and after sign up , it said error instead of d
+[33md7507d7[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m156cafc[m Setting page is , user autogenerated icon and UID: XXXXXX with copy icon
+[33m868a7f1[m Build a unique ID for each client it is a 6 digit id , start from 100001
+[33m8e356fc[m What about elements like points Numbers quete cards buttons and others i
+[33mb24ebd9[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mc1967ff[m Add a blog feature ,  blog page and post preview, and admin to post
+[33m486c916[m Collect all these data and show  them to admin Great — focusing on IP ad
+[33md515ef7[m Restore the previous icon and ghe gradient of tge buttons
+[33m72ccdff[m Note , restore our previous green gradient branding
+[33mfc552e9[m Use toogles components with icons , about tabs use pilled , about preloa
+[33m98f9e66[m About toast components use Center and with icon type
+[33mf0d59bc[m Many filed filled in admin form but never shown in usee preview broker a
+[33m6c21d53[m Not all broker var added to the broker form i think we should focus more
+[33m231088d[m I mean if if user click the broker card it show the preview page , but i
+[33m654ded7[m User when cliecking broker open the broker preview page it show all brok
+[33m1ed8267[m I can't create broker it requires all field
+[33m4f85a59[m Previous brokers didn't appear in user dashboard, and i cant create new
+[33m99b525c[m We will face many troubles because our previous broker data was with dif
+[33mbaa76fe[m 🧩 Section 1: Basic Broker Information
+[33m49dbe45[m This is the design and the var od the brokers page
+[33m4c99eda[m Add login using google or apple
+[33mee5a5a0[m Make all fonts and elements of the user system smaller for better UX
+[33m887cdff[m Show other all payment methods to user but the one who didn't have Link
+[33m33472bd[m User after selecting withdraw method he asked to add payment method deta
+[33mfe23733[m This grid elements too big i want to show at least 6 products per screen
+[33mba6fe7f[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m3ba83ec[m Fix the design layout of setting page make elements so small to be inclu
+[33m380f53b[m Re structure and build data and page will to avoide these problems Fireb
+[33mee34f73[m No lets build a professional user profile, name email and status if conf
+[33m4b4827c[m Why Dashboard didn't contain refral link and numbers of refrals and poin
+[33mbc15bd5[m Using same dashboard design add the other dashboard functions like refra
+[33m6d51055[m Don't forget the ads banner, and about buttons of withdraw and get Cashb
+[33m30579f9[m Make dashboard elements smart organized like this
+[33m474230c[m Use drop list instead of radio
+[33mf6a7fe5[m First user , select the category crypto, internal transfer using User Id
+[33m994e111[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m06e0adb[m This problem can't be solved anyone so re build logic or re build page o
+[33ma6c77f5[m Still errorvmake payment methods category crypto or international or to
+[33m8d66520[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mb59faef[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mf1b38ac[m User withdraw page didn't show only admin payment methods
+[33m027f95a[m ReferenceError: FormDescription is not defined     at Object.render (htt
+[33m97e789c[m ReferenceError: DialogFooter is not defined     at PaymentMethodForm (ht
+[33m25c51ab[m TypeError: Cannot convert undefined or null to object     at Function.en
+[33m87c7a0b[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m756c3ac[m We want go manage withdraw professionally, admin add payment methods and
+[33mfd1d4bf[m I think available to withdraw balance should be same Var in all places
+[33m22fefb5[m I found a very important mistake, when user balance 1 and buy product wi
+[33m484132d[m Admin failed to update order status
+[33m8604d07[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mce3144d[m What
+[33me951f79[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m986be4e[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m9743833[m Atore page in user is 404
+[33m64ddd10[m Error: Invalid src prop (https://ycoincash.com/wp-content/uploads/2024/1
+[33m10884e5[m Let's build user and admin pages and variables, i want to add a feature
+[33m2400719[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mbc73681[m Add to user , notification icon and red point when clieck show unread no
+[33md336a31[m Error: Each child in a list should have a unique "key" prop.
+[33md139a64[m Error: [ Server ] Only plain objects can be passed to Client Components
+[33ma933585[m What if we add refral code in registration form
+[33m1fc0c50[m TypeError: a.createdAt?.toMillis is not a function     at ManageUsersPag
+[33mb5f2247[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m5d4f648[m Perfect — since you already have a cashback system, we’ll treat the refe
+[33m857da24[m ReferenceError: FormLabel is not defined     at Object.render (https://9
+[33m5ede525[m Add to admib the choice to add a script code as banner ad
+[33mb86377b[m Also  i want to add banner  as script like <script src="https://fbs.part
+[33m615db2d[m Add ads banner in user dashboard , and banner setting to admin , banner
+[33md752b27[m Add variable in Database , to add instructions in how to link previous t
+[33mbefa226[m Make the design of the foot modern gradient
+[33mad7c012[m Add to button of landing page a map of website pages and add build pages
+[33me90a074[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m520f384[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mbaffe78[m About withdraw transaction, it show admib the payment method and wallet
+[33mb1235fb[m This page is to search for users or trading account from database and se
+[33mdf61fd7[m Users can't have same aprove trading account numbers related to same bro
+[33mfd71319[m Broker Instructions should be variable in both admib abd user
+[33m9a9542b[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m84553c0[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m3fb06b5[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m648b779[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m7ee4c95[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m4527b37[m For admin , managing broker , we can edit the order of the broker in the
+[33m5c0bee5[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m0ca5fa6[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m259cba6[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m8f9c812[m Build these pages for admin , admib is the one who responsive for dealin
+[33m3467cf4[m Add feature to refer admin to admib dashboard and user to user dashboard
+[33m83d3c5b[m How can i add email to auth data base and set it as admin to acess admin
+[33m8929fb7[m In dashboard show only number of aproved trading account not pending or
+[33mdbaf2a3[m Ok now i want all data shown in all variable go be real frol firestorw d
+[33mad1298f[m Delete page  compeletely , I do not have time
+[33me3e42d6[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mc65f81c[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mb7bd657[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m00bbb3d[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m34bafb9[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m8f8278e[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m97bf218[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m7cd09c2[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mf12b52a[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m8ed602b[m I said in lenth not widh and all search and sort card
+[33mf31d388[m Make search bar smaller in lenth  to make design smooth nice
+[33m82de735[m Add search bar to the broker page and sorting parameters
+[33mcbff6bf[m Now Structure the database variables
+[33m6fcd2bb[m Why we are wasting time You are building a cashback platform. I need all
+[33md12135a[m In sorting show only aproved account
+[33m11823e1[m Dear make this page as other app page XML phone fixed
+[33mea74b41[m Date from to mix it in one calendar
+[33m1068127[m This new page is not xml and it show dem in real data , is the data from
+[33m76e1b11[m Add a page for Cashback  transaction earning history, it show how much c
+[33m528c5ec[m Build all pages XML my website is for phone
+[33mc2ba275[m My heart my hear i have MI
+[33m470f507[m It is easy components Smaller , page responsive toobile , is this diffec
+[33m0b290bc[m Why u did this why
+[33m66bd022[m I think we are playing
+[33m2aef432[m Do you know understand
+[33mac05844[m Add title hook for the steps section like , Start Earning Now
+[33m56d5edc[m U know something called small or not ,
+[33md848604[m All of these should be in only one horizental loine Min. Deposit
+[33m83fd6be[m Head of broker description make it small smooth so no space taken
+[33mef858c6[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m2535896[m No start with the broker preview and description then steps line is so s
+[33m09bcd6f[m What if you build it withb multiple steps with next and previous
+[33m7bfabdb[m I am talking about this page src/app/dashboard/brokers/[brokerId]/page.t
+[33m450f056[m I mean steps like this , i want client to easy understand how to flow
+[33m2f662c0[m Make the card of the steps in one box cards and show step number in the
+[33m507fe9e[m Landing page : Great! Designing a Landing Page for your Forex Cashback p
+[33m4e155cf[m No sir i want steps with show and hide , but after choosing one choice s
+[33m2b504dc[m Good but on top of page start with broker description and details then t
+[33me7f8acb[m No start with broker preview without visit broker website button, then n
+[33m38cd3d1[m Great — turning this into a multi-step interactive flow is a smart choic
+[33m6208b21[m Apply this gradient awesome design to all buttons, and about balance car
+[33mc402520[m On top show card of balance and inside card tow buttons in modern gradie
+[33m7008b7b[m Here’s an optimized English prompt that explains how to structure and or
+[33me4ec019[m Dash Here is an English prompt you can use to explain and request how th
+[33m65f32a8[m Use this modern design, to make ui modern
+[33m165d185[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mc88d3f2[m Great add the withdraw page , with professional modern international sta
+[33m4839a4b[m Error are   ، page's without head section, and all pages missed 404 or f
+[33m63c2cbd[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m8b88caf[m Clicking broker  is previewing most important variables that user should
+[33mf525446[m Without admin dashboard start push example data to firebase, to structur
+[33m7b1316e[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m8f7f250[m I see this error with the app, reported by NextJS, please fix it. The er
+[33mc99ee0c[m Why  most pages without head bar
+[33m52a2790[m Don't add admin functions, it is uI
+[33m0ab0e21[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m91fa373[m User need , show him brokers and description of each , he choose one , r
+[33mff003bf[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m607a156[m "use client";
+[33m5cc9388[m I see this error with the app, reported by NextJS, please fix it. The er
+[33m71c9a04[m Dashboard "use client";
+[33m7f980aa[m No example src/components/user/AccountCard.tsx
+[33mf27f3f8[m You are working with the GitHub repository: https://github.com/tcb4dev/c
+[33m6059a09[m Can't login
+[33m6125e29[m Creat account, missing or incomplete permission
+[33m4e40bf7[m You are working with the GitHub repository: https://github.com/tcb4dev/c
+[33m5939c36[m // Import the functions you need from the SDKs you need import { initial
+[33mae5fe23[m I'm building a cashback system that is functionally inspired by the GitH
+[33m8851b8a[m You are working with the GitHub project `https://github.com/tcb4dev/cash
+[33m39743ea[m I see this error with the app, reported by NextJS, please fix it. The er
+[33me6c80f5[m Updated app
+[33meb61068[m initial scaffold
