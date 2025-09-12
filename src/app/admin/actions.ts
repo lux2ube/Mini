@@ -33,6 +33,33 @@ export async function logUserActivity(
     clientInfo: { deviceInfo: DeviceInfo, geoInfo: GeoInfo },
     details?: Record<string, any>,
 ) {
+    try {
+        const logEntry: Omit<ActivityLog, 'id'> = {
+            userId,
+            event,
+            timestamp: new Date(),
+            ipAddress: clientInfo.geoInfo.ip || 'unknown',
+            userAgent: clientInfo.deviceInfo.browser,
+            device: clientInfo.deviceInfo,
+            geo: {
+                country: clientInfo.geoInfo.country,
+                city: clientInfo.geoInfo.city,
+            },
+            details,
+        };
+        await addDoc(collection(db, 'activityLogs'), logEntry);
+    } catch (error) {
+        console.error(`Failed to log activity for event ${event}:`, error);
+        // We don't want to block the user's action if logging fails
+    }
+}
+
+export async function adminLogUserActivity(
+    userId: string, 
+    event: ActivityLog['event'], 
+    clientInfo: { deviceInfo: DeviceInfo, geoInfo: GeoInfo },
+    details?: Record<string, any>,
+) {
     await verifyAdmin();
     try {
         const logEntry: Omit<ActivityLog, 'id'> = {
@@ -51,7 +78,6 @@ export async function logUserActivity(
         await addDoc(collection(adminDb, 'activityLogs'), logEntry);
     } catch (error) {
         console.error(`Failed to log activity for event ${event}:`, error);
-        // We don't want to block the user's action if logging fails
     }
 }
 
@@ -547,6 +573,15 @@ export async function requestWithdrawal(payload: Omit<Withdrawal, 'id' | 'reques
             ...payload,
             requestedAt: serverTimestamp()
         });
+
+        // Use the admin logger for this server-side action
+        await adminLogUserActivity(payload.userId, 'withdrawal_request', { 
+            deviceInfo: { device: 'Unknown', os: 'Unknown', browser: 'Unknown' },
+            geoInfo: { ip: 'Not Collected' }
+        }, {
+            amount: payload.amount,
+            method: payload.paymentMethod
+        });
         
         return { success: true, message: 'Withdrawal request submitted successfully.' };
     }).catch(error => {
@@ -882,7 +917,7 @@ export async function placeOrder(
 
         await createNotification(transaction, userId, `تم تقديم طلبك لـ ${product.name}.`, 'store', '/dashboard/store/orders');
         
-        await logUserActivity(userId, 'store_purchase', clientInfo, { productId, price: product.price });
+        await adminLogUserActivity(userId, 'store_purchase', clientInfo, { productId, price: product.price });
         
         return { success: true, message: 'تم تقديم الطلب بنجاح!' };
     }).catch(error => {
@@ -1327,9 +1362,13 @@ export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]
 // Verification Actions
 export async function getPendingVerifications(): Promise<PendingVerification[]> {
     await verifyAdmin();
+    
+    // Fetch all users using the admin SDK to have permission to see all documents.
     const allUsers = await getUsers();
+    
     const results: PendingVerification[] = [];
 
+    // Filter users in code, which is more reliable than a complex query.
     allUsers.forEach(user => {
         if (user.hasPendingKYC && user.kycData?.status === 'Pending') {
             results.push({
@@ -1376,40 +1415,55 @@ export async function updateVerificationStatus(
 ) {
     await verifyAdmin();
     try {
-        const userRef = adminDb.doc(`users/${userId}`);
-        let updateData: Record<string, any> = {};
-        let notificationMessage = '';
-        let notificationType: Notification['type'] = 'general';
+        await adminDb.runTransaction(async (transaction) => {
+            const userRef = adminDb.doc(`users/${userId}`);
+            let updateData: Record<string, any> = {};
+            let notificationMessage = '';
+            let notificationType: Notification['type'] = 'general';
 
-        if (type === 'kyc') {
-            updateData['kycData.status'] = status;
-            updateData['hasPendingKYC'] = admin.firestore.FieldValue.delete();
-            notificationMessage = `تم تحديث حالة التحقق من هويتك إلى: ${status}.`;
-            notificationType = 'account';
-            if (status === 'Rejected') {
-                updateData['kycData.rejectionReason'] = rejectionReason;
-                 notificationMessage += ` السبب: ${rejectionReason}`;
-            }
-        } else if (type === 'address') {
-            updateData['addressData.status'] = status;
-            updateData['hasPendingAddress'] = admin.firestore.FieldValue.delete();
-            notificationMessage = `تم تحديث حالة التحقق من عنوانك إلى: ${status}.`;
-            notificationType = 'account';
-             if (status === 'Rejected') {
-                updateData['addressData.rejectionReason'] = rejectionReason;
-                notificationMessage += ` السبب: ${rejectionReason}`;
-            }
-        } else if (type === 'phone') {
-            updateData['phoneNumberVerified'] = status === 'Verified';
-            updateData['hasPendingPhone'] = admin.firestore.FieldValue.delete();
-            notificationMessage = status === 'Verified' ? 'تم التحقق من رقم هاتفك بنجاح.' : 'فشل التحقق من رقم هاتفك.';
-            notificationType = 'account';
-        }
+            const createAdminNotification = (
+                message: string,
+                type: Notification['type'],
+                link?: string
+            ) => {
+                const notifRef = adminDb.collection('notifications').doc();
+                transaction.set(notifRef, {
+                    userId,
+                    message,
+                    type,
+                    link,
+                    isRead: false,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            };
 
-        await runTransaction(db, async (transaction) => {
-            const clientUserRef = doc(db, 'users', userId); // Use client ref for transaction
-            transaction.update(clientUserRef, updateData);
-            await createNotification(transaction, userId, notificationMessage, notificationType, '/dashboard/settings/verification');
+            if (type === 'kyc') {
+                updateData['kycData.status'] = status;
+                updateData['hasPendingKYC'] = admin.firestore.FieldValue.delete();
+                notificationMessage = `تم تحديث حالة التحقق من هويتك إلى: ${status}.`;
+                notificationType = 'account';
+                if (status === 'Rejected' && rejectionReason) {
+                    updateData['kycData.rejectionReason'] = rejectionReason;
+                    notificationMessage += ` السبب: ${rejectionReason}`;
+                }
+            } else if (type === 'address') {
+                updateData['addressData.status'] = status;
+                updateData['hasPendingAddress'] = admin.firestore.FieldValue.delete();
+                notificationMessage = `تم تحديث حالة التحقق من عنوانك إلى: ${status}.`;
+                notificationType = 'account';
+                if (status === 'Rejected' && rejectionReason) {
+                    updateData['addressData.rejectionReason'] = rejectionReason;
+                    notificationMessage += ` السبب: ${rejectionReason}`;
+                }
+            } else if (type === 'phone') {
+                updateData['phoneNumberVerified'] = status === 'Verified';
+                updateData['hasPendingPhone'] = admin.firestore.FieldValue.delete();
+                notificationMessage = status === 'Verified' ? 'تم التحقق من رقم هاتفك بنجاح.' : 'فشل التحقق من رقم هاتفك.';
+                notificationType = 'account';
+            }
+
+            transaction.update(userRef, updateData);
+            createAdminNotification(notificationMessage, notificationType, '/dashboard/settings/verification');
         });
 
         return { success: true, message: `تم تحديث حالة التحقق للمستخدم.` };
