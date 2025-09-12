@@ -32,6 +32,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { countries } from "@/lib/countries";
+import PhoneInput, { isPossiblePhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import ar from 'react-phone-number-input/locale/ar.json'
 
 type UserDetails = Awaited<ReturnType<typeof getUserDetails>>;
 
@@ -318,7 +321,7 @@ function AddressEditDialog({ data, userId, onSuccess }: { data?: AddressData; us
 }
 
 const phoneSchema = z.object({
-  phoneNumber: z.string().min(10, "رقم الهاتف مطلوب"),
+  phoneNumber: z.string().refine(value => isPossiblePhoneNumber(value), { message: "الرجاء إدخال رقم هاتف صحيح."}),
 });
 type PhoneFormValues = z.infer<typeof phoneSchema>;
 
@@ -353,8 +356,30 @@ function PhoneEditDialog({ phoneNumber, userId, onSuccess }: { phoneNumber?: str
                 <DialogHeader><DialogTitle>{phoneNumber ? "تعديل" : "إضافة"} رقم الهاتف</DialogTitle></DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField control={form.control} name="phoneNumber" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="+20123456789" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}حفظ</Button></DialogFooter>
+                        <FormField
+                            control={form.control}
+                            name="phoneNumber"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>رقم الهاتف</FormLabel>
+                                    <FormControl>
+                                        <div className="phone-input-container" dir="ltr">
+                                            <PhoneInput
+                                                international
+                                                labels={ar}
+                                                placeholder="أدخل رقم الهاتف"
+                                                {...field}
+                                                className="w-full"
+                                            />
+                                        </div>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}حفظ</Button>
+                        </DialogFooter>
                     </form>
                 </Form>
             </DialogContent>
