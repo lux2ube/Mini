@@ -426,3 +426,19 @@ export interface PendingVerification {
     data: KycData | AddressData | { phoneNumber: string };
     requestedAt: Date;
 }
+
+/**
+ * Represents the contact settings for the entire application.
+ */
+export interface ContactSettings {
+    email: string;
+    phone: string;
+    address: string;
+    social: {
+        facebook: string;
+        twitter: string;
+        instagram: string;
+        whatsapp: string;
+        telegram: string;
+    };
+}
