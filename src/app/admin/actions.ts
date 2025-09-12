@@ -5,7 +5,7 @@ import { db } from '@/lib/firebase/config';
 import { adminDb, verifyAdmin } from '@/lib/firebase/admin-config';
 import * as admin from 'firebase-admin';
 import { collection as clientCollection, doc as clientDoc, updateDoc as clientUpdateDoc } from 'firebase/firestore';
-import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit, or } from 'firebase/firestore';
+import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
 import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData, PendingVerification } from '@/types';
 import { headers } from 'next/headers';
@@ -777,7 +777,7 @@ export async function updateProduct(id: string, data: Partial<Product>) {
 export async function deleteProduct(id: string) {
     await verifyAdmin();
     try {
-        await deleteDoc(doc(db, 'products', id), data);
+        await deleteDoc(doc(db, 'products', id));
         return { success: true, message: 'تم حذف المنتج بنجاح.' };
     } catch (error) {
         console.error("Error deleting product:", error);
@@ -924,7 +924,7 @@ export async function updatePaymentMethod(id: string, data: Partial<PaymentMetho
 export async function deletePaymentMethod(id: string) {
     await verifyAdmin();
     try {
-        await deleteDoc(doc(db, 'paymentMethods', id), data);
+        await deleteDoc(doc(db, 'paymentMethods', id));
         return { success: true, message: 'تم حذف طريقة الدفع بنجاح.' };
     } catch (error) {
         console.error("Error deleting payment method:", error);
@@ -1327,30 +1327,10 @@ export async function getUserActivityLogs(userId: string): Promise<ActivityLog[]
 // Verification Actions
 export async function getPendingVerifications(): Promise<PendingVerification[]> {
     await verifyAdmin();
-    const usersRef = adminDb.collection('users');
+    const allUsers = await getUsers();
     const results: PendingVerification[] = [];
 
-    // Fetch users with any of the pending flags set to true.
-    const kycSnapshot = await usersRef.where('hasPendingKYC', '==', true).get();
-    const addressSnapshot = await usersRef.where('hasPendingAddress', '==', true).get();
-    const phoneSnapshot = await usersRef.where('hasPendingPhone', '==', true).get();
-    
-    const userMap = new Map<string, UserProfile>();
-
-    const processSnapshot = (snapshot: admin.firestore.QuerySnapshot) => {
-        snapshot.forEach(doc => {
-            if (!userMap.has(doc.id)) {
-                 userMap.set(doc.id, { uid: doc.id, ...doc.data() } as UserProfile);
-            }
-        });
-    }
-
-    processSnapshot(kycSnapshot);
-    processSnapshot(addressSnapshot);
-    processSnapshot(phoneSnapshot);
-    
-    userMap.forEach(user => {
-        // Check for pending KYC
+    allUsers.forEach(user => {
         if (user.hasPendingKYC && user.kycData?.status === 'Pending') {
             results.push({
                 userId: user.uid,
@@ -1358,11 +1338,10 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
                 userEmail: user.email,
                 type: 'KYC',
                 data: user.kycData,
-                requestedAt: safeToDate(user.kycData.submittedAt) || new Date()
+                requestedAt: user.kycData.submittedAt || new Date()
             });
         }
         
-        // Check for pending Address
         if (user.hasPendingAddress && user.addressData?.status === 'Pending') {
              results.push({
                 userId: user.uid,
@@ -1370,11 +1349,10 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
                 userEmail: user.email,
                 type: 'Address',
                 data: user.addressData,
-                requestedAt: safeToDate(user.addressData.submittedAt) || new Date()
+                requestedAt: user.addressData.submittedAt || new Date()
             });
         }
         
-        // Check for pending Phone
         if (user.hasPendingPhone && !user.phoneNumberVerified) {
             results.push({
                 userId: user.uid,
@@ -1382,7 +1360,7 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
                 userEmail: user.email,
                 type: 'Phone',
                 data: { phoneNumber: user.phoneNumber! },
-                requestedAt: safeToDate(user.createdAt) || new Date() // Fallback date
+                requestedAt: safeToDate(user.createdAt) || new Date()
             });
         }
     });
@@ -1593,5 +1571,4 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
         return { success: false, message: `Failed to backfill levels: ${errorMessage}` };
     }
 }
-
     
