@@ -4,8 +4,7 @@
 import { useEffect, useState } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { getTradingAccounts, getWithdrawals } from '../actions';
-import { getUsers } from '../users/actions';
+import { getTradingAccounts, getWithdrawals, getUsers } from '../actions';
 import type { TradingAccount, UserProfile, Withdrawal } from '@/types';
 import { Loader2, Users, Briefcase, Landmark } from 'lucide-react';
 

@@ -5,8 +5,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getClientLevels } from '@/app/admin/actions';
-import { getUsers } from './actions';
+import { getClientLevels, getUsers } from '@/app/admin/actions';
 import type { UserProfile, ClientLevel } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
