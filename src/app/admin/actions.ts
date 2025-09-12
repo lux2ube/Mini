@@ -777,7 +777,7 @@ export async function updateProduct(id: string, data: Partial<Product>) {
 export async function deleteProduct(id: string) {
     await verifyAdmin();
     try {
-        await deleteDoc(doc(db, 'products', id));
+        await deleteDoc(doc(db, 'products', id), data);
         return { success: true, message: 'تم حذف المنتج بنجاح.' };
     } catch (error) {
         console.error("Error deleting product:", error);
@@ -924,7 +924,7 @@ export async function updatePaymentMethod(id: string, data: Partial<PaymentMetho
 export async function deletePaymentMethod(id: string) {
     await verifyAdmin();
     try {
-        await deleteDoc(doc(db, 'paymentMethods', id));
+        await deleteDoc(doc(db, 'paymentMethods', id), data);
         return { success: true, message: 'تم حذف طريقة الدفع بنجاح.' };
     } catch (error) {
         console.error("Error deleting payment method:", error);
@@ -1330,20 +1330,26 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
     const usersRef = adminDb.collection('users');
     const results: PendingVerification[] = [];
 
-    // Use a compound query to fetch users with any pending verification flag
-    const q = usersRef.where(
-        admin.firestore.Filter.or(
-            admin.firestore.Filter.where('hasPendingKYC', '==', true),
-            admin.firestore.Filter.where('hasPendingAddress', '==', true),
-            admin.firestore.Filter.where('hasPendingPhone', '==', true)
-        )
-    );
+    // Fetch users with any of the pending flags set to true.
+    const kycSnapshot = await usersRef.where('hasPendingKYC', '==', true).get();
+    const addressSnapshot = await usersRef.where('hasPendingAddress', '==', true).get();
+    const phoneSnapshot = await usersRef.where('hasPendingPhone', '==', true).get();
+    
+    const userMap = new Map<string, UserProfile>();
 
-    const snapshot = await q.get();
+    const processSnapshot = (snapshot: admin.firestore.QuerySnapshot) => {
+        snapshot.forEach(doc => {
+            if (!userMap.has(doc.id)) {
+                 userMap.set(doc.id, { uid: doc.id, ...doc.data() } as UserProfile);
+            }
+        });
+    }
 
-    snapshot.docs.forEach(doc => {
-        const user = { uid: doc.id, ...doc.data() } as UserProfile;
-        
+    processSnapshot(kycSnapshot);
+    processSnapshot(addressSnapshot);
+    processSnapshot(phoneSnapshot);
+    
+    userMap.forEach(user => {
         // Check for pending KYC
         if (user.hasPendingKYC && user.kycData?.status === 'Pending') {
             results.push({
@@ -1587,3 +1593,5 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
         return { success: false, message: `Failed to backfill levels: ${errorMessage}` };
     }
 }
+
+    
