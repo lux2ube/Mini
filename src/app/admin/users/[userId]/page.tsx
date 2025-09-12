@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { getUserDetails, getBrokers, adminAddTradingAccount, updateUser, adminUpdateKyc, adminUpdateAddress } from "../../actions";
+import { getUserDetails, getBrokers, adminAddTradingAccount, updateUser, adminUpdateKyc, adminUpdateAddress, adminUpdatePhoneNumber } from "../../actions";
 import { Loader2, User, Wallet, Briefcase, Gift, ArrowRight, ArrowUpFromLine, ShoppingBag, PlusCircle, Globe, Phone, Check, X, ShieldAlert, Home, Edit2, ShieldCheck, FileText, ArrowLeft } from "lucide-react";
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { countries } from "@/lib/countries";
 
 type UserDetails = Awaited<ReturnType<typeof getUserDetails>>;
 
@@ -43,8 +44,7 @@ type AddAccountForm = z.infer<typeof addAccountSchema>;
 
 const editUserSchema = z.object({
     name: z.string().min(3, "الاسم مطلوب"),
-    country: z.string().length(2, "يجب أن يكون رمز البلد من حرفين").toUpperCase().or(z.literal("")).optional(),
-    phoneNumber: z.string().optional(),
+    country: z.string().length(2, "يجب أن يكون رمز البلد من حرفين").optional(),
 })
 type EditUserForm = z.infer<typeof editUserSchema>;
 
@@ -59,7 +59,6 @@ function EditUserDialog({ userProfile, onSuccess }: { userProfile: UserProfile, 
         defaultValues: {
             name: userProfile?.name || "",
             country: userProfile?.country || "",
-            phoneNumber: userProfile?.phoneNumber || "",
         },
     });
 
@@ -92,10 +91,17 @@ function EditUserDialog({ userProfile, onSuccess }: { userProfile: UserProfile, 
                             <FormItem><FormLabel>الاسم</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                          )}/>
                          <FormField control={form.control} name="country" render={({ field }) => (
-                            <FormItem><FormLabel>الدولة (رمز ISO)</FormLabel><FormControl><Input placeholder="EG" {...field} /></FormControl><FormMessage /></FormItem>
-                         )}/>
-                         <FormField control={form.control} name="phoneNumber" render={({ field }) => (
-                            <FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="+201234567890" {...field} /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>الدولة</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="اختر دولة..." /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <Input placeholder="بحث..." className="mb-2" onChange={(e) => {
+                                            // Implement search logic here if needed
+                                        }} />
+                                        {countries.map(c => <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            <FormMessage /></FormItem>
                          )}/>
                         <DialogFooter>
                             <DialogClose asChild><Button type="button" variant="secondary">إلغاء</Button></DialogClose>
@@ -311,6 +317,51 @@ function AddressEditDialog({ data, userId, onSuccess }: { data?: AddressData; us
     );
 }
 
+const phoneSchema = z.object({
+  phoneNumber: z.string().min(10, "رقم الهاتف مطلوب"),
+});
+type PhoneFormValues = z.infer<typeof phoneSchema>;
+
+function PhoneEditDialog({ phoneNumber, userId, onSuccess }: { phoneNumber?: string; userId: string; onSuccess: () => void; }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { toast } = useToast();
+    const form = useForm<PhoneFormValues>({
+        resolver: zodResolver(phoneSchema),
+        defaultValues: { phoneNumber: phoneNumber || '' },
+    });
+
+    const onSubmit = async (values: PhoneFormValues) => {
+        setIsSubmitting(true);
+        const result = await adminUpdatePhoneNumber(userId, values.phoneNumber);
+        if (result.success) {
+            toast({ title: "نجاح", description: result.message });
+            onSuccess();
+            setIsOpen(false);
+        } else {
+            toast({ variant: "destructive", title: "خطأ", description: result.error });
+        }
+        setIsSubmitting(false);
+    };
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button size="sm" variant="outline">{phoneNumber ? <Edit2 className="ml-2 h-4 w-4"/> : <PlusCircle className="ml-2 h-4 w-4"/>}{phoneNumber ? "تعديل" : "إضافة"}</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader><DialogTitle>{phoneNumber ? "تعديل" : "إضافة"} رقم الهاتف</DialogTitle></DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <FormField control={form.control} name="phoneNumber" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input placeholder="+20123456789" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <DialogFooter><Button type="submit" disabled={isSubmitting}>{isSubmitting && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}حفظ</Button></DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 function VerificationCard<T extends KycData | AddressData>({
   type,
   title,
@@ -350,10 +401,11 @@ function VerificationCard<T extends KycData | AddressData>({
           <p className="text-sm text-muted-foreground">لم يقدم المستخدم هذه المعلومات بعد.</p>
         ) : (
           Object.entries(data).map(([key, value]) => {
-            if (key === 'status') return null;
-            return <InfoRow key={key} label={key} value={String(value)} />;
+            if (key === 'status' || key === 'submittedAt' || key === 'rejectionReason') return null;
+            return <InfoRow key={key} label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} value={String(value)} />;
           })
         )}
+        {data?.rejectionReason && <InfoRow label="سبب الرفض" value={data.rejectionReason} />}
       </CardContent>
     </Card>
   );
@@ -450,7 +502,6 @@ export default function UserDetailPage() {
                         <CardContent className="space-y-1 divide-y">
                            <InfoRow label="معرف العميل" value={userProfile.clientId} />
                            <InfoRow label="البريد الإلكتروني" value={userProfile.email} />
-                           <InfoRow label="رقم الهاتف" value={userProfile.phoneNumber || 'لم يضف'} />
                            <InfoRow label="تاريخ الانضمام" value={userProfile.createdAt ? format(userProfile.createdAt, 'PP') : '-'} />
                            <InfoRow label="الدولة" value={userProfile.country || 'N/A'} />
                            <InfoRow label="Auth UID" value={userProfile.uid} />
@@ -494,13 +545,16 @@ export default function UserDetailPage() {
                         <CardHeader>
                             <CardTitle className="text-base flex items-center gap-2"><ShieldAlert/> طلبات التحقق</CardTitle>
                         </CardHeader>
-                        <CardContent className="grid md:grid-cols-2 gap-4">
+                        <CardContent className="grid md:grid-cols-1 gap-4">
                             <VerificationCard type="kyc" title="تحقق الهوية (KYC)" icon={FileText} data={userProfile.kycData} userId={userId} onSuccess={fetchDetails} />
                             <VerificationCard type="address" title="تحقق العنوان" icon={Home} data={userProfile.addressData} userId={userId} onSuccess={fetchDetails} />
-                             <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-base flex items-center gap-2"><Phone/>تحقق الهاتف</CardTitle>
-                                    <Badge variant={userProfile.phoneNumberVerified ? 'default' : 'secondary'} className="w-fit">{userProfile.phoneNumberVerified ? 'تم التحقق' : 'لم يتم التحقق'}</Badge>
+                            <Card>
+                                <CardHeader className="flex flex-row justify-between items-start">
+                                    <div>
+                                        <CardTitle className="text-base flex items-center gap-2"><Phone/>تحقق الهاتف</CardTitle>
+                                        <Badge variant={userProfile.phoneNumberVerified ? 'default' : 'secondary'} className="w-fit mt-2">{userProfile.phoneNumberVerified ? 'تم التحقق' : 'لم يتم التحقق'}</Badge>
+                                    </div>
+                                    <PhoneEditDialog phoneNumber={userProfile.phoneNumber} userId={userId} onSuccess={fetchDetails} />
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-muted-foreground">{userProfile.phoneNumber || 'لم يتم تقديم رقم هاتف.'}</p>

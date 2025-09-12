@@ -427,11 +427,11 @@ export async function adminAddTradingAccount(userId: string, brokerName: string,
     });
 }
 
-export async function updateUser(userId: string, data: Partial<Pick<UserProfile, 'name' | 'country' | 'phoneNumber'>>) {
+export async function updateUser(userId: string, data: Partial<Pick<UserProfile, 'name' | 'country'>>) {
     await verifyAdmin();
     try {
-        const userRef = clientDoc(adminDb, 'users', userId);
-        await clientUpdateDoc(userRef, data);
+        const userRef = adminDb.doc(`users/${userId}`);
+        await userRef.update(data);
         return { success: true, message: 'تم تحديث الملف الشخصي بنجاح.' };
     } catch (error) {
         console.error("Error updating user profile:", error);
@@ -1422,6 +1422,32 @@ export async function adminUpdateAddress(userId: string, data: AddressData) {
     } catch (error) {
         console.error("Error updating address by admin:", error);
         return { success: false, message: "فشل تحديث بيانات العنوان." };
+    }
+}
+
+export async function adminUpdatePhoneNumber(userId: string, phoneNumber: string) {
+    await verifyAdmin();
+    const userRef = adminDb.doc(`users/${userId}`);
+
+    try {
+        const parsedNumber = parsePhoneNumber(phoneNumber);
+        if (!parsedNumber) {
+            throw new Error('Invalid phone number format.');
+        }
+        
+        const countryCode = parsedNumber.country;
+
+        await userRef.update({
+            phoneNumber: parsedNumber.number, // Store in E.164 format
+            country: countryCode, // Update country code based on phone
+            phoneNumberVerified: true, // Admin approval verifies it
+            hasPendingPhone: deleteField(),
+        });
+
+        return { success: true, message: "تم تحديث رقم الهاتف والتحقق منه." };
+    } catch (error: any) {
+        console.error("Error updating phone number by admin:", error);
+        return { success: false, error: error.message };
     }
 }
     
