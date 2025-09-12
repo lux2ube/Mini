@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { db } from '@/lib/firebase/config';
@@ -7,7 +8,7 @@ import * as admin from 'firebase-admin';
 import { collection as clientCollection, doc as clientDoc, updateDoc as clientUpdateDoc } from 'firebase/firestore';
 import { collection, doc, getDocs, updateDoc, addDoc, serverTimestamp, query, where, Timestamp, orderBy, writeBatch, deleteDoc, getDoc, setDoc, runTransaction, increment, Transaction, limit } from 'firebase/firestore';
 import { startOfMonth } from 'date-fns';
-import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData, PendingVerification } from '@/types';
+import type { ActivityLog, BannerSettings, BlogPost, Broker, CashbackTransaction, DeviceInfo, Notification, Order, PaymentMethod, ProductCategory, Product, TradingAccount, UserProfile, Withdrawal, GeoInfo, ClientLevel, AdminNotification, FeedbackForm, FeedbackResponse, EnrichedFeedbackResponse, UserStatus, KycData, AddressData, PendingVerification, ContactSettings } from '@/types';
 import { headers } from 'next/headers';
 import { parsePhoneNumber } from "libphonenumber-js";
 
@@ -1300,7 +1301,7 @@ export async function getFeedbackResponses(formId: string): Promise<EnrichedFeed
     const userIds = [...new Set(responses.map(r => r.userId))];
     if (userIds.length === 0) return [];
 
-    const usersQuery = query(collection(db, 'users'), where('__name__', 'in', userIds));
+    const usersQuery = query(collection(db, 'users'), where(admin.firestore.FieldPath.documentId(), 'in', userIds));
     const usersSnap = await getDocs(usersQuery);
     const usersMap = new Map(usersSnap.docs.map(d => [d.id, d.data() as UserProfile]));
 
@@ -1410,27 +1411,26 @@ export async function getPendingVerifications(): Promise<PendingVerification[]> 
 export async function updateVerificationStatus(
     userId: string,
     type: 'kyc' | 'address' | 'phone',
-    status: 'Verified' | 'Rejected' | 'Pending',
+    status: 'Verified' | 'Rejected',
     rejectionReason?: string
 ) {
     await verifyAdmin();
     try {
         await adminDb.runTransaction(async (transaction) => {
             const userRef = adminDb.doc(`users/${userId}`);
-            let updateData: Record<string, any> = {};
+            const updateData: Record<string, any> = {};
             let notificationMessage = '';
-            let notificationType: Notification['type'] = 'general';
+            const notificationType: Notification['type'] = 'account';
 
             const createAdminNotification = (
                 message: string,
-                type: Notification['type'],
                 link?: string
             ) => {
                 const notifRef = adminDb.collection('notifications').doc();
                 transaction.set(notifRef, {
                     userId,
                     message,
-                    type,
+                    type: notificationType,
                     link,
                     isRead: false,
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -1441,7 +1441,6 @@ export async function updateVerificationStatus(
                 updateData['kycData.status'] = status;
                 updateData['hasPendingKYC'] = admin.firestore.FieldValue.delete();
                 notificationMessage = `تم تحديث حالة التحقق من هويتك إلى: ${status}.`;
-                notificationType = 'account';
                 if (status === 'Rejected' && rejectionReason) {
                     updateData['kycData.rejectionReason'] = rejectionReason;
                     notificationMessage += ` السبب: ${rejectionReason}`;
@@ -1450,7 +1449,6 @@ export async function updateVerificationStatus(
                 updateData['addressData.status'] = status;
                 updateData['hasPendingAddress'] = admin.firestore.FieldValue.delete();
                 notificationMessage = `تم تحديث حالة التحقق من عنوانك إلى: ${status}.`;
-                notificationType = 'account';
                 if (status === 'Rejected' && rejectionReason) {
                     updateData['addressData.rejectionReason'] = rejectionReason;
                     notificationMessage += ` السبب: ${rejectionReason}`;
@@ -1459,11 +1457,10 @@ export async function updateVerificationStatus(
                 updateData['phoneNumberVerified'] = status === 'Verified';
                 updateData['hasPendingPhone'] = admin.firestore.FieldValue.delete();
                 notificationMessage = status === 'Verified' ? 'تم التحقق من رقم هاتفك بنجاح.' : 'فشل التحقق من رقم هاتفك.';
-                notificationType = 'account';
             }
 
             transaction.update(userRef, updateData);
-            createAdminNotification(notificationMessage, notificationType, '/dashboard/settings/verification');
+            createAdminNotification(notificationMessage, '/dashboard/settings/verification');
         });
 
         return { success: true, message: `تم تحديث حالة التحقق للمستخدم.` };
@@ -1473,7 +1470,6 @@ export async function updateVerificationStatus(
     }
 }
     
-
 export async function adminUpdateKyc(userId: string, data: KycData) {
     await verifyAdmin();
     try {
@@ -1625,4 +1621,34 @@ export async function backfillUserLevels(): Promise<{ success: boolean; message:
         return { success: false, message: `Failed to backfill levels: ${errorMessage}` };
     }
 }
+
+// Contact Settings
+export async function getContactSettings(): Promise<ContactSettings> {
+    await verifyAdmin();
+    const docRef = doc(db, 'settings', 'contact');
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as ContactSettings;
+    }
+    // Return default settings if not found
+    return {
+        email: 'support@example.com',
+        phone: '+1 234 567 890',
+        address: '123 Main Street, Anytown, USA',
+        social: { facebook: '#', twitter: '#', instagram: '#', whatsapp: '#', telegram: '#' },
+    };
+}
+
+export async function updateContactSettings(settings: ContactSettings) {
+    await verifyAdmin();
+    try {
+        const docRef = doc(db, 'settings', 'contact');
+        await setDoc(docRef, settings, { merge: true });
+        return { success: true, message: 'تم تحديث إعدادات الاتصال بنجاح.' };
+    } catch (error) {
+        console.error("Error updating contact settings:", error);
+        return { success: false, message: 'فشل تحديث إعدادات الاتصال.' };
+    }
+}
     
+
